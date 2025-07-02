@@ -79,9 +79,15 @@ sektor_map = {
                 "WICO"]
 }
 
-# Konversi ke .JK dan buat mapping sektor
+# Konversi ke .JK dan buat mapping ticker ke sektor
 tickers = []
-sektor_map = {}
+ticker_to_sector = {}  # mapping ticker -> sektor
+for sektor, daftar in sektor_map.items():
+    for t in daftar:
+        ticker_jk = t + ".JK"
+        tickers.append(ticker_jk)
+        ticker_to_sector[ticker_jk] = sektor
+
 for sektor, daftar in sektor_map.items():
     for t in daftar:
         ticker_jk = t + ".JK"
@@ -103,7 +109,7 @@ def ambil_data(tickers):
                 'PBV': info.get('priceToBook', None),
                 'ROE': info.get('returnOnEquity', None),
                 'Div Yield': info.get('dividendYield', None),
-                'Sektor': sektor_map.get(t, '-')
+                'Sektor': ticker_to_sector.get(t, '-')
             })
         except:
             continue
