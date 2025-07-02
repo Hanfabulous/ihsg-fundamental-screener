@@ -108,29 +108,20 @@ def ambil_data(tickers):
             continue
     return pd.DataFrame(data)
 
-# === Proses data ===
+# ====================== Ambil dan Tampilkan Data ======================
 with st.spinner("🔄 Mengambil data Yahoo Finance..."):
     df = ambil_data(tickers)
 
-st.write("📋 Tipe Data Sebelum Konversi:")
-st.write(df.dtypes)
-
-# Pastikan numerik
+# ⛏️ Konversi Kolom ke Numerik
 for kolom in ['PER', 'PBV', 'ROE', 'Div Yield']:
     df[kolom] = pd.to_numeric(df[kolom], errors='coerce')
 
-# Tampilkan lagi tipe data setelah konversi
+# Tampilkan tipe data (debug)
 st.write("📋 Tipe Data Setelah Konversi:")
 st.write(df.dtypes)
 
-df = df.dropna(subset=['PER', 'PBV', 'ROE'])
-
-# Konversi ROE dan Div Yield ke persen
-df['ROE'] = df['ROE'] * 100
-df['Div Yield'] = df['Div Yield'] * 100
-
-# === Sidebar Filter ===
-st.sidebar.header("📌 Filter Screening")
+# ====================== Sidebar Filter ======================
+st.sidebar.header("📌 Filter")
 semua_sektor = sorted(df['Sektor'].dropna().unique())
 sektor_pilihan = st.sidebar.multiselect("Pilih Sektor", semua_sektor, default=semua_sektor)
 
@@ -138,32 +129,25 @@ min_roe = st.sidebar.slider("Min ROE (%)", 0.0, 100.0, 10.0)
 max_per = st.sidebar.slider("Max PER", 0.0, 100.0, 25.0)
 max_pbv = st.sidebar.slider("Max PBV", 0.0, 10.0, 3.0)
 
-# === Screening ===
-df = df.dropna(subset=['PER', 'PBV', 'ROE'])
+# ====================== Filter Data ======================
+df_clean = df.dropna(subset=['PER', 'PBV', 'ROE']).copy()
+df_clean['ROE'] = df_clean['ROE'] * 100  # ubah jadi persen
+df_clean['Div Yield'] = df_clean['Div Yield'] * 100  # ubah jadi persen
 
-# Konversi kolom ke numerik (sekali lagi untuk jaga-jaga)
-df['PER'] = pd.to_numeric(df['PER'], errors='coerce')
-df['PBV'] = pd.to_numeric(df['PBV'], errors='coerce')
-df['ROE'] = pd.to_numeric(df['ROE'], errors='coerce')
-df['Div Yield'] = pd.to_numeric(df['Div Yield'], errors='coerce')
-
-# Buang data yang tidak valid
-df = df.dropna(subset=['PER', 'PBV', 'ROE'])
-
-# Lanjutkan screening
-hasil = df[
-    (df['Sektor'].isin(sektor_pilihan)) &
-    (df['ROE'] >= min_roe) &
-    (df['PER'] <= max_per) &
-    (df['PBV'] <= max_pbv)
+# Apply filter
+hasil = df_clean[
+    (df_clean['Sektor'].isin(sektor_pilihan)) &
+    (df_clean['ROE'] >= min_roe) &
+    (df_clean['PER'] <= max_per) &
+    (df_clean['PBV'] <= max_pbv)
 ]
-# === Tampilkan Hasil Screening ===
+
+# ====================== Tampilkan Hasil ======================
 st.subheader("📈 Hasil Screening")
 st.dataframe(hasil.sort_values(by='ROE', ascending=False).reset_index(drop=True))
 
-# === Hasil Per Sektor ===
-st.markdown("## 📂 Rekap Per Sektor")
-for sektor in sorted(hasil['Sektor'].unique()):
+# ====================== Per Sektor ======================
+st.markdown("## 📂 Hasil per Sektor")
+for sektor in sorted(hasil['Sektor'].dropna().unique()):
     st.markdown(f"### 🔸 {sektor}")
-    df_sektor = hasil[hasil['Sektor'] == sektor]
-    st.dataframe(df_sektor.reset_index(drop=True))
+    st.dataframe(hasil[hasil['Sektor'] == sektor].reset_index(drop=True))
