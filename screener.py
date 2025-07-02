@@ -98,11 +98,11 @@ def ambil_data(tickers):
             data.append({
                 'Ticker': t,
                 'Name': info.get('longName', '-'),
-                'Price': info.get('currentPrice', np.nan),
-                'PER': info.get('trailingPE', np.nan),
-                'PBV': info.get('priceToBook', np.nan),
-                'ROE': info.get('returnOnEquity', np.nan),
-                'Div Yield': info.get('dividendYield', np.nan),
+                'Price': info.get('currentPrice', None),
+                'PER': info.get('trailingPE', None),
+                'PBV': info.get('priceToBook', None),
+                'ROE': info.get('returnOnEquity', None),
+                'Div Yield': info.get('dividendYield', None),
                 'Sektor': sektor_map.get(t, '-')
             })
         except:
@@ -114,6 +114,9 @@ with st.spinner("🔄 Mengambil data Yahoo Finance..."):
 
 # Tampilkan kolom yang tersedia untuk debug
 st.write("🛠️ Kolom tersedia:", df.columns.tolist())
+
+# 👇 Debug: Cek beberapa baris data
+st.write("Contoh data:", df.head())
 
 # Pastikan kolom numerik
 for col in ['PER', 'PBV', 'ROE', 'Div Yield']:
