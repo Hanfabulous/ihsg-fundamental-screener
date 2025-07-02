@@ -104,6 +104,7 @@ def ambil_data(tickers):
                 'ROE': info.get('returnOnEquity', None),
                 'Div Yield': info.get('dividendYield', None),
                 'Sektor': ticker_to_sector.get(t, '-')
+                'Expected PER': info.get('forwardPE', None),
             })
         except:
             continue
@@ -123,6 +124,9 @@ for col in ['PER', 'PBV', 'ROE', 'Div Yield']:
     if col in df.columns:
         df[col] = pd.to_numeric(df[col], errors='coerce')
 
+if 'Expected PER' in df.columns:
+    df['Expected PER'] = pd.to_numeric(df['Expected PER'], errors='coerce')
+
 # Sidebar filter
 st.sidebar.header("📌 Filter")
 semua_sektor = sorted(df['Sektor'].dropna().unique())
@@ -141,7 +145,7 @@ if len(kolom_tersedia) < 3:
     st.stop()
 
 # Filter
-df_clean = df.dropna(subset=['PER', 'PBV', 'ROE'])
+df_clean = df.dropna(subset=['PER', 'PBV', 'ROE', 'Expected PER'])
 df_clean['ROE'] = df_clean['ROE'] * 100
 df_clean['Div Yield'] = df_clean['Div Yield'] * 100
 
@@ -149,7 +153,8 @@ hasil = df_clean[
     (df_clean['Sektor'].isin(sektor_pilihan)) &
     (df_clean['ROE'] >= min_roe) &
     (df_clean['PER'] <= max_per) &
-    (df_clean['PBV'] <= max_pbv)
+    (df_clean['PBV'] <= max_pbv) &
+    (df_clean['Expected PER']
 ]
 
 # Tampilkan hasil
