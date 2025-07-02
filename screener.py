@@ -3,138 +3,149 @@ import streamlit as st
 import yfinance as yf
 import pandas as pd
 
+st.set_page_config(page_title="Screener Fundamental IHSG", layout="wide")
 st.title("📊 Screener Fundamental IHSG")
 
-# === Daftar ticker saham IHSG ===
-tickers = [
-    
-        "AALI", "ABBA", "ABDA", "ABMM", "ACST", "ADES", "ADHI", "ADMF", "ADMG", "ADRO", "AGII", "AGRO",
-          "AHAP", "AIMS", "AISA", "AKRA", "AKSI", "ALKA", "AMFG", "AMIN", "AGRS", "ANJT", "ANTM", "APEX", "APIC", "APII", "APLI", "APLN", "ARGO", "ARII", "ARNA", "ARTA", "ARTO",
-          "ASBI", "ASDM", "ASGR", "ASJT", "ASMI", "ASRI", "ASRM", "ASSA", "ATIC", "AUTO", "BABP", "BACA", "BAJA",
-          "BALI", "BAPA", "BATA", "BAYU", "BBCA", "BBHI", "BBKP", "BBLD", "BBMD", "BBNI", "BBRI", "BBRM", "BBTN", "BBYB",
-          "BCAP", "BCIC", "BCIP", "BDMN", "BEKS", "BEST", "BFIN", "BGTG", "BHIT", "BIMA", "BINA", "BIPI", "BIPP",
-          "BIRD", "BISI", "BJBR", "BJTM", "BKDP", "BKSL", "BKSW", "BLTA", "BLTZ", "BMAS", "BMRI", "BMSR", "BMTR", "BNBA",
-          "BNBR", "BNGA", "BNII", "BNLI", "BOLT", "BRAM", "BRMS", "BRNA", "BRPT", "BSDE", "BSIM", "BSSR",
-          "BSWD", "BTON", "BTPN", "BUDI", "BUKK", "BULL", "BUMI", "BUVA", "BVIC", "BWPT", "BYAN", "CANI",
-          "CASS", "CEKA", "CENT", "CFIN", "CINT", "CITA", "CLPI", "CMNP", "CMPP", "CNKO", "COWL", "CPIN", "CPRO",
-          "CSAP", "CTBN", "CTRA", "CTTH", "DART", "DEWA", "DGIK", "DILD", "DKFT", "DLTA", "DMAS", "DNAR", "DNET",
-          "DOID", "DPNS", "DSFI", "DSNG", "DSSA", "DUTI", "DVLA", "DYAN", "ECII", "EKAD", "ELSA", "ELTY", "EMDE", "EMTK",
-          "ENRG", "EPMT", "ERAA", "ERTX", "ESSA", "ESTI", "ETWA", "EXCL", "FAST", "FASW", "FISH", "FMII", "FORU", "FPNI",
-          "FREN", "GAMA", "GDST", "GDYR", "GEMA", "GEMS", "GGRM", "GIAA", "GJTL", "GLOB", "GMTD", "GOLD", "GPRA",
-          "GSMF", "GTBO", "GWSA", "GZCO", "HADE", "HDFA", "HDTX", "HERO", "HEXA", "HITS", "HMSP", "HOTL", "HRUM",
-          "IATA", "IBFN", "IBST", "ICBP", "ICON", "IGAR", "IKAI", "IKBI", "IMAS", "IMJS", "IMPC", "INAF", "INAI",
-          "INCI", "INCO", "INDF", "INDR", "INDS", "INDX", "INDY", "INKP", "INPC", "INPP", "INRU", "INTA", "INTD", "INTP",
-          "JIHD", "JKON", "JKSW", "JPFA", "JRPT", "JSMR", "JSPT", "JTPE", "KAEF", "KARW", "KBLI", "KBLM", "KBLV",
-                  "KDSI", "KIAS", "KICI", "KIJA", "KKGI", "KLBF", "KOBX", "KOIN", "KONI", "KOPI", "KPIG", "KRAH", "KRAS", "KREN",
-          "LAPD", "LCGP", "LEAD", "LINK", "LION", "LMAS", "LMPI", "LMSH", "LPCK", "LPGI", "LPIN", "LPKR", "LPLI", "LPPF",
-          "LPPS", "LRNA", "LSIP", "LTLS", "MAGP", "MAIN", "MAMI", "MAPI", "MASA", "MAYA", "MBAP", "MBSS", "MBTO", "MCOR",
-          "MDIA", "MDKA", "MDLN", "MDRN", "MEDC", "MEGA", "MERK", "META", "MFIN", "MFMI", "MGNA", "MICE", "MIDI", "MIKA",
-          "MIRA", "MITI", "MKPI", "MLBI", "MLIA", "MLPL", "MLPT", "MMLP", "MNCN", "MPMX", "MPPA", "MRAT", "MREI", "MSKY",
-          "MTDL", "MTFN", "MTLA", "MTSM", "MYOH", "MYOR", "MYTX", "NELY", "NIKL", "NIPS", "NIRO", "NISP", "NOBU",
-          "NRCA", "OCAP", "OKAS", "OMRE", "PADI", "PALM", "PANR", "PANS", "PBRX", "PDES", "PEGE", "PGAS", "PGLI", "PICO",
-          "PJAA", "PKPK", "PLAS", "PLIN", "PNBN", "PNBS", "PNIN", "PNLF", "PNSE", "POLY", "PPRO", "PRAS", "PSAB",
-          "PSDN", "PSKT", "PTBA", "PTIS", "PTPP", "PTRO", "PTSN", "PTSP", "PUDP", "PWON", "PYFA", "RODA", "ROTI",
-          "RUIS", "SAFE", "SAME", "SCCO", "SCMA", "SCPI", "SDMU", "SDPC", "SDRA", "SGRO", "SHID", "SIDO", "SILO", 
-          "SIMP", "SIPD", "SKBM", "SKLT", "SKYB", "SMAR", "SMBR", "SMCB", "SMDM", "SMDR", "SMGR", "SMMA", "SMMT", "SMRA",
-          "SMRU", "SMSM", "SOCI", "SONA", "SPMA", "SQMI", "SRAJ", "SRSN", "SRTG", "SSIA", "SSMS", "SSTM", "STAR",
-          "STTP", "SUGI", "SULI", "SUPR", "TALF", "TARA", "TAXI", "TBIG", "TBLA", "TBMS", "TCID", "TELE", "TFCO", "TGKA",
-          "TIFA", "TINS", "TIRA", "TIRT", "TKIM", "TLKM", "TMAS", "TMPO", "TOBA", "TOTL", "TOTO", "TOWR", "TPIA", "TPMA",
-          "TSPC", "ULTJ", "UNIC", "UNIT", "UNSP", "UNTR", "UNVR", "VICO", "VINS", "VIVA", "VOKS", "VRNA", "WAPO", "WEHA",
-          "WICO", "WIIM", "WIKA", "WINS", "WOMF", "WSKT", "WTON", "YPAS", "YULE", "ZBRA", "SHIP", "CASA", "DAYA", "DPUM",
-          "IDPR", "JGLE", "KINO", "MARI", "MKNT", "MTRA", "PRDA", "BOGA", "BRIS", "PORT", "CARS", "MINA", "FORZ", "CLEO",
-          "TAMU", "CSIS", "TGRA", "FIRE", "KMTR", "MAPB", "WOOD", "HRTA", "HOKI", "MPOW", "MARK",
-          "NASA", "MDKI", "BELL", "KIOS", "GMFI", "MTWI", "ZINC", "MCAS", "PPRE", "WEGE", "PSSI", "MORA", "DWGL", "PBID",
-          "JMAS", "CAMP", "IPCM", "LCKM", "BOSS", "HELI", "INPS", "GHON", "TDPM", "DFAM", "NICK", "BTPS",
-          "SPTO", "PRIM", "HEAL", "TRUK", "PZZA", "TUGU", "MSIN", "SWAT", "KPAL", "TNCA", "MAPA", "TCPI", "IPCC", "RISE",
-          "BPTR", "POLL", "NFCX", "MGRO", "FILM", "LAND", "MOLI", "PANI", "DIGI", "CITY", "SAPX", "KPAS",
-          "SURE", "MPRO", "DUCK", "GOOD", "SKRN", "YELO", "CAKK", "SOSS", "DEAL", "POLA", "DIVA", "LUCK",
-          "URBN", "SOTS", "ZONE", "PEHA", "FOOD", "BEEF", "POLI", "CLAY", "NATO", "JAYA", "COCO", "MTPS", "CPRI", "HRME",
-          "POSA", "JAST", "FITT", "BOLA", "CCSI", "SFAN", "POLU", "KJEN", "KAYU", "ITIC", "PAMG", "IPTV", "BLUE", "ENVY",
-          "EAST", "LIFE", "FUJI", "KOTA", "INOV", "ARKA", "SMKL", "KEEN", "BAPI", "TFAS", "GGRP", "OPMS", "NZIA",
-          "SLIS", "PURE", "IRRA", "DMMX", "SINI", "WOWS", "ESIP", "TEBE", "KEJU", "PSGO", "AGAR", "IFSH", "REAL", "IFII",
-          "PMJS", "UCID", "GLVA", "PGJO", "AMAR", "CSRA", "INDO", "AMOR", "TRIN", "DMND", "PURA", "PTPW", "TAMA", "IKAN",
-          "AYLS", "DADA", "ASPI", "ESTA", "BESS", "AMAN", "CARE", "SAMF", "SBAT", "KBAG", "CBMF", "RONY", "CSMI", "BBSS",
-          "BHAT", "CASH", "TECH", "EPAC", "UANG", "PGUN", "SOFA", "PPGL", "TOYS", "SGER", "TRJA", "PNGO", "SCNP", "BBSI",
-          "KMDS", "PURI", "SOHO", "HOMI", "ROCK", "PLAN", "PTDU", "ATAP", "VICI", "PMMP", "WIFI", "FAPA", "DCII",
-          "KETR", "DGNS", "UFOE", "BANK", "EDGE", "UNIQ", "BEBS", "SNLK", "ZYRX", "LFLO", "FIMP", "TAPG", "NPGF",
-          "LUCY", "ADCP", "MGLV", "TRUE", "LABA", "BUKA", "HAIS", "OILS", "GPSO", "MCOL", "MTEL", "DEPO",
-          "CMRY", "WGSH", "TAYS", "RMKE", "OBMD", "AVIA", "IPPE", "NASI", "BSML", "DRMA", "ADMR", "SEMA", "ASLC",
-          "NETV", "BAUT", "ENAK", "NTBK", "BIKE", "WIRG", "SICO", "GOTO", "TLDN", "MTMH", "WINR", "IBOS", "OLIV", "ASHA",
-          "SWID", "TRGU", "ARKO", "CHEM", "DEWI", "AXIO", "KRYA", "HATM", "RCCC", "GULA", "JARR", "AMMS", "RAFI", "KKES",
-          "ELPI", "EURO", "KLIN", "TOOL", "BUAH", "CRAB", "MEDS", "COAL", "PRAY", "CBUT", "BELI", "MKTR", "OMED", "BSBK",
-          "PDPP", "KDTN", "SOUL", "ELIT", "BEER", "CBPE", "SUNI", "CBRE", "WINE", "BMBL", "PEVE", "LAJU", "FWCT", "NAYZ",
-          "IRSX", "PACK", "VAST", "CHIP", "HALO", "KING", "PGEO", "FUTR", "GTRA", "HAJJ", "PIPA", "NCKL", "MENN", "AWAN",
-          "MBMA", "RAAM", "DOOH", "JATI", "TYRE", "MPXL", "SMIL", "KLAS", "MAXI", "VKTR", "RELF", "AMMN", "CRSN", "HBAT",
-          "GRIA", "PPRI", "ERAL", "CYBR", "MUTU", "LMAX", "KOCI", "PTPS", "BREN", "STRK", "KOKA", "LOPI", "UDNG", "CGAS",
-          "NICE", "MSJA", "SMLE", "ACRO", "MANG", "MEJA", "LIVE", "HYGN", "BAIK", "VISI", "AREA", "MHKI", "ATLA", "DATA",
-          "SOLA", "BATR", "SPRE", "PART", "GOLF", "ISEA", "BLES", "GUNA", "LABS", "DOSS", "NEST", "PTMR", "VERN", "DAAZ",
-          "BOAT", "OASA", "POWR", "INCF", "WSBP", "PBSA", "IPOL", "ISAT", "ISSP", "ITMA", "ITMG", "JAWA", "JECC", "NAIK",
-          "AADI", "MDIY", "TRIL", "TRIM", "TRIO", "TRIS", "TRST", "TRUS", "RSGK", "RUNS", "SBMA", "CMNT", "GTSI",
-          "IDEA", "KUAS", "BOBA", "GRPM", "WIDI", "TGUK", "INET", "MAHA", "RMKO", "CNMA", "FOLK", "HUMI", "MSIE", "RSCH",
-          "BABY", "AEGS", "IOTF", "RGAS", "MSTI", "IKPM", "AYAM", "SURI", "ASLI", "GRPH", "SMGA", "UNTD", "TOSK", "MPIX",
-          "ALII", "MKAP", "SMKM", "STAA", "NANO", "ARCI", "IPAC", "MASB", "BMHS", "FLMC", "NICL", "UVCR", "ZATA", "NINE",
-          "MMIX", "PADA", "ISAP", "VTNY", "HILL", "BDKR", "PTMP", "SAGE", "TRON", "CUAN", "NSSS", "RAJA", "RALS", "RANC",
-          "RBMS", "RDTX", "RELI", "RICY", "RIGS","YOII","KSIX","RATU","HGII","BRRC","OBAT","DGWG","CBDK","ACES", "ADMR", "ADRO", "AKRA", "AMMN", "AMRT", "ANTM", "ARTO", "ASII", "BBCA", "BBNI",
-"BBRI", "BBTN", "BMRI", "BRIS", "BRPT", "CPIN", "CTRA", "ESSA", "EXCL", "GOTO", "ICBP",
-"INCO", "INDF", "INKP", "ISAT", "ITMG", "JPFA", "JSMR", "KLBF", "MAPA", "MAPI", "MBMA",
-"MDKA", "MEDC", "PGAS", "PGEO", "PTBA", "SIDO", "SMGR", "SMRA", "TLKM", "TOWR", "UNTR", "UNVR"
+# === Daftar sektor dan ticker (.JK sudah ditambahkan) ===
+sektor_saham = {
+    "Teknologi": ["GOTO", "BUKA", "EMTK", "WIFI", "WIRG", "MTDL", "DMMX", "DCII", "MLPT", "ELIT", "PTSN", "EDGE", "JATI",
+                  "LUCK", "KREN", "MCAS", "KIOS", "MSTI", "CYBR", "DIVA", "IOTF", "NFCX", "AWAN", "ZYRX", "TRON", "AXIO",
+                  "TFAS", "BELI", "UVCR", "AREA", "HDIT", "TECH", "TOSK", "MPIX", "ATIC", "ENVY", "GLVA", "LMAS", "IRSX", "SKYB"],
+    "Energi": ["ADRO", "PGAS", "PTBA", "ITMG", "HRUM", "BUMI", "PTRO", "MEDC", "ADMR", "ELSA", "AKRA", "INDY", "AADI",
+               "CUAN", "RAJA", "BSSR", "ENRG", "RATU", "TOBA", "DOID", "DEWA", "GEMS", "ABMM", "BYAN", "TPMA", "MBAP",
+               "KKGI", "BULL", "SOCI", "FIRE", "SGER", "DSSA", "BIPI", "WINS", "HUMI", "PSSI", "MBSS", "SMMT", "IATA",
+               "CGAS", "BOSS", "UNIQ", "TEBE", "MAHA", "COAL", "LEAD", "JSKY", "BOAT", "TCPI", "BSML", "ITMA", "ATLA",
+               "SICO", "MCOL", "APEX", "MYOH", "RMKE", "PKPK", "RUIS", "RIGS", "BESS", "SEMA", "HILL", "SHIP", "DWGL",
+               "GTBO", "ARII", "TRAM", "WOWS", "PTIS", "ALII", "RGAS", "CNKO", "GTSI", "AIMS", "TAMU", "KOPI", "BBRM",
+               "HITS", "INPS", "MKAP", "SUNI", "MTFN", "SURE", "CBRE", "RMKO", "CANI", "ARTI", "SMRU", "SUGI"],
+    "Basic Industrial" : ["ANTM", "SMGR", "INTP", "BRPT", "INCO", "MDKA", "TINS", "INKP", "BRMS", "TPIA", "TKIM", "AMMN", "ESSA", "MBMA", "PSAB",
+                "KRAS", "WSBP", "WTON", "SMBR", "NCKL", "NICL", "DKFT", "AGII", "AVIA", "DAAZ", "ISSP", "ARCI", "NIKL", "ZINC", "EKAD",
+                "FPNI", "PBID", "BAJA", "AYLS", "SMGA", "SOLA", "PACK", "OKAS", "GDST", "CLPI", "NICE", "SPMA", "BLES", "LTLS", "SAMF",
+                "ADMG", "CITA", "KAYU", "BEBS", "SMCB", "PICO", "OPMS", "MDKI", "BATR", "DGWG", "SULI", "HKMU", "BMSR", "SRSN", "SQMI",
+                "SMLE", "PDPP", "ESIP", "FWCT", "PURE", "CHEM", "SBMA", "UNIC", "TBMS", "SWAT", "INCI", "ALDO", "PPRI", "SMKL", "OBMD",
+                "IGAR", "BTON", "GGRP", "IFII", "KDSI", "IPOL", "PTMR", "IFSH", "INAI", "MOLI", "INCF", "ALKA", "INTD", "INRU", "DPNS",
+                "EPAC", "AKPI", "CMNT", "NPGF", "CTBN", "KMTR", "APLI", "TDPM", "TIRT", "YPAS", "TRST", "LMSH", "ALMI", "FASW", "TALF",
+                "KKES", "BRNA", "ETWA", "SIMA", "KBRI", "JKSW"],
+    "Kesehatan" : ["KLBF", "SIDO", "KAEF", "MIKA", "SILO", "INAF", "TSPC", "IRRA", "[YFA", "HEAL", "PRDA", "SAME", "MERK", "PEHA", "OBAT",
+                "DGNS", "DVLA", "SOHO", "CARE", "PRIM", "SRAJ", "MMIX", "BMHS", "OMED", "SURI", "LABS", "MEDS", "PEVE", "HALO", "RSCH",
+                "MTMH", "SCPI", "IKPM", "RSGK", "PRAY"],
+    "Transportasi" : ["GIAA", "SMDR", "BIRD", "ASSA", "TMAS", "IMJS", "CMPP", "HAIS", "NELY", "JAYA", "WEHA", "KJEN", "PURA", "TNCA", "TRUK",
+                "MITI", "HATM", "SAPX", "MPXL", "AKSI", "SDMU", "LAJU", "ELPI", "TRJA", "GTRA", "HELI", "DEAL", "TAXI", "BPTR", "KLAS",
+                "LRNA", "SAFE", "MIRA", "BLTA"],
+    "Infrastruktur" : ["TLKM", "ADHI", "WIKA", "JSMR", "WSKT", "PTPP", "EXCL", "BREN", "PGEO", "ISAT", "TOWR", "TOTL", "DATA", "IPCC", "MTEL",
+                "WEGE", "SSIA", "INET", "KEEN", "LINK", "ACST", "JKON", "CMNP", "HGII", "CENT", "IPCM", "JAST", "NRCA", "PPRE", "GMFI",
+                "META", "MPOW", "PBSA", "KARW", "TGRA", "ARKO", "DGIK", "CASS", "KRYA", "BDKR", "OASA", "KOKA", "KBLV", "BALI", "BUKK",
+                "PTDU", "GHON", "GOLD", "TOPS", "MORA", "MTPS", "PORT", "IDPR", "KETR", "RONY", "TAMA", "SUPR", "HADE", "ASLI", "PTPW",
+                "IBST", "LCKM", "BTEL", "MTRA", "POWR", "TBIG", "FREN"],
+    "Keuangan" : ["BBCA", "BBRI", "BMRI", "BBNI", "BRIS", "BBTN", "ARTO", "BNGA", "BJTM", "BTPS", "SRTG", "AGRO", "BBKP", "BJBR", "NISP",
+                "PNLF", "BDMN", "BFIN", "BBHI", "BABP", "BNLI", "BANK", "PNBS", "INPC", "BNII", "ADMF", "CFIN", "PNBN", "BTPN",
+                "BGTG", "MEGA", "BACA", "BCAP", "TUGU", "BNBA", "BEKS", "PALM", "MAYA", "BVIC", "BSIM", "PNIN", "PANS", "AMAR", "MCOR",
+                "NOBU", "DNET", "DNAR", "AGRS", "BKSW", "TRIM", "JMAS", "WOMF", "AHAP", "BINA", "SMMA", "BCIC", "MTWI", "MFIN", "VICO",
+                "BMAS", "SDRA", "LPGI", "AMAG", "PEGE", "BBSI", "LIFE", "PADI", "VTNY", "LPPS", "VINS", "CASA", "POLA", "AMOR", "APIC",
+                "ASDM", "FUJI", "GSMF", "VRNA", "TRUS", "BHAT", "HDFA", "MREI", "STAR", "ASMI", "ASJT", "YOII", "BPFI", "ASBI", "ASRM",
+                "BBLD", "TIFA", "TIFA", "BBMD", "NICK", "RELI", "BPII", "MASB", "YULE", "POOL", "SFAN", "ABDA", "BSWD", "DEFI", "OCAP",
+                "PLAS"],
+    "Industri" : ["ASII", "UNTR", "HEXA", "BHIT", "TOTO", "ARNA", "SMIL", "LABA", "MARK", "ASGR", "KBLI", "NAIK", "KOBX", "SPTO", "MLIA",
+                "CAKK", "PTMP", "CCSI", "GPSO", "INDX", "BNBR", "DYAN", "JTPE", "SKRN", "SCCO", "KBLM", "IMPC", "VISI", "MHKI", "LION",
+                "MUTU", "VOKS", "ZBRA", "AMFG", "SINI", "BLUE", "IKAI", "HOPE", "JECC", "BINO", "IKBI", "PIPA", "ICON", "NTBK", "ARKA",
+                "AMIN", "SOSS", "MFMI", "KIAS", "KONI", "TIRA", "KUAS", "PADA", "HYGN", "APII", "CRSN", "CTTH", "MDRN", "FOLK", "KOIN",
+                "INTA", "KPAL", "IBFN", "TRIL", "KRAH"],
+    "Properti" : ["CTRA", "BSDE", "PWON", "SMRA", "PANI", "KIJA", "DMAS", "CBDK", "ASRI", "APLN", "LPKR", "DILD", "BKSL", "PPRO", "BEST",
+                "LPCK", "JRPT", "BSBK", "GPRA", "MDLN", "SMDM", "BCIP", "KSIX", "TRIN", "MMLP", "PAMG", "REAL", "KBAG", "CITY", "INDO",
+                "BAPA", "ADCP", "LAND", "NZIA", "DUTI", "AMAN", "CSIS", "MTLA", "RBMS", "ASPI", "SATU", "PURI", "DADA", "RODA", "BBSS",
+                "HOMI", "WINR", "FMII", "ELTY", "PLIN", "POLL", "TRUE", "VAST", "MKPI", "EMDE", "PUDP", "SAGE", "RDTX", "LPLI", "ATAP",
+                "URBN", "UANG", "BKDP", "RISE", "MPRO", "MTSM", "BAPI", "GMTD", "TARA", "DART", "NASA", "GRIA", "CBPE", "KOCI", "INPP",
+                "BIPP", "MYRX", "POSA", "OMRE", "RIMO", "POLI", "BIKA", "GAMA", "CPRI", "ROCK", "NIRO", "LCGP", "FORZ", "ARMY", "COWL"],
+    "Siklikal" : ["MNCN", "LPPF", "SCMA", "ACES", "ERAA", "GJTL", "MAPI", "MAPI", "AUTO", "MPMX", "BMTR", "RALS", "FILM", "HRTA", "SMSM",
+                "IMAS", "MAPA", "KPIG", "WOOD", "SRIL", "MSIN", "IPTV", "KAQI", "FAST", "DOOH", "MINA", "CNMA", "JIHD", "SLIS", "NETV",
+                "DRMA", "MARI", "ABBA", "PZZA", "MSKY", "DOSS", "INDR", "VKTR", "YELO", "MDIY", "ASLC", "EAST", "PBRX", "FORU", "PJAA",
+                "TMPO", "VERN", "GOLF", "RAAM", "PANR", "BUVA", "TOYS", "FUTR", "BOLA", "BELL", "ACRO", "VIVA", "ERAL", "ECII", "BAYU",
+                "INDS", "LPIN", "TRIS", "CARS", "MAPB", "GDYR", "PART", "KICI", "KOTA", "ERTX", "PSKT", "TELE", "DUCK", "BIMA", "LMPI",
+                "SONA", "BABY", "RAFI", "UFOE", "NATO", "UNTD", "BAIK", "HRME", "GWSA", "CINT", "LIVE", "BOGA", "JSPT", "SHID", "BIKE",
+                "ENAK", "FITT", "BAUT", "BRAM", "MASA", "ESTA", "INOV", "RICY", "MICE", "MDIA", "MAMI", "CSAP", "POLY", "ZATA", "PMJS",
+                "SBAT", "BOLT", "SNLK", "DIGI", "DEPO", "BATA", "PTSP", "SOTS", "TOOL", "DFAM", "PGLI", "ZONE", "MKNT", "TYRE", "IIKP",
+                "SCNP", "GEMA", "CBMF", "SSTM", "ESTI", "SWID", "PNSE", "HOME", "JGLE", "ARGO", "BLTZ", "TFCO", "PDES", "GLOB", "KDTN",
+                "ARTA", "NUSA", "GRPH", "MYTX", "AKKU", "MGNA", "CSMI", "CLAY", "PRAS", "MABA", "CNTX", "TRIO", "UNIT", "HOTL", "HDTX",
+                "NIPS"],
+    "Non-Siklikal" : ["UNVR", "INDF", "ICBP", "GGRM", "AALI", "MYOR", "JPFA", "CPIN", "LSIP", "HMSP", "AMRT", "ULTJ", "CLEO", "MLPL", "TAPG",
+                "WIIM", "HOKI", "GOOD", "SIMP", "MPPA", "GZCO", "DSNG", "CAMP", "SSMS", "MAIN", "SMAR", "MIDI", "ROTI", "TBLA", "AISA",
+                "CMRY", "SGRO", "ANJT", "BWPT", "CPRO", "JARR", "PMMP", "KINO", "CEKA", "ADES", "WMUU", "BISI", "KEJU", "NASI", "CSRA",
+                "BEEF", "PTPS", "MRAT", "UCID", "BUDI", "JAWA", "WAPO", "NEST", "ITIC", "MLBI", "GULA", "IKAN", "COCO", "RANC", "DMND",
+                "BRRC", "STAA", "FOOD", "STTP", "DLTA", "ISEA", "DSFI", "EPMT", "TGUK", "STRK", "DEWI", "GUNA", "ASHA", "IPPE", "NSSS",
+                "SKLT", "BTEK", "AYAM", "OILS", "SDPC", "HERO", "ANDI", "PCAR", "SKBM", "MGRO", "PSGO", "UNSP", "PSDN", "MBTO", "TGKA",
+                "PNGO", "KMDS", "MSJA", "TCID", "TAYS", "MKTR", "TLDN", "WINE", "KPAS", "PGUN", "VICI", "ENZO", "BOBA", "DAYA", "BUAH",
+                "FISH", "SIPD", "WMPP", "CRAB", "TRGU", "AGAR", "DPUM", "FAPA", "CBUT", "BEER", "ALTO", "MAXI", "MAGP", "LAPD", "GOLL",
+                "WICO"]
+}
 
-]
-tickers = [ticker + ".JK" for ticker in tickers]
+# Konversi ke .JK dan buat mapping sektor
+tickers = []
+sektor_map = {}
+for sektor, daftar in sektor_saham.items():
+    for t in daftar:
+        ticker_jk = t + ".JK"
+        tickers.append(ticker_jk)
+        sektor_map[ticker_jk] = sektor
 
-# === Ambil data fundamental ===
-data = []
+# === Ambil data fundamental dari Yahoo Finance ===
+@st.cache_data(ttl=3600)
+def ambil_data(tickers):
+    data = []
+    for t in tickers:
+        try:
+            info = yf.Ticker(t).info
+            data.append({
+                'Ticker': t,
+                'Name': info.get('longName', '-'),
+                'Price': info.get('currentPrice', None),
+                'PER': info.get('trailingPE', None),
+                'PBV': info.get('priceToBook', None),
+                'ROE': info.get('returnOnEquity', None),
+                'Div Yield': info.get('dividendYield', None),
+                'Sektor': sektor_map.get(t, '-')
+            })
+        except:
+            continue
+    return pd.DataFrame(data)
 
-st.info("⏳ Mengambil data dari Yahoo Finance, mohon tunggu...")
+# === Proses data ===
+with st.spinner("🔄 Mengambil data Yahoo Finance..."):
+    df = ambil_data(tickers)
 
-for t in tickers:
-    try:
-        info = yf.Ticker(t).info
-        data.append({
-            'Ticker': t,
-            'Name': info.get('longName', '-'),
-            'Price': info.get('currentPrice', None),
-            'PER': info.get('trailingPE', None),
-            'PBV': info.get('priceToBook', None),
-            'ROE': info.get('returnOnEquity', None),
-            'Div Yield': info.get('dividendYield', None),
-        })
-    except Exception as e:
-        st.warning(f"❌ Gagal mengambil data {t}: {e}")
-        continue
+# Pastikan numerik
+for kolom in ['PER', 'PBV', 'ROE', 'Div Yield']:
+    df[kolom] = pd.to_numeric(df[kolom], errors='coerce')
 
-df = pd.DataFrame(data)
+# Konversi ROE dan Div Yield ke persen
+df['ROE'] = df['ROE'] * 100
+df['Div Yield'] = df['Div Yield'] * 100
 
-# ✅ Pastikan kolom PER, PBV, ROE tetap ada walaupun kosong
-for col in ['PER', 'PBV', 'ROE', 'Div Yield']:
-    if col not in df.columns:
-        df[col] = None
+# === Sidebar Filter ===
+st.sidebar.header("📌 Filter Screening")
+semua_sektor = sorted(df['Sektor'].dropna().unique())
+sektor_pilihan = st.sidebar.multiselect("Pilih Sektor", semua_sektor, default=semua_sektor)
 
-# Bersihkan baris yang tidak punya nilai penting
-try:
-    df_clean = df.dropna(subset=['PER', 'PBV', 'ROE']).copy()
-
-    # Ubah ROE dan Div Yield ke %
-    df_clean['ROE'] = df_clean['ROE'] * 100
-    df_clean['Div Yield'] = df_clean['Div Yield'] * 100
-except Exception as e:
-    st.error(f"Gagal membersihkan data: {e}")
-    df_clean = pd.DataFrame()
-
-# Filter user
-st.sidebar.header("📌 Filter Kriteria")
 min_roe = st.sidebar.slider("Min ROE (%)", 0.0, 100.0, 10.0)
-max_per = st.sidebar.slider("Max PER", 0.0, 50.0, 20.0)
+max_per = st.sidebar.slider("Max PER", 0.0, 100.0, 25.0)
 max_pbv = st.sidebar.slider("Max PBV", 0.0, 10.0, 3.0)
 
-# Tampilkan hasil
-if not df_clean.empty:
-    result = df_clean[
-        (df_clean['ROE'] >= min_roe) &
-        (df_clean['PER'] <= max_per) &
-        (df_clean['PBV'] <= max_pbv)
-    ]
-    st.subheader("📈 Hasil Screening")
-    st.dataframe(result.sort_values(by='ROE', ascending=False).reset_index(drop=True))
-else:
-    st.warning("⚠️ Tidak ada data yang bisa ditampilkan. Coba periksa koneksi atau daftar saham.")
+# === Screening ===
+df = df.dropna(subset=['PER', 'PBV', 'ROE'])
+
+hasil = df[
+    (df['Sektor'].isin(sektor_pilihan)) &
+    (df['ROE'] >= min_roe) &
+    (df['PER'] <= max_per) &
+    (df['PBV'] <= max_pbv)
+]
+
+# === Tampilkan Hasil Screening ===
+st.subheader("📈 Hasil Screening")
+st.dataframe(hasil.sort_values(by='ROE', ascending=False).reset_index(drop=True))
+
+# === Hasil Per Sektor ===
+st.markdown("## 📂 Rekap Per Sektor")
+for sektor in sorted(hasil['Sektor'].unique()):
+    st.markdown(f"### 🔸 {sektor}")
+    df_sektor = hasil[hasil['Sektor'] == sektor]
+    st.dataframe(df_sektor.reset_index(drop=True))
