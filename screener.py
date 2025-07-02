@@ -154,7 +154,7 @@ hasil = df_clean[
     (df_clean['ROE'] >= min_roe) &
     (df_clean['PER'] <= max_per) &
     (df_clean['PBV'] <= max_pbv) &
-    (df_clean['Expected PER']
+    (df_clean['Expected PER'] <= max_forward_per)
 ]
 
 # Tampilkan hasil
