@@ -85,7 +85,7 @@ tickers = [ticker + ".JK" for ticker in tickers]
 # === Ambil data fundamental ===
 data = []
 
-st.info("Mengambil data dari Yahoo Finance, mohon tunggu...")
+st.info("⏳ Mengambil data dari Yahoo Finance, mohon tunggu...")
 
 for t in tickers:
     try:
@@ -99,22 +99,27 @@ for t in tickers:
             'ROE': info.get('returnOnEquity', None),
             'Div Yield': info.get('dividendYield', None),
         })
-    except:
-        pass
+    except Exception as e:
+        st.warning(f"❌ Gagal mengambil data {t}: {e}")
+        continue
 
 df = pd.DataFrame(data)
 
-# Pastikan kolom PER, PBV, ROE tetap ada walau kosong
-for col in ['PER', 'PBV', 'ROE']:
+# ✅ Pastikan kolom PER, PBV, ROE tetap ada walaupun kosong
+for col in ['PER', 'PBV', 'ROE', 'Div Yield']:
     if col not in df.columns:
         df[col] = None
 
-# Drop baris yang nilai pentingnya tidak tersedia
-df_clean = df.dropna(subset=['PER', 'PBV', 'ROE'])
+# Bersihkan baris yang tidak punya nilai penting
+try:
+    df_clean = df.dropna(subset=['PER', 'PBV', 'ROE']).copy()
 
-# Konversi ke persen
-df_clean['ROE'] = df_clean['ROE'] * 100
-df_clean['Div Yield'] = df_clean['Div Yield'] * 100
+    # Ubah ROE dan Div Yield ke %
+    df_clean['ROE'] = df_clean['ROE'] * 100
+    df_clean['Div Yield'] = df_clean['Div Yield'] * 100
+except Exception as e:
+    st.error(f"Gagal membersihkan data: {e}")
+    df_clean = pd.DataFrame()
 
 # Filter user
 st.sidebar.header("📌 Filter Kriteria")
@@ -122,13 +127,14 @@ min_roe = st.sidebar.slider("Min ROE (%)", 0.0, 100.0, 10.0)
 max_per = st.sidebar.slider("Max PER", 0.0, 50.0, 20.0)
 max_pbv = st.sidebar.slider("Max PBV", 0.0, 10.0, 3.0)
 
-# Apply filter
-result = df_clean[
-    (df_clean['ROE'] >= min_roe) &
-    (df_clean['PER'] <= max_per) &
-    (df_clean['PBV'] <= max_pbv)
-]
-
 # Tampilkan hasil
-st.subheader("📈 Hasil Screening")
-st.dataframe(result.sort_values(by='ROE', ascending=False).reset_index(drop=True))
+if not df_clean.empty:
+    result = df_clean[
+        (df_clean['ROE'] >= min_roe) &
+        (df_clean['PER'] <= max_per) &
+        (df_clean['PBV'] <= max_pbv)
+    ]
+    st.subheader("📈 Hasil Screening")
+    st.dataframe(result.sort_values(by='ROE', ascending=False).reset_index(drop=True))
+else:
+    st.warning("⚠️ Tidak ada data yang bisa ditampilkan. Coba periksa koneksi atau daftar saham.")
