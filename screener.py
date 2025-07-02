@@ -2,12 +2,13 @@
 import streamlit as st
 import yfinance as yf
 import pandas as pd
+import numpy as np
 
 st.set_page_config(page_title="Screener Fundamental IHSG", layout="wide")
 st.title("📊 Screener Fundamental IHSG")
 
 # === Daftar sektor dan ticker (.JK sudah ditambahkan) ===
-sektor_saham = {
+sektor_map = {
     "Teknologi": ["GOTO", "BUKA", "EMTK", "WIFI", "WIRG", "MTDL", "DMMX", "DCII", "MLPT", "ELIT", "PTSN", "EDGE", "JATI",
                   "LUCK", "KREN", "MCAS", "KIOS", "MSTI", "CYBR", "DIVA", "IOTF", "NFCX", "AWAN", "ZYRX", "TRON", "AXIO",
                   "TFAS", "BELI", "UVCR", "AREA", "HDIT", "TECH", "TOSK", "MPIX", "ATIC", "ENVY", "GLVA", "LMAS", "IRSX", "SKYB"],
@@ -81,7 +82,7 @@ sektor_saham = {
 # Konversi ke .JK dan buat mapping sektor
 tickers = []
 sektor_map = {}
-for sektor, daftar in sektor_saham.items():
+for sektor, daftar in sektor_map.items():
     for t in daftar:
         ticker_jk = t + ".JK"
         tickers.append(ticker_jk)
@@ -97,48 +98,50 @@ def ambil_data(tickers):
             data.append({
                 'Ticker': t,
                 'Name': info.get('longName', '-'),
-                'Price': info.get('currentPrice', None),
-                'PER': info.get('trailingPE', None),
-                'PBV': info.get('priceToBook', None),
-                'ROE': info.get('returnOnEquity', None),
-                'Div Yield': info.get('dividendYield', None),
+                'Price': info.get('currentPrice', np.nan),
+                'PER': info.get('trailingPE', np.nan),
+                'PBV': info.get('priceToBook', np.nan),
+                'ROE': info.get('returnOnEquity', np.nan),
+                'Div Yield': info.get('dividendYield', np.nan),
                 'Sektor': sektor_map.get(t, '-')
             })
         except:
             continue
     return pd.DataFrame(data)
 
-# ====================== Ambil dan Tampilkan Data ======================
 with st.spinner("🔄 Mengambil data Yahoo Finance..."):
     df = ambil_data(tickers)
 
-# ⛏️ Konversi Kolom ke Numerik
-for kolom in ['PER', 'PBV', 'ROE', 'Div Yield']:
-    df[kolom] = pd.to_numeric(df[kolom], errors='coerce')
+# Tampilkan kolom yang tersedia untuk debug
+st.write("🛠️ Kolom tersedia:", df.columns.tolist())
 
-# Tampilkan tipe data (debug)
-st.write("📋 Tipe Data Setelah Konversi:")
-st.write(df.dtypes)
+# Pastikan kolom numerik
+for col in ['PER', 'PBV', 'ROE', 'Div Yield']:
+    if col in df.columns:
+        df[col] = pd.to_numeric(df[col], errors='coerce')
 
-# ====================== Sidebar Filter ======================
+# Sidebar filter
 st.sidebar.header("📌 Filter")
 semua_sektor = sorted(df['Sektor'].dropna().unique())
 sektor_pilihan = st.sidebar.multiselect("Pilih Sektor", semua_sektor, default=semua_sektor)
-
 min_roe = st.sidebar.slider("Min ROE (%)", 0.0, 100.0, 10.0)
 max_per = st.sidebar.slider("Max PER", 0.0, 100.0, 25.0)
 max_pbv = st.sidebar.slider("Max PBV", 0.0, 10.0, 3.0)
 
-# ====================== Filter Data ======================
-df_clean = df.dropna(subset=['PER', 'PBV', 'ROE']).copy()
-df_clean['ROE'] = df_clean['ROE'] * 100  # ubah jadi persen
-df_clean['Div Yield'] = df_clean['Div Yield'] * 100  # ubah jadi persen
+# Pastikan semua kolom filter tersedia
+kolom_wajib = ['PER', 'PBV', 'ROE']
+kolom_tersedia = [kol for kol in kolom_wajib if kol in df.columns]
 
-st.write("📋 Debug Tipe Data df_clean:")
-st.write(df_clean.dtypes)
-st.write(df_clean[['PER', 'PBV', 'ROE']].head())
+if len(kolom_tersedia) < 3:
+    st.error("❌ Kolom PER, PBV, atau ROE tidak tersedia di sebagian besar data.")
+    st.dataframe(df)
+    st.stop()
 
-# Apply filter
+# Filter
+df_clean = df.dropna(subset=['PER', 'PBV', 'ROE'])
+df_clean['ROE'] = df_clean['ROE'] * 100
+df_clean['Div Yield'] = df_clean['Div Yield'] * 100
+
 hasil = df_clean[
     (df_clean['Sektor'].isin(sektor_pilihan)) &
     (df_clean['ROE'] >= min_roe) &
@@ -146,12 +149,13 @@ hasil = df_clean[
     (df_clean['PBV'] <= max_pbv)
 ]
 
-# ====================== Tampilkan Hasil ======================
+# Tampilkan hasil
 st.subheader("📈 Hasil Screening")
 st.dataframe(hasil.sort_values(by='ROE', ascending=False).reset_index(drop=True))
 
-# ====================== Per Sektor ======================
+# Per sektor
 st.markdown("## 📂 Hasil per Sektor")
-for sektor in sorted(hasil['Sektor'].dropna().unique()):
+for sektor in sorted(hasil['Sektor'].unique()):
     st.markdown(f"### 🔸 {sektor}")
-    st.dataframe(hasil[hasil['Sektor'] == sektor].reset_index(drop=True))
+    df_sektor = hasil[hasil['Sektor'] == sektor]
+    st.dataframe(df_sektor.reset_index(drop=True))
