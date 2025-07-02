@@ -3,7 +3,6 @@ import streamlit as st
 import yfinance as yf
 import pandas as pd
 
-st.set_page_config(page_title="📊 Screener Fundamental IHSG", layout="wide")
 st.title("📊 Screener Fundamental IHSG")
 
 # === Daftar ticker saham IHSG ===
@@ -85,7 +84,8 @@ tickers = [ticker + ".JK" for ticker in tickers]
 
 # === Ambil data fundamental ===
 data = []
-st.info("Mengambil data, mohon tunggu...")
+
+st.info("Mengambil data dari Yahoo Finance, mohon tunggu...")
 
 for t in tickers:
     try:
@@ -99,16 +99,20 @@ for t in tickers:
             'ROE': info.get('returnOnEquity', None),
             'Div Yield': info.get('dividendYield', None),
         })
-
     except:
         pass
 
 df = pd.DataFrame(data)
 
-# Drop baris yang kolom PER, PBV, ROE-nya kosong
+# Pastikan kolom PER, PBV, ROE tetap ada walau kosong
+for col in ['PER', 'PBV', 'ROE']:
+    if col not in df.columns:
+        df[col] = None
+
+# Drop baris yang nilai pentingnya tidak tersedia
 df_clean = df.dropna(subset=['PER', 'PBV', 'ROE'])
 
-# Konversi rasio ROE dan Div Yield dari desimal ke persen (opsional)
+# Konversi ke persen
 df_clean['ROE'] = df_clean['ROE'] * 100
 df_clean['Div Yield'] = df_clean['Div Yield'] * 100
 
