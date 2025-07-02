@@ -112,12 +112,18 @@ def ambil_data(tickers):
 with st.spinner("🔄 Mengambil data Yahoo Finance..."):
     df = ambil_data(tickers)
 
-st.write("Tipe Data Kolom:")
+st.write("📋 Tipe Data Sebelum Konversi:")
 st.write(df.dtypes)
 
 # Pastikan numerik
 for kolom in ['PER', 'PBV', 'ROE', 'Div Yield']:
     df[kolom] = pd.to_numeric(df[kolom], errors='coerce')
+
+# Tampilkan lagi tipe data setelah konversi
+st.write("📋 Tipe Data Setelah Konversi:")
+st.write(df.dtypes)
+
+df = df.dropna(subset=['PER', 'PBV', 'ROE'])
 
 # Konversi ROE dan Div Yield ke persen
 df['ROE'] = df['ROE'] * 100
