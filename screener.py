@@ -88,12 +88,6 @@ for sektor, daftar in sektor_map.items():
         tickers.append(ticker_jk)
         ticker_to_sector[ticker_jk] = sektor
 
-for sektor, daftar in sektor_map.items():
-    for t in daftar:
-        ticker_jk = t + ".JK"
-        tickers.append(ticker_jk)
-        sektor_map[ticker_jk] = sektor
-
 # === Ambil data fundamental dari Yahoo Finance ===
 @st.cache_data(ttl=3600)
 def ambil_data(tickers):
