@@ -112,6 +112,9 @@ def ambil_data(tickers):
 with st.spinner("🔄 Mengambil data Yahoo Finance..."):
     df = ambil_data(tickers)
 
+st.write("Tipe Data Kolom:")
+st.write(df.dtypes)
+
 # Pastikan numerik
 for kolom in ['PER', 'PBV', 'ROE', 'Div Yield']:
     df[kolom] = pd.to_numeric(df[kolom], errors='coerce')
@@ -132,13 +135,22 @@ max_pbv = st.sidebar.slider("Max PBV", 0.0, 10.0, 3.0)
 # === Screening ===
 df = df.dropna(subset=['PER', 'PBV', 'ROE'])
 
+# Konversi kolom ke numerik (sekali lagi untuk jaga-jaga)
+df['PER'] = pd.to_numeric(df['PER'], errors='coerce')
+df['PBV'] = pd.to_numeric(df['PBV'], errors='coerce')
+df['ROE'] = pd.to_numeric(df['ROE'], errors='coerce')
+df['Div Yield'] = pd.to_numeric(df['Div Yield'], errors='coerce')
+
+# Buang data yang tidak valid
+df = df.dropna(subset=['PER', 'PBV', 'ROE'])
+
+# Lanjutkan screening
 hasil = df[
     (df['Sektor'].isin(sektor_pilihan)) &
     (df['ROE'] >= min_roe) &
     (df['PER'] <= max_per) &
     (df['PBV'] <= max_pbv)
 ]
-
 # === Tampilkan Hasil Screening ===
 st.subheader("📈 Hasil Screening")
 st.dataframe(hasil.sort_values(by='ROE', ascending=False).reset_index(drop=True))
