@@ -3,8 +3,8 @@ import streamlit as st
 import yfinance as yf
 import pandas as pd
 
-st.set_page_config(page_title="📊 Fundamental Screener IHSG", layout="wide")
-st.title("📊 Fundamental Screener IHSG")
+st.set_page_config(page_title="📊 Screener Fundamental IHSG", layout="wide")
+st.title("📊 Screener Fundamental IHSG")
 
 # === Daftar ticker saham IHSG ===
 tickers = [
@@ -85,38 +85,45 @@ tickers = [ticker + ".JK" for ticker in tickers]
 
 # === Ambil data fundamental ===
 data = []
-with st.spinner("Mengambil data dari Yahoo Finance..."):
-    for t in tickers:
-        try:
-            info = yf.Ticker(t).info
-            data.append({
-                'Ticker': t,
-                'Nama': info.get('longName'),
-                'Harga': info.get('currentPrice'),
-                'PER': info.get('trailingPE'),
-                'PBV': info.get('priceToBook'),
-                'ROE': info.get('returnOnEquity'),
-                'Dividen (%)': info.get('dividendYield'),
-                'Revenue Growth': info.get('revenueGrowth'),
-            })
-        except:
-            pass
+st.info("Mengambil data, mohon tunggu...")
+
+for t in tickers:
+    try:
+        info = yf.Ticker(t).info
+        data.append({
+            'Ticker': t,
+            'Name': info.get('longName'),
+            'Price': info.get('currentPrice'),
+            'PER': info.get('trailingPE'),
+            'PBV': info.get('priceToBook'),
+            'ROE': info.get('returnOnEquity'),
+            'Div Yield': info.get('dividendYield'),
+        })
+    except:
+        pass
 
 df = pd.DataFrame(data)
 
-# === Tampilkan filter ===
-st.sidebar.header("🔎 Filter Screening")
-min_roe = st.sidebar.slider("Minimal ROE", 0.0, 1.0, 0.1)
-max_per = st.sidebar.slider("Maksimal PER", 0.0, 100.0, 20.0)
-max_pbv = st.sidebar.slider("Maksimal PBV", 0.0, 10.0, 3.0)
+# Drop baris yang kolom PER, PBV, ROE-nya kosong
+df_clean = df.dropna(subset=['PER', 'PBV', 'ROE'])
 
-# === Screening ===
-filtered = df[
-    (df['ROE'] >= min_roe) &
-    (df['PER'] <= max_per) &
-    (df['PBV'] <= max_pbv)
+# Konversi rasio ROE dan Div Yield dari desimal ke persen (opsional)
+df_clean['ROE'] = df_clean['ROE'] * 100
+df_clean['Div Yield'] = df_clean['Div Yield'] * 100
+
+# Filter user
+st.sidebar.header("📌 Filter Kriteria")
+min_roe = st.sidebar.slider("Min ROE (%)", 0.0, 100.0, 10.0)
+max_per = st.sidebar.slider("Max PER", 0.0, 50.0, 20.0)
+max_pbv = st.sidebar.slider("Max PBV", 0.0, 10.0, 3.0)
+
+# Apply filter
+result = df_clean[
+    (df_clean['ROE'] >= min_roe) &
+    (df_clean['PER'] <= max_per) &
+    (df_clean['PBV'] <= max_pbv)
 ]
 
-# === Tampilkan hasil ===
-st.success(f"Menampilkan {len(filtered)} dari {len(df)} saham")
-st.dataframe(filtered.sort_values(by="ROE", ascending=False), use_container_width=True)
+# Tampilkan hasil
+st.subheader("📈 Hasil Screening")
+st.dataframe(result.sort_values(by='ROE', ascending=False).reset_index(drop=True))
