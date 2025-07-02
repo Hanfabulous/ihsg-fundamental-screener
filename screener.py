@@ -92,13 +92,14 @@ for t in tickers:
         info = yf.Ticker(t).info
         data.append({
             'Ticker': t,
-            'Name': info.get('longName'),
-            'Price': info.get('currentPrice'),
-            'PER': info.get('trailingPE'),
-            'PBV': info.get('priceToBook'),
-            'ROE': info.get('returnOnEquity'),
-            'Div Yield': info.get('dividendYield'),
+            'Name': info.get('longName', '-'),
+            'Price': info.get('currentPrice', None),
+            'PER': info.get('trailingPE', None),
+            'PBV': info.get('priceToBook', None),
+            'ROE': info.get('returnOnEquity', None),
+            'Div Yield': info.get('dividendYield', None),
         })
+
     except:
         pass
 
