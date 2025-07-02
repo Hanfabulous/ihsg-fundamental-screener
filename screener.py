@@ -134,6 +134,10 @@ df_clean = df.dropna(subset=['PER', 'PBV', 'ROE']).copy()
 df_clean['ROE'] = df_clean['ROE'] * 100  # ubah jadi persen
 df_clean['Div Yield'] = df_clean['Div Yield'] * 100  # ubah jadi persen
 
+st.write("📋 Debug Tipe Data df_clean:")
+st.write(df_clean.dtypes)
+st.write(df_clean[['PER', 'PBV', 'ROE']].head())
+
 # Apply filter
 hasil = df_clean[
     (df_clean['Sektor'].isin(sektor_pilihan)) &
