@@ -158,6 +158,9 @@ if not all(kol in df.columns for kol in kolom_wajib):
     st.dataframe(df)
     st.stop()
 
+def buat_link_ticker(ticker):
+    return f"[{ticker}](?tkr={ticker})"
+    
 # ============================ #
 # 🧹 BERSIHKAN & FILTER DATA
 # ============================ #
@@ -173,11 +176,14 @@ hasil = df_clean[
     (df_clean['Expected PER'] <= max_forward_per)
 ]
 
+hasil['Ticker'] = hasil['Ticker'].apply(buat_link_ticker)
+
 # ============================ #
 # 🔗 LINKABLE TICKER (Markdown)
 # ============================ #
 st.subheader("📈 Hasil Screening")
-from urllib.parse import urlparse, parse_qs
+st.dataframe(hasil.reset_index(drop=True), use_container_width=True)
+
 query_params = st.query_params
 ticker_qs = query_params.get("tkr", None)
 if ticker_qs:
