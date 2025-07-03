@@ -3,7 +3,6 @@ import streamlit as st
 import yfinance as yf
 import pandas as pd
 import numpy as np
-import plotly.graph_objects as go
 import plotly.express as px
 
 st.set_page_config(page_title="Screener Fundamental IHSG", layout="wide")
@@ -80,7 +79,6 @@ sektor_map = {
                 "FISH", "SIPD", "WMPP", "CRAB", "TRGU", "AGAR", "DPUM", "FAPA", "CBUT", "BEER", "ALTO", "MAXI", "MAGP", "LAPD", "GOLL",
                 "WICO"]
 }
-# === Persiapan Ticker ===
 tickers = []
 ticker_to_sector = {}
 for sektor, daftar in sektor_map.items():
@@ -89,7 +87,6 @@ for sektor, daftar in sektor_map.items():
         tickers.append(ticker_jk)
         ticker_to_sector[ticker_jk] = sektor
 
-# === Ambil Data Fundamental ===
 @st.cache_data(ttl=3600)
 def ambil_data(tickers):
     data = []
@@ -104,8 +101,8 @@ def ambil_data(tickers):
                 'PBV': info.get('priceToBook', None),
                 'ROE': info.get('returnOnEquity', None),
                 'Div Yield': info.get('dividendYield', None),
+                'Sektor': ticker_to_sector.get(t, '-'),
                 'Expected PER': info.get('forwardPE', None),
-                'Sektor': ticker_to_sector.get(t, '-')
             })
         except:
             continue
@@ -114,45 +111,55 @@ def ambil_data(tickers):
 with st.spinner("🔄 Mengambil data Yahoo Finance..."):
     df = ambil_data(tickers)
 
-# === Pembersihan dan Konversi Kolom Numerik ===
+# Konversi kolom numerik
 for col in ['PER', 'PBV', 'ROE', 'Div Yield', 'Expected PER']:
     if col in df.columns:
         df[col] = pd.to_numeric(df[col], errors='coerce')
-df['ROE'] = df['ROE'] * 100
-df['Div Yield'] = df['Div Yield'] * 100
 
-# === Sidebar Filter ===
+df_clean = df.dropna(subset=['PER', 'PBV', 'ROE', 'Expected PER']).copy()
+df_clean['ROE'] = df_clean['ROE'] * 100
+df_clean['Div Yield'] = df_clean['Div Yield'] * 100
+
+# Sidebar Filter
 st.sidebar.header("📌 Filter")
-semua_sektor = sorted(df['Sektor'].dropna().unique())
+semua_sektor = sorted(df_clean['Sektor'].dropna().unique())
 sektor_pilihan = st.sidebar.multiselect("Pilih Sektor", semua_sektor, default=semua_sektor)
 min_roe = st.sidebar.slider("Min ROE (%)", 0.0, 100.0, 10.0)
 max_per = st.sidebar.slider("Max PER", 0.0, 100.0, 25.0)
 max_pbv = st.sidebar.slider("Max PBV", 0.0, 10.0, 3.0)
 max_forward_per = st.sidebar.slider("Max Expected PER", 0.0, 100.0, 25.0)
 
-# === Filter Data ===
-df_clean = df.dropna(subset=['PER', 'PBV', 'ROE', 'Expected PER']).copy()
 hasil = df_clean[
     (df_clean['Sektor'].isin(sektor_pilihan)) &
     (df_clean['ROE'] >= min_roe) &
     (df_clean['PER'] <= max_per) &
     (df_clean['PBV'] <= max_pbv) &
     (df_clean['Expected PER'] <= max_forward_per)
-].sort_values(by='ROE', ascending=False).reset_index(drop=True)
+]
 
-# === Tampilkan Daftar Ticker yang Bisa Diklik ===
+# ========================
+# ⛳ Ticker Clickable
+# ========================
+query_params = st.experimental_get_query_params()
+ticker_param = query_params.get("ticker", [None])[0]
+
+# Buat kolom Ticker menjadi hyperlink
+def make_clickable(val):
+    return f'<a href="?ticker={val}">{val}</a>'
+
+hasil_click = hasil.copy()
+hasil_click['Ticker'] = hasil_click['Ticker'].apply(make_clickable)
+
 st.subheader("📈 Hasil Screening")
+st.markdown(hasil_click.to_html(escape=False, index=False), unsafe_allow_html=True)
 
-for i, row in hasil.iterrows():
-    if st.button(f"🔎 {row['Ticker']}", key=row['Ticker']):
-        st.session_state.selected_ticker = row['Ticker']
-        st.experimental_rerun()
-
-# === Tampilkan Detail Ticker Jika Ada ===
-ticker_param = st.session_state.get("selected_ticker", None)
+# ========================
+# 📌 Detail Ticker
+# ========================
 if ticker_param:
     st.markdown("---")
     st.header(f"📌 Detail Ticker: {ticker_param}")
+
     t = yf.Ticker(ticker_param)
     info = t.info
 
@@ -160,19 +167,19 @@ if ticker_param:
     st.markdown(f"**Harga:** {info.get('currentPrice', '-')} | **Sektor:** {ticker_to_sector.get(ticker_param, '-')}")
     st.markdown(f"**Dividend Yield:** {round(info.get('dividendYield', 0) * 100, 2)}%")
 
-    # Ambil data kuartalan
     with st.spinner("📊 Mengambil data historis kuartalan..."):
         try:
-            income = t.quarterly_financials.T.sort_index()
-            balance = t.quarterly_balance_sheet.T.sort_index()
-            earnings = t.quarterly_earnings.set_index('Quarter')
+            income = t.quarterly_financials.T
+            balance = t.quarterly_balance_sheet.T
+            income = income.sort_index()
+            balance = balance.sort_index()
 
             eps = income['Net Income'] / balance['Ordinary Shares Number']
             roe = income['Net Income'] / balance['Total Stockholder Equity']
-            per = earnings['Earnings'] / (balance['Ordinary Shares Number'] if 'Ordinary Shares Number' in balance else 1)
-            pbv = earnings['Earnings'] / (balance['Total Stockholder Equity'] if 'Total Stockholder Equity' in balance else 1)
+            per = eps / info.get('currentPrice', 1)
+            pbv = balance['Total Assets'] / balance['Total Stockholder Equity']
         except Exception as e:
-            st.error(f"❌ Gagal ambil data: {e}")
+            st.error(f"Gagal ambil data historis: {e}")
             income = balance = eps = roe = per = pbv = pd.Series()
 
     def plot_series(series, title, y_label):
@@ -180,17 +187,13 @@ if ticker_param:
             fig = px.bar(series, title=title, labels={"index": "Periode", "value": y_label})
             st.plotly_chart(fig, use_container_width=True)
 
-    st.subheader("📊 Grafik Keuangan Kuartalan")
+    st.subheader("📊 Grafik Kuartalan")
     col1, col2 = st.columns(2)
     with col1:
-        plot_series(income['Total Revenue'], "Pendapatan", "Rp")
-        plot_series(eps, "EPS", "Rp")
+        plot_series(income['Total Revenue'], "Revenue", "Rp")
+        plot_series(eps, "Earnings per Share (EPS)", "Rp")
         plot_series(per, "PER", "x")
     with col2:
-        plot_series(income['Net Income'], "Laba Bersih", "Rp")
-        plot_series(roe * 100, "ROE", "%")
+        plot_series(income['Net Income'], "Net Income", "Rp")
+        plot_series(roe * 100, "ROE (%)", "%")
         plot_series(pbv, "PBV", "x")
-
-    if st.button("🔙 Kembali ke Daftar"):
-        st.session_state.selected_ticker = None
-        st.experimental_rerun()
