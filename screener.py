@@ -80,26 +80,6 @@ sektor_map = {
                 "FISH", "SIPD", "WMPP", "CRAB", "TRGU", "AGAR", "DPUM", "FAPA", "CBUT", "BEER", "ALTO", "MAXI", "MAGP", "LAPD", "GOLL",
                 "WICO"]
 }
-
-ChatGPT said:
-Berikut adalah versi skrip yang sudah disusun ulang, rapi, dan fungsional, dengan navigasi klik untuk setiap ticker bekerja dengan tombol (bukan hyperlink ?ticker= yang tidak bekerja di Streamlit):
-
-✅ SCREENING & NAVIGASI TICKER (STREAMLIT)
-python
-Copy
-Edit
-import streamlit as st
-import yfinance as yf
-import pandas as pd
-import plotly.express as px
-
-# === Contoh peta sektor (isi sesuai kebutuhan Anda) ===
-sektor_map = {
-    "Energi": ["PGAS", "MEDC", "ELSA"],
-    "Perbankan": ["BBRI", "BBCA", "BMRI"],
-    "Konsumsi": ["UNVR", "ICBP", "INDF"]
-}
-
 # === Konversi ticker ke .JK dan mapping sektor ===
 tickers = []
 ticker_to_sector = {}
