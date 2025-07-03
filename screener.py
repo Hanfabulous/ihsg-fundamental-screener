@@ -177,32 +177,31 @@ hasil = df_clean[
 # ============================ #
 st.subheader("📈 Hasil Screening (Klik Ticker)")
 
-# 1. Tambahkan kolom baru berisi link HTML
-hasil['Link'] = hasil['Ticker'].apply(
+# Tambahkan kolom baru berisi link HTML dari Ticker
+hasil['Ticker_Link'] = hasil['Ticker'].apply(
     lambda x: f"<a href='?tkr={x}' target='_self'>{x}</a>"
 )
 
-# 2. Konfigurasi JavaScript untuk merender HTML di kolom Link
-js_link_renderer = JsCode("""
+# Konfigurasi JavaScript untuk render HTML
+js_renderer = JsCode("""
 function(params) {
     return params.value;
 }
 """)
 
-# 3. Siapkan konfigurasi kolom AgGrid
+# Buat konfigurasi grid
 gb = GridOptionsBuilder.from_dataframe(
-    hasil[['Link', 'Name', 'Price', 'PER', 'PBV', 'ROE', 'Div Yield', 'Sektor', 'Expected PER']]
+    hasil[['Ticker_Link', 'Name', 'Price', 'PER', 'PBV', 'ROE', 'Div Yield', 'Sektor', 'Expected PER']]
 )
 gb.configure_default_column(sortable=True, filter=True, resizable=True)
-gb.configure_column("Link", header_name="Ticker", cellRenderer=js_link_renderer)
+gb.configure_column("Ticker_Link", header_name="Ticker", cellRenderer=js_renderer)
 gb.configure_side_bar()
 
-# 4. Render tabel AgGrid
+# Tampilkan AgGrid
 AgGrid(
-    hasil[['Link', 'Name', 'Price', 'PER', 'PBV', 'ROE', 'Div Yield', 'Sektor', 'Expected PER']],
+    hasil[['Ticker_Link', 'Name', 'Price', 'PER', 'PBV', 'ROE', 'Div Yield', 'Sektor', 'Expected PER']],
     gridOptions=gb.build(),
     allow_unsafe_jscode=True,
-    enable_enterprise_modules=False,
     height=350,
     fit_columns_on_grid_load=True,
     update_mode=GridUpdateMode.NO_UPDATE
@@ -211,11 +210,13 @@ AgGrid(
 # ============================ #
 # 🔍 Detail Ticker (dari query param)
 # ============================ #
+# Tangkap query param dan simpan ke session
 query_params = st.query_params
-ticker_qs = query_params.get("tkr", None)
+ticker_qs = query_params.get("tkr")
 if ticker_qs:
     st.session_state["ticker_diklik"] = ticker_qs
 
+# Fungsi detail saham
 def tampilkan_detail_ticker(ticker):
     st.markdown(f"---\n## 📌 Detail Ticker: `{ticker}`")
     try:
@@ -231,8 +232,10 @@ def tampilkan_detail_ticker(ticker):
     except Exception as e:
         st.error(f"❌ Gagal mengambil data detail: {e}")
 
+# Tampilkan jika ada yang diklik
 if st.session_state.get("ticker_diklik"):
     tampilkan_detail_ticker(st.session_state["ticker_diklik"])
+
 
 # ============================ #
 # 📂 Tabel per Sektor (HTML Klik)
@@ -243,38 +246,29 @@ for sektor in sorted(hasil['Sektor'].unique()):
     st.markdown(f"### 🔸 {sektor}")
     df_sektor = hasil[hasil['Sektor'] == sektor].copy()
 
-    html_sektor = """
+    st.markdown("""
     <style>
         table { width: 100%; border-collapse: collapse; font-size: 14px; margin-bottom: 20px; }
         th, td { border: 1px solid #ddd; padding: 6px; text-align: center; }
         thead th { background-color: #f2f2f2; }
         a { color: #1f77b4; text-decoration: none; font-weight: bold; }
     </style>
-    <table>
-    <thead>
-        <tr>
-            <th>Ticker</th>
-            <th>Name</th>
-            <th>Price</th>
-            <th>PER</th>
-            <th>PBV</th>
-            <th>ROE (%)</th>
-            <th>Div Yield (%)</th>
-            <th>Expected PER</th>
-        </tr>
-    </thead>
-    <tbody>
-    """
+    """, unsafe_allow_html=True)
+
+    html = "<table><thead><tr>"
+    for col in ['Ticker', 'Name', 'Price', 'PER', 'PBV', 'ROE (%)', 'Div Yield (%)', 'Expected PER']:
+        html += f"<th>{col}</th>"
+    html += "</tr></thead><tbody>"
 
     for _, row in df_sektor.iterrows():
-        html_sektor += f"<tr><td><a href='?tkr={row['Ticker']}' target='_self'>{row['Ticker']}</a></td>" \
-                       f"<td>{row['Name']}</td>" \
-                       f"<td>{row['Price']:.2f}</td>" \
-                       f"<td>{row['PER']:.2f}</td>" \
-                       f"<td>{row['PBV']:.2f}</td>" \
-                       f"<td>{row['ROE']:.2f}</td>" \
-                       f"<td>{row['Div Yield']:.2f}</td>" \
-                       f"<td>{row['Expected PER']:.2f}</td></tr>"
+        html += f"<tr><td><a href='?tkr={row['Ticker']}' target='_self'>{row['Ticker']}</a></td>" \
+                f"<td>{row['Name']}</td>" \
+                f"<td>{row['Price']:.2f}</td>" \
+                f"<td>{row['PER']:.2f}</td>" \
+                f"<td>{row['PBV']:.2f}</td>" \
+                f"<td>{row['ROE']:.2f}</td>" \
+                f"<td>{row['Div Yield']:.2f}</td>" \
+                f"<td>{row['Expected PER']:.2f}</td></tr>"
 
-    html_sektor += "</tbody></table>"
-    st.markdown(html_sektor, unsafe_allow_html=True)
+    html += "</tbody></table>"
+    st.markdown(html, unsafe_allow_html=True)
