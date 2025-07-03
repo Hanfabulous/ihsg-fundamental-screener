@@ -174,33 +174,73 @@ hasil = df_clean[
 ]
 
 # ============================ #
-# 🔗 Buat Link Ticker Clickable
-# ============================ #
-def buat_link_ticker(t):
-    return f"[{t}](?tkr={t})"
-hasil['Ticker'] = hasil['Ticker'].apply(buat_link_ticker)
-
-# ============================ #
 # 📊 Tampilkan Hasil Screening
 # ============================ #
 st.subheader("📈 Hasil Screening")
-st.markdown("Klik ticker untuk melihat detail 👇")
+st.markdown("Klik ticker untuk melihat detail 👇", unsafe_allow_html=True)
 
+# ============================ #
+# 📊 Tampilkan Tabel HTML Screening
+# ============================ #
+html_table = """
+<style>
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+    thead th { background-color: #f2f2f2; }
+    tr:nth-child(even) { background-color: #f9f9f9; }
+    a { color: #1f77b4; text-decoration: none; font-weight: bold; }
+</style>
+<table>
+<thead>
+    <tr>
+        <th>Ticker</th>
+        <th>Name</th>
+        <th>Price</th>
+        <th>PER</th>
+        <th>PBV</th>
+        <th>ROE (%)</th>
+        <th>Div Yield (%)</th>
+        <th>Sektor</th>
+        <th>Expected PER</th>
+    </tr>
+</thead>
+<tbody>
+"""
+
+for _, row in hasil.iterrows():
+    html_table += f"<tr><td><a href='?tkr={row['Ticker']}' target='_self'>{row['Ticker']}</a></td>" \
+                  f"<td>{row['Name']}</td>" \
+                  f"<td>{row['Price']:.2f}</td>" \
+                  f"<td>{row['PER']:.2f}</td>" \
+                  f"<td>{row['PBV']:.2f}</td>" \
+                  f"<td>{row['ROE']:.2f}</td>" \
+                  f"<td>{row['Div Yield']:.2f}</td>" \
+                  f"<td>{row['Sektor']}</td>" \
+                  f"<td>{row['Expected PER']:.2f}</td></tr>"
+
+html_table += "</tbody></table>"
+# ============================ #
+# 📊 Tampilkan Tabel AgGrid Interaktif
+# ============================ #
+st.subheader("📈 Hasil Screening")
+st.markdown("Klik ticker untuk melihat detail 👇", unsafe_allow_html=True)
+
+# Buat konfigurasi grid tanpa pagination
 gb = GridOptionsBuilder.from_dataframe(
     hasil[['Ticker', 'Name', 'Price', 'PER', 'PBV', 'ROE', 'Div Yield', 'Sektor', 'Expected PER']]
 )
 gb.configure_default_column(sortable=True, filter=True)
 gb.configure_side_bar()
 
+# Render AgGrid dengan tinggi sesuai kira-kira 7 baris (misalnya 350px)
 AgGrid(
     hasil,
     gridOptions=gb.build(),
     theme='light',
     enable_enterprise_modules=False,
     fit_columns_on_grid_load=True,
-    height=350
+    height=350  # cukup untuk ~7 baris
 )
-
 # ============================ #
 # 🔍 Detail Ticker Saat Diklik
 # ============================ #
