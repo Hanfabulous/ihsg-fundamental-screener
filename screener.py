@@ -100,7 +100,7 @@ for sektor, daftar in sektor_map.items():
         ticker_to_sector[ticker_jk] = sektor
 
 # ============================ #
-# 📥 FUNGSI AMBIL DATA
+# 📥 Ambil Data
 # ============================ #
 @st.cache_data(ttl=3600)
 def ambil_data(tickers):
@@ -111,38 +111,37 @@ def ambil_data(tickers):
             data.append({
                 'Ticker': t,
                 'Name': info.get('longName', '-'),
-                'Price': info.get('currentPrice', None),
-                'PER': info.get('trailingPE', None),
-                'PBV': info.get('priceToBook', None),
-                'ROE': info.get('returnOnEquity', None),
-                'Div Yield': info.get('dividendYield', None),
+                'Price': info.get('currentPrice'),
+                'PER': info.get('trailingPE'),
+                'PBV': info.get('priceToBook'),
+                'ROE': info.get('returnOnEquity'),
+                'Div Yield': info.get('dividendYield'),
                 'Sektor': ticker_to_sector.get(t, '-'),
-                'Expected PER': info.get('forwardPE', None),
+                'Expected PER': info.get('forwardPE'),
             })
         except:
             continue
     return pd.DataFrame(data)
 
 # ============================ #
-# ⏳ AMBIL DATA DENGAN SPINNER
+# 🔄 Ambil Data
 # ============================ #
 with st.spinner("🔄 Mengambil data Yahoo Finance..."):
     df = ambil_data(tickers)
 
 # ============================ #
-# 🔢 KONVERSI KOLOM NUMERIK
+# 🔢 Konversi Kolom Numerik
 # ============================ #
 kolom_numerik = ['PER', 'PBV', 'ROE', 'Div Yield', 'Expected PER']
-for kolom in kolom_numerik:
-    if kolom in df.columns:
-        df[kolom] = pd.to_numeric(df[kolom], errors='coerce')
+for kol in kolom_numerik:
+    if kol in df.columns:
+        df[kol] = pd.to_numeric(df[kol], errors='coerce')
 
 # ============================ #
-# 🎛️ FILTER DI SIDEBAR
+# 📌 Filter di Sidebar
 # ============================ #
 st.sidebar.header("📌 Filter")
 semua_sektor = sorted(df['Sektor'].dropna().unique())
-
 sektor_pilihan = st.sidebar.multiselect("Pilih Sektor", semua_sektor, default=semua_sektor)
 min_roe = st.sidebar.slider("Min ROE (%)", 0.0, 100.0, 10.0)
 max_per = st.sidebar.slider("Max PER", 0.0, 100.0, 25.0)
@@ -150,7 +149,7 @@ max_pbv = st.sidebar.slider("Max PBV", 0.0, 10.0, 3.0)
 max_forward_per = st.sidebar.slider("Max Expected PER", 0.0, 100.0, 25.0)
 
 # ============================ #
-# ❗ VALIDASI KOLOM WAJIB
+# ❗ Validasi Kolom Wajib
 # ============================ #
 kolom_wajib = ['PER', 'PBV', 'ROE']
 if not all(kol in df.columns for kol in kolom_wajib):
@@ -159,14 +158,11 @@ if not all(kol in df.columns for kol in kolom_wajib):
     st.stop()
 
 # ============================ #
-# 🧹 BERSIHKAN & FILTER DATA
+# 🧹 Bersihkan dan Filter Data
 # ============================ #
-def buat_link_ticker(ticker):
-    return f"[{ticker}](?tkr={ticker})"
-
 df_clean = df.dropna(subset=['PER', 'PBV', 'ROE', 'Expected PER']).copy()
-df_clean['ROE'] = df_clean['ROE'] * 100
-df_clean['Div Yield'] = df_clean['Div Yield'] * 100
+df_clean['ROE'] *= 100
+df_clean['Div Yield'] *= 100
 
 hasil = df_clean[
     (df_clean['Sektor'].isin(sektor_pilihan)) &
@@ -177,25 +173,23 @@ hasil = df_clean[
 ]
 
 # ============================ #
-# 📈 TAMPILKAN HASIL SCREENING
+# 📊 Tampilkan Tabel Hasil Screening
 # ============================ #
 st.subheader("📈 Hasil Screening")
-st.markdown("Klik ticker untuk detail 👇", unsafe_allow_html=True)
+st.markdown("Klik ticker untuk melihat detail 👇", unsafe_allow_html=True)
 
-# Buat tabel HTML agar link bisa diklik (dan rapi)
 html_table = """
-<table border="1" style="border-collapse: collapse; width: 100%;">
+<style>
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    thead th { background-color: #f2f2f2; padding: 8px; border: 1px solid #ddd; text-align: left; }
+    tbody td { padding: 8px; border: 1px solid #ddd; }
+    tbody tr:nth-child(even) { background-color: #fafafa; }
+    a { color: #1f77b4; text-decoration: none; font-weight: bold; }
+</style>
+<table>
     <thead>
-        <tr style="background-color: #f2f2f2;">
-            <th>Ticker</th>
-            <th>Name</th>
-            <th>Price</th>
-            <th>PER</th>
-            <th>PBV</th>
-            <th>ROE (%)</th>
-            <th>Div Yield (%)</th>
-            <th>Sektor</th>
-            <th>Expected PER</th>
+        <tr>
+            <th>Ticker</th><th>Name</th><th>Price</th><th>PER</th><th>PBV</th><th>ROE (%)</th><th>Div Yield (%)</th><th>Sektor</th><th>Expected PER</th>
         </tr>
     </thead>
     <tbody>
@@ -206,7 +200,7 @@ for _, row in hasil.iterrows():
     <tr>
         <td><a href='?tkr={row['Ticker']}' target='_self'>{row['Ticker']}</a></td>
         <td>{row['Name']}</td>
-        <td>{row['Price']}</td>
+        <td>{row['Price']:.2f}</td>
         <td>{row['PER']:.2f}</td>
         <td>{row['PBV']:.2f}</td>
         <td>{row['ROE']:.2f}</td>
@@ -217,13 +211,10 @@ for _, row in hasil.iterrows():
     """
 
 html_table += "</tbody></table>"
-
-st.markdown("### 📈 Hasil Screening", unsafe_allow_html=True)
 st.markdown(html_table, unsafe_allow_html=True)
 
-
 # ============================ #
-# 🔍 TAMPILKAN DETAIL TICKER
+# 🔍 Tampilkan Detail Ticker
 # ============================ #
 query_params = st.query_params
 ticker_qs = query_params.get("tkr", None)
@@ -249,11 +240,10 @@ if st.session_state.get("ticker_diklik"):
     tampilkan_detail_ticker(st.session_state["ticker_diklik"])
 
 # ============================ #
-# 📂 TAMPILKAN PER SEKTOR
+# 📂 Tampilkan Hasil per Sektor
 # ============================ #
 st.markdown("## 📂 Hasil per Sektor")
 for sektor in sorted(hasil['Sektor'].unique()):
     st.markdown(f"### 🔸 {sektor}")
     df_sektor = hasil[hasil['Sektor'] == sektor].copy()
-    df_sektor['Ticker'] = df_sektor['Ticker'].apply(buat_link_ticker)
-    st.dataframe(df_sektor, use_container_width=True, height=300)
+    st.dataframe(df_sektor[['Ticker', 'Name', 'Price', 'PER', 'PBV', 'ROE', 'Div Yield', 'Expected PER']], use_container_width=True, height=300)
