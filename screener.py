@@ -225,21 +225,22 @@ html_table += "</tbody></table>"
 st.subheader("📈 Hasil Screening")
 st.markdown("Klik ticker untuk melihat detail 👇", unsafe_allow_html=True)
 
+# Buat konfigurasi grid tanpa pagination
 gb = GridOptionsBuilder.from_dataframe(
     hasil[['Ticker', 'Name', 'Price', 'PER', 'PBV', 'ROE', 'Div Yield', 'Sektor', 'Expected PER']]
 )
-gb.configure_pagination(paginationAutoPageSize=True)
-gb.configure_side_bar()
 gb.configure_default_column(sortable=True, filter=True)
+gb.configure_side_bar()
 
+# Render AgGrid dengan tinggi sesuai kira-kira 7 baris (misalnya 350px)
 AgGrid(
     hasil,
     gridOptions=gb.build(),
     theme='light',
     enable_enterprise_modules=False,
-    fit_columns_on_grid_load=True
+    fit_columns_on_grid_load=True,
+    height=350  # cukup untuk ~7 baris
 )
-
 # ============================ #
 # 🔍 Detail Ticker Saat Diklik
 # ============================ #
