@@ -7,8 +7,8 @@ import numpy as np
 # ============================ #
 # 📌 KONFIGURASI HALAMAN
 # ============================ #
-st.set_page_config(page_title="Screener Fundamental IHSG", layout="wide")
-st.title("📊 Screener Fundamental IHSG")
+st.set_page_config(page_title="Zona Fundamental", layout="wide")
+st.title("📊 ZONA FUNDAMENTAL")
 
 # ============================ #
 # 🧠 INISIALISASI SESSION STATE
