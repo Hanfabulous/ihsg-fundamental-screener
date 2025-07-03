@@ -87,6 +87,9 @@ for sektor, daftar in sektor_map.items():
         tickers.append(ticker_jk)
         ticker_to_sector[ticker_jk] = sektor
 
+# =========================
+# 2️⃣ Ambil Data Fundamental
+# =========================
 @st.cache_data(ttl=3600)
 def ambil_data(tickers):
     data = []
@@ -101,8 +104,8 @@ def ambil_data(tickers):
                 'PBV': info.get('priceToBook', None),
                 'ROE': info.get('returnOnEquity', None),
                 'Div Yield': info.get('dividendYield', None),
-                'Sektor': ticker_to_sector.get(t, '-'),
                 'Expected PER': info.get('forwardPE', None),
+                'Sektor': ticker_to_sector.get(t, '-')
             })
         except:
             continue
@@ -111,14 +114,19 @@ def ambil_data(tickers):
 with st.spinner("🔄 Mengambil data Yahoo Finance..."):
     df = ambil_data(tickers)
 
+# =========================
+# 3️⃣ Pembersihan & Filter
+# =========================
 for col in ['PER', 'PBV', 'ROE', 'Div Yield', 'Expected PER']:
-    if col in df.columns:
-        df[col] = pd.to_numeric(df[col], errors='coerce')
+    df[col] = pd.to_numeric(df[col], errors='coerce')
 
 df_clean = df.dropna(subset=['PER', 'PBV', 'ROE', 'Expected PER']).copy()
-df_clean['ROE'] = df_clean['ROE'] * 100
-df_clean['Div Yield'] = df_clean['Div Yield'] * 100
+df_clean['ROE'] *= 100
+df_clean['Div Yield'] *= 100
 
+# =========================
+# 4️⃣ Sidebar Filter
+# =========================
 st.sidebar.header("📌 Filter")
 semua_sektor = sorted(df_clean['Sektor'].dropna().unique())
 sektor_pilihan = st.sidebar.multiselect("Pilih Sektor", semua_sektor, default=semua_sektor)
@@ -135,29 +143,34 @@ hasil = df_clean[
     (df_clean['Expected PER'] <= max_forward_per)
 ].copy()
 
-st.subheader("📈 Hasil Screening")
-
-selected_ticker = st.session_state.get("selected_ticker", None)
+# =========================
+# 5️⃣ Klik Ticker dengan Tombol
+# =========================
+st.subheader("📈 Hasil Screening Saham")
+st.caption("Klik tombol di bawah untuk melihat detail saham:")
 
 for i, row in hasil.iterrows():
-    col1, col2 = st.columns([5, 1])
+    col1, col2, col3 = st.columns([1.5, 2, 6])
     with col1:
-        st.markdown(f"**{row['Ticker']}** | {row['Name']}")
-        st.markdown(f"PER: {row['PER']}, PBV: {row['PBV']}, ROE: {round(row['ROE'], 2)}%, Div: {round(row['Div Yield'], 2)}%")
+        if st.button(f"🔍 {row['Ticker']}", key=row['Ticker']):
+            st.session_state["selected_ticker"] = row['Ticker']
     with col2:
-        if st.button(f"📊 Lihat", key=row['Ticker']):
-            st.session_state.selected_ticker = row['Ticker']
-            selected_ticker = row['Ticker']
+        st.markdown(f"**{row['Name']}**")
+    with col3:
+        st.markdown(f"PER: {row['PER']} | PBV: {row['PBV']} | ROE: {round(row['ROE'], 2)}%")
 
-if selected_ticker:
+# =========================
+# 6️⃣ Tampilkan Detail Saham
+# =========================
+ticker_param = st.session_state.get("selected_ticker", None)
+if ticker_param:
     st.markdown("---")
-    st.header(f"📌 Detail Ticker: {selected_ticker}")
-
-    t = yf.Ticker(selected_ticker)
+    st.header(f"📌 Detail Saham: {ticker_param}")
+    t = yf.Ticker(ticker_param)
     info = t.info
 
     st.markdown(f"**Nama:** {info.get('longName', '-')}")
-    st.markdown(f"**Harga Saat Ini:** {info.get('currentPrice', '-')} | **Sektor:** {ticker_to_sector.get(selected_ticker, '-')}")
+    st.markdown(f"**Harga Saat Ini:** {info.get('currentPrice', '-')} | **Sektor:** {ticker_to_sector.get(ticker_param, '-')}")
     st.markdown(f"**Dividend Yield:** {round(info.get('dividendYield', 0) * 100, 2)}%")
 
     with st.spinner("📊 Mengambil data historis kuartalan..."):
