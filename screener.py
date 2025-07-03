@@ -5,7 +5,7 @@ import pandas as pd
 import numpy as np
 from urllib.parse import urlparse, parse_qs
 import streamlit.components.v1 as components
-from st_aggrid import AgGrid, GridOptionsBuilder, JsCode
+from st_aggrid import AgGrid, GridOptionsBuilder, JsCode, GridUpdateMode
 
 # ============================ #
 # 📌 KONFIGURASI HALAMAN
