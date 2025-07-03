@@ -162,7 +162,7 @@ if not all(k in df.columns for k in ['PER', 'PBV', 'ROE']):
 # ============================ #
 df_clean = df.dropna(subset=['PER', 'PBV', 'ROE', 'Expected PER']).copy()
 df_clean['ROE'] *= 100
-df_clean['Div Yield'] = 100
+df_clean['Div Yield'] *= 1
 
 hasil = df_clean[
     (df_clean['Sektor'].isin(sektor_pilihan)) &
