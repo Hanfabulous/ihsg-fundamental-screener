@@ -177,19 +177,22 @@ hasil = df_clean[
 # ============================ #
 st.subheader("📈 Hasil Screening (Klik Ticker)")
 
+# Siapkan JsCode untuk kolom 'Ticker' agar bisa diklik
 js_clickable_link = JsCode("""
 function(params) {
     return `<a href='?tkr=${params.value}' target='_self'>${params.value}</a>`;
 }
 """)
 
+# Siapkan konfigurasi grid
 gb = GridOptionsBuilder.from_dataframe(
     hasil[['Ticker', 'Name', 'Price', 'PER', 'PBV', 'ROE', 'Div Yield', 'Sektor', 'Expected PER']]
 )
-gb.configure_default_column(sortable=True, filter=True)
+gb.configure_default_column(sortable=True, filter=True, resizable=True)
 gb.configure_column("Ticker", cellRenderer=js_clickable_link)
 gb.configure_side_bar()
 
+# Render AgGrid
 AgGrid(
     hasil,
     gridOptions=gb.build(),
