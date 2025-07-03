@@ -134,6 +134,7 @@ sektor_pilihan = st.sidebar.multiselect("Pilih Sektor", semua_sektor, default=se
 min_roe = st.sidebar.slider("Min ROE (%)", 0.0, 100.0, 10.0)
 max_per = st.sidebar.slider("Max PER", 0.0, 100.0, 25.0)
 max_pbv = st.sidebar.slider("Max PBV", 0.0, 10.0, 3.0)
+max_forward_per = st.sidebar.slider("Max Expected PER", 0.0, 100.0, 25.0)
 
 # Pastikan semua kolom filter tersedia
 kolom_wajib = ['PER', 'PBV', 'ROE']
