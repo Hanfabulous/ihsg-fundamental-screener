@@ -191,22 +191,19 @@ ticker_qs = query_params.get("tkr", None)
 if ticker_qs:
     st.session_state["ticker_diklik"] = ticker_qs
 
-for i, row in hasil.sort_values(by="ROE", ascending=False).reset_index(drop=True).iterrows():
-    ticker = row["Ticker"]
-    name = row["Name"]
-    roe = row["ROE"]
-    st.markdown(
-        f"""
-        <div style='display: flex; justify-content: space-between;'>
-            <a href='?tkr={ticker}' target='_self' style='font-weight: bold; text-decoration: none; color: #1f77b4;'>
-                {ticker}
-            </a>
-            <span>{name}</span>
-            <span><strong>ROE:</strong> {roe:.2f} %</span>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+# Tampilkan tabel hasil screening rapi dan bisa discroll
+st.subheader("📈 Hasil Screening")
+st.markdown("Klik ticker untuk detail 👇", unsafe_allow_html=True)
+
+tabel_tampilan = hasil[['Ticker', 'Name', 'ROE']].copy()
+tabel_tampilan['Ticker'] = tabel_tampilan['Ticker'].apply(buat_link_ticker)
+tabel_tampilan['ROE'] = tabel_tampilan['ROE'].map(lambda x: f"{x:.2f} %")
+
+st.dataframe(
+    tabel_tampilan.reset_index(drop=True),
+    use_container_width=True,
+    height=300  # Scroll otomatis jika lebih dari 7 baris
+)
 
 # ============================ #
 # 🔍 TAMPILKAN DETAIL TICKER
