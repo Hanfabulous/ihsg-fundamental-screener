@@ -184,8 +184,14 @@ hasil['Ticker_Link'] = hasil['Ticker'].apply(
 
 # Konfigurasi JavaScript untuk render HTML
 js_renderer = JsCode("""
-function(params) {
-    return params.value;
+class HtmlLinkRenderer {
+    init(params) {
+        this.eGui = document.createElement('div');
+        this.eGui.innerHTML = params.value;
+    }
+    getGui() {
+        return this.eGui;
+    }
 }
 """)
 
