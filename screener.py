@@ -81,6 +81,26 @@ sektor_map = {
                 "WICO"]
 }
 
+ChatGPT said:
+Berikut adalah versi skrip yang sudah disusun ulang, rapi, dan fungsional, dengan navigasi klik untuk setiap ticker bekerja dengan tombol (bukan hyperlink ?ticker= yang tidak bekerja di Streamlit):
+
+✅ SCREENING & NAVIGASI TICKER (STREAMLIT)
+python
+Copy
+Edit
+import streamlit as st
+import yfinance as yf
+import pandas as pd
+import plotly.express as px
+
+# === Contoh peta sektor (isi sesuai kebutuhan Anda) ===
+sektor_map = {
+    "Energi": ["PGAS", "MEDC", "ELSA"],
+    "Perbankan": ["BBRI", "BBCA", "BMRI"],
+    "Konsumsi": ["UNVR", "ICBP", "INDF"]
+}
+
+# === Konversi ticker ke .JK dan mapping sektor ===
 tickers = []
 ticker_to_sector = {}
 for sektor, daftar in sektor_map.items():
@@ -104,80 +124,70 @@ def ambil_data(tickers):
                 'PBV': info.get('priceToBook', None),
                 'ROE': info.get('returnOnEquity', None),
                 'Div Yield': info.get('dividendYield', None),
-                'Sektor': ticker_to_sector.get(t, '-'),
                 'Expected PER': info.get('forwardPE', None),
+                'Sektor': ticker_to_sector.get(t, '-')
             })
         except:
             continue
     return pd.DataFrame(data)
 
-# Ambil data dan siapkan filter
+# === Ambil data dan siapkan filter ===
 with st.spinner("🔄 Mengambil data Yahoo Finance..."):
     df = ambil_data(tickers)
 
+# Pastikan data numerik
 for col in ['PER', 'PBV', 'ROE', 'Div Yield', 'Expected PER']:
     if col in df.columns:
         df[col] = pd.to_numeric(df[col], errors='coerce')
 
-# === Sidebar Filter ===
+# === Sidebar filter ===
 st.sidebar.header("📌 Filter")
 semua_sektor = sorted(df['Sektor'].dropna().unique())
 sektor_pilihan = st.sidebar.multiselect("Pilih Sektor", semua_sektor, default=semua_sektor)
 min_roe = st.sidebar.slider("Min ROE (%)", 0.0, 100.0, 10.0)
 max_per = st.sidebar.slider("Max PER", 0.0, 100.0, 25.0)
 max_pbv = st.sidebar.slider("Max PBV", 0.0, 10.0, 3.0)
-max_forward_per = st.sidebar.slider("Max Expected PER", 0.0, 100.0, 25.0)
+max_expected_per = st.sidebar.slider("Max Expected PER", 0.0, 100.0, 25.0)
 
-# === Filter data ===
+# === Screening ===
 df_clean = df.dropna(subset=['PER', 'PBV', 'ROE', 'Expected PER']).copy()
-df_clean['ROE'] = df_clean['ROE'] * 100
-df_clean['Div Yield'] = df_clean['Div Yield'] * 100
+df_clean['ROE'] *= 100
+df_clean['Div Yield'] *= 100
 
 hasil = df_clean[
     (df_clean['Sektor'].isin(sektor_pilihan)) &
     (df_clean['ROE'] >= min_roe) &
     (df_clean['PER'] <= max_per) &
     (df_clean['PBV'] <= max_pbv) &
-    (df_clean['Expected PER'] <= max_forward_per)
+    (df_clean['Expected PER'] <= max_expected_per)
 ]
 
-# === Tampilkan tabel dan navigasi ===
-st.subheader("📈 Hasil Screening")
-# Buat salinan hasil
-hasil_sorted = hasil.sort_values(by='ROE', ascending=False).reset_index(drop=True).copy()
+# === Tampilan tombol ticker ===
+st.subheader("📈 Hasil Screening Saham")
+hasil_sorted = hasil.sort_values(by='ROE', ascending=False).reset_index(drop=True)
 
-# Tambahkan kolom hyperlink
-hasil_sorted['Ticker'] = hasil_sorted['Ticker'].apply(
-    lambda x: f'<a href="?ticker={x}">{x}</a>'
-)
+for _, row in hasil_sorted.iterrows():
+    col1, col2 = st.columns([1, 8])
+    with col1:
+        if st.button(row['Ticker'], key=row['Ticker']):
+            st.session_state['selected_ticker'] = row['Ticker']
+    with col2:
+        st.write(f"{row['Name']}")
 
-# Tampilkan dengan HTML agar klikable
-st.markdown(
-    hasil_sorted.to_html(escape=False, index=False),
-    unsafe_allow_html=True
-)
-
-
-st.markdown("### 🔍 Klik Ticker untuk Melihat Detail:")
-for i, row in hasil.iterrows():
-    ticker = row['Ticker']
-    st.markdown(f"- 🔗 [{ticker}](?ticker={ticker})", unsafe_allow_html=True)
-
-# === Halaman Detail Ticker ===
-if ticker_param:
-    st.header(f"📌 Detail Ticker: {ticker_param}")
-if ticker_param:
+# === Detail jika ticker dipilih ===
+if 'selected_ticker' in st.session_state:
+    ticker = st.session_state['selected_ticker']
     st.markdown("---")
-    st.header(f"📌 Detail Ticker: {ticker_param}")
-    t = yf.Ticker(ticker_param)
-    info = t.info
+    st.header(f"📌 Detail Ticker: {ticker}")
+    try:
+        t = yf.Ticker(ticker)
+        info = t.info
+        st.markdown(f"**Nama:** {info.get('longName', '-')}")
+        st.markdown(f"**Harga:** {info.get('currentPrice', '-')} | **Sektor:** {ticker_to_sector.get(ticker, '-')}")
+        st.markdown(f"**Dividend Yield:** {round(info.get('dividendYield', 0) * 100, 2)}%")
 
-    st.markdown(f"**Nama:** {info.get('longName', '-')}")
-    st.markdown(f"**Harga:** {info.get('currentPrice', '-')} | **Sektor:** {ticker_to_sector.get(ticker_param, '-')}")
-    st.markdown(f"**Dividend Yield:** {round(info.get('dividendYield', 0) * 100, 2)}%")
-
-    with st.spinner("📊 Mengambil data historis kuartalan..."):
-        try:
+        # Ambil data historis
+        with st.spinner("📊 Mengambil data historis kuartalan..."):
             income = t.quarterly_financials.T
             balance = t.quarterly_balance_sheet.T
             income = income.sort_index()
@@ -187,10 +197,11 @@ if ticker_param:
             roe = income['Net Income'] / balance['Total Stockholder Equity']
             per = t.quarterly_earnings['Earnings'] / balance['Ordinary Shares Number']
             pbv = t.quarterly_earnings['Earnings'] / balance['Total Stockholder Equity']
-        except Exception as e:
-            st.error(f"Gagal ambil data historis: {e}")
-            income = balance = eps = roe = per = pbv = pd.Series()
+    except Exception as e:
+        st.error(f"Gagal ambil data historis: {e}")
+        income = balance = eps = roe = per = pbv = pd.Series()
 
+    # Fungsi grafik
     def plot_series(series, title, y_label):
         if not series.empty:
             fig = px.bar(series, title=title, labels={"index": "Periode", "value": y_label})
@@ -206,5 +217,14 @@ if ticker_param:
         plot_series(income['Net Income'], "Net Income", "Rp")
         plot_series(roe * 100, "ROE (%)", "%")
         plot_series(pbv, "PBV", "x")
-        df_sektor = hasil[hasil['Sektor'] == sektor]
-        st.dataframe(df_sektor.reset_index(drop=True))
+
+    if st.button("🔙 Kembali ke daftar"):
+        del st.session_state['selected_ticker']
+
+# === Rekap Per Sektor ===
+st.markdown("---")
+st.markdown("## 📂 Hasil per Sektor")
+for sektor in sorted(hasil['Sektor'].unique()):
+    st.markdown(f"### 🔸 {sektor}")
+    df_sektor = hasil[hasil['Sektor'] == sektor]
+    st.dataframe(df_sektor.reset_index(drop=True))
