@@ -3,6 +3,8 @@ import streamlit as st
 import yfinance as yf
 import pandas as pd
 import numpy as np
+import plotly.graph_objects as go
+import plotly.express as px
 
 st.set_page_config(page_title="Screener Fundamental IHSG", layout="wide")
 st.title("📊 Screener Fundamental IHSG")
@@ -81,7 +83,7 @@ sektor_map = {
 
 # Konversi ke .JK dan buat mapping ticker ke sektor
 tickers = []
-ticker_to_sector = {}  # mapping ticker -> sektor
+ticker_to_sector = {}
 for sektor, daftar in sektor_map.items():
     for t in daftar:
         ticker_jk = t + ".JK"
@@ -113,17 +115,10 @@ def ambil_data(tickers):
 with st.spinner("🔄 Mengambil data Yahoo Finance..."):
     df = ambil_data(tickers)
 
-# Tampilkan kolom yang tersedia untuk debug
-st.write("🛠️ Kolom tersedia:", df.columns.tolist())
-
-# 👇 Debug: Cek beberapa baris data
-st.write("Contoh data:", df.head())
-
 # Pastikan kolom numerik
 for col in ['PER', 'PBV', 'ROE', 'Div Yield']:
     if col in df.columns:
         df[col] = pd.to_numeric(df[col], errors='coerce')
-
 if 'Expected PER' in df.columns:
     df['Expected PER'] = pd.to_numeric(df['Expected PER'], errors='coerce')
 
@@ -136,19 +131,10 @@ max_per = st.sidebar.slider("Max PER", 0.0, 100.0, 25.0)
 max_pbv = st.sidebar.slider("Max PBV", 0.0, 10.0, 3.0)
 max_forward_per = st.sidebar.slider("Max Expected PER", 0.0, 100.0, 25.0)
 
-# Pastikan semua kolom filter tersedia
-kolom_wajib = ['PER', 'PBV', 'ROE']
-kolom_tersedia = [kol for kol in kolom_wajib if kol in df.columns]
-
-if len(kolom_tersedia) < 3:
-    st.error("❌ Kolom PER, PBV, atau ROE tidak tersedia di sebagian besar data.")
-    st.dataframe(df)
-    st.stop()
-
 # Filter
 df_clean = df.dropna(subset=['PER', 'PBV', 'ROE', 'Expected PER']).copy()
-df_clean.loc[:, 'ROE'] = df_clean['ROE'] * 100
-df_clean.loc[:, 'Div Yield'] = df_clean['Div Yield'] * 100
+df_clean['ROE'] = df_clean['ROE'] * 100
+df_clean['Div Yield'] = df_clean['Div Yield'] * 100
 
 hasil = df_clean[
     (df_clean['Sektor'].isin(sektor_pilihan)) &
@@ -158,13 +144,52 @@ hasil = df_clean[
     (df_clean['Expected PER'] <= max_forward_per)
 ]
 
-# Tampilkan hasil
 st.subheader("📈 Hasil Screening")
+for i, row in hasil.iterrows():
+    ticker = row['Ticker']
+    st.markdown(f"### [{ticker}](?ticker={ticker})")
+
 st.dataframe(hasil.sort_values(by='ROE', ascending=False).reset_index(drop=True))
+
+# === Detail per ticker jika diklik ===
+ticker_param = st.query_params.get("ticker")
+if ticker_param:
+    st.header(f"📌 Detail Ticker: {ticker_param}")
+    t = yf.Ticker(ticker_param)
+    info = t.info
+
+    st.markdown(f"**Nama:** {info.get('longName', '-')}")
+    st.markdown(f"**Harga:** {info.get('currentPrice', '-')} | **Sektor:** {ticker_to_sector.get(ticker_param, '-')}")
+    st.markdown(f"**Dividend Yield:** {round(info.get('dividendYield', 0)*100, 2)}%")
+
+    with st.spinner("📊 Mengambil data historis keuangan..."):
+        income = t.quarterly_financials.T
+        balance = t.quarterly_balance_sheet.T
+        cashflow = t.quarterly_cashflow.T
+        try:
+            eps = income['Net Income']/balance['Ordinary Shares Number']
+            roe = income['Net Income']/balance['Total Stockholder Equity']
+        except:
+            eps = pd.Series()
+            roe = pd.Series()
+
+    def plot_graph(df, column, title, ylabel):
+        if column in df.columns:
+            st.plotly_chart(px.bar(df[column].dropna(), title=title, labels={"index": "Tanggal", column: ylabel}))
+
+    plot_graph(income, 'Total Revenue', '📊 Pendapatan (Revenue)', 'Rp')
+    plot_graph(income, 'Net Income', '📊 Laba Bersih (Net Income)', 'Rp')
+    plot_graph(income / balance['Ordinary Shares Number'], 'Net Income', '📊 EPS', 'Rp')
+    plot_graph(income / balance['Total Stockholder Equity'], 'Net Income', '📊 ROE', '%')
+    plot_graph(cashflow, 'Total Cash From Operating Activities', '📊 Operating Cash Flow', 'Rp')
+    plot_graph(cashflow, 'Free Cash Flow', '📊 Free Cash Flow', 'Rp')
+    plot_graph(balance / balance['Total Stockholder Equity'], 'Total Liab', '📊 Debt to Equity Ratio', '%')
 
 # Per sektor
 st.markdown("## 📂 Hasil per Sektor")
 for sektor in sorted(hasil['Sektor'].unique()):
     st.markdown(f"### 🔸 {sektor}")
     df_sektor = hasil[hasil['Sektor'] == sektor]
+    st.dataframe(df_sektor.reset_index(drop=True))
+
     st.dataframe(df_sektor.reset_index(drop=True))
