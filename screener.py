@@ -184,14 +184,7 @@ hasil_tampilan['Ticker'] = hasil_tampilan['Ticker'].apply(buat_link_ticker)
 # ============================ #
 st.subheader("📈 Hasil Screening")
 st.markdown("Klik ticker untuk detail 👇", unsafe_allow_html=True)
-markdown_tabel = hasil_tampilan.to_markdown(index=False)
-scrollable_html = f"""
-<div style="max-height: 300px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; margin-bottom: 20px;">
-    <pre>{markdown_tabel}</pre>
-</div>
-"""
-st.markdown(scrollable_html, unsafe_allow_html=True)
-
+st.dataframe(hasil_tampilan, use_container_width=True, height=300)
 
 query_params = st.query_params
 ticker_qs = query_params.get("tkr", None)
@@ -245,10 +238,4 @@ for sektor in sorted(hasil['Sektor'].unique()):
     df_sektor = hasil[hasil['Sektor'] == sektor].copy()
     df_sektor['Ticker'] = df_sektor['Ticker'].apply(buat_link_ticker)
     
-    markdown_tabel = df_sektor.to_markdown(index=False)
-    scrollable_html = f"""
-    <div style="max-height: 300px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; margin-bottom: 20px;">
-        <pre>{markdown_tabel}</pre>
-    </div>
-    """
-    st.markdown(scrollable_html, unsafe_allow_html=True)
+    st.dataframe(df_sektor, use_container_width=True, height=300)
