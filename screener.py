@@ -152,8 +152,7 @@ max_forward_per = st.sidebar.slider("Max Expected PER", 0.0, 100.0, 25.0)
 # ============================ #
 # ❗ Validasi Kolom Wajib
 # ============================ #
-kolom_wajib = ['PER', 'PBV', 'ROE']
-if not all(k in df.columns for k in kolom_wajib):
+if not all(k in df.columns for k in ['PER', 'PBV', 'ROE']):
     st.error("❌ Kolom PER, PBV, atau ROE tidak tersedia.")
     st.dataframe(df)
     st.stop()
@@ -174,73 +173,26 @@ hasil = df_clean[
 ]
 
 # ============================ #
-# 📊 Tampilkan Tabel HTML Screening
+# 📊 Hasil Screening: AgGrid Interaktif dengan clickable Ticker
 # ============================ #
-html_table = """
-<style>
-    table { width: 100%; border-collapse: collapse; font-size: 14px; }
-    th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
-    thead th { background-color: #f2f2f2; }
-    tr:nth-child(even) { background-color: #f9f9f9; }
-    a { color: #1f77b4; text-decoration: none; font-weight: bold; }
-</style>
-<table>
-<thead>
-    <tr>
-        <th>Ticker</th>
-        <th>Name</th>
-        <th>Price</th>
-        <th>PER</th>
-        <th>PBV</th>
-        <th>ROE (%)</th>
-        <th>Div Yield (%)</th>
-        <th>Sektor</th>
-        <th>Expected PER</th>
-    </tr>
-</thead>
-<tbody>
-"""
+st.subheader("📈 Hasil Screening (Klik Ticker)")
 
-for _, row in hasil.iterrows():
-    html_table += f"<tr><td><a href='?tkr={row['Ticker']}' target='_self'>{row['Ticker']}</a></td>" \
-                  f"<td>{row['Name']}</td>" \
-                  f"<td>{row['Price']:.2f}</td>" \
-                  f"<td>{row['PER']:.2f}</td>" \
-                  f"<td>{row['PBV']:.2f}</td>" \
-                  f"<td>{row['ROE']:.2f}</td>" \
-                  f"<td>{row['Div Yield']:.2f}</td>" \
-                  f"<td>{row['Sektor']}</td>" \
-                  f"<td>{row['Expected PER']:.2f}</td></tr>"
+# Konfigurasi kolom Ticker menjadi link dengan JsCode
+js_clickable_link = JsCode("""
+function(params) {
+    return `<a href='?tkr=${params.value}' target='_self'>${params.value}</a>`;
+}
+""")
 
-html_table += "</tbody></table>"
-# ============================ #
-# 📊 Tampilkan Tabel AgGrid Interaktif
-# ============================ #
-st.subheader("📈 Hasil Screening")
-
-# ============================ #
-# 🖱️ Buat kolom Ticker bisa diklik
-# ============================ #
-hasil_clickable = hasil.copy()
-hasil_clickable['Ticker'] = hasil_clickable['Ticker'].apply(
-    lambda x: f"<a href='?tkr={x}' target='_self'>{x}</a>"
-)
-
-# Buat konfigurasi grid tanpa pagination
 gb = GridOptionsBuilder.from_dataframe(
-    hasil_clickable[['Ticker', 'Name', 'Price', 'PER', 'PBV', 'ROE', 'Div Yield', 'Sektor', 'Expected PER']]
+    hasil[['Ticker', 'Name', 'Price', 'PER', 'PBV', 'ROE', 'Div Yield', 'Sektor', 'Expected PER']]
 )
 gb.configure_default_column(sortable=True, filter=True)
-gb.configure_column("Ticker", cellRenderer=JsCode("""
-    function(params) {
-        return params.value;
-    }
-"""))  # biar HTML-nya jalan
+gb.configure_column("Ticker", cellRenderer=js_clickable_link)
 gb.configure_side_bar()
 
-st.subheader("📈 Hasil Screening (Klik Ticker)")
 AgGrid(
-    hasil_clickable,
+    hasil,
     gridOptions=gb.build(),
     allow_unsafe_jscode=True,
     enable_enterprise_modules=False,
@@ -248,6 +200,7 @@ AgGrid(
     fit_columns_on_grid_load=True,
     update_mode=GridUpdateMode.NO_UPDATE
 )
+
 # ============================ #
 # 🔍 Detail Ticker Saat Diklik
 # ============================ #
@@ -275,7 +228,7 @@ if st.session_state.get("ticker_diklik"):
     tampilkan_detail_ticker(st.session_state["ticker_diklik"])
 
 # ============================ #
-# 📂 Hasil per Sektor (dengan clickable Ticker)
+# 📂 Hasil per Sektor dengan Ticker Klikabel
 # ============================ #
 st.markdown("## 📂 Hasil per Sektor")
 
@@ -283,7 +236,6 @@ for sektor in sorted(hasil['Sektor'].unique()):
     st.markdown(f"### 🔸 {sektor}")
     df_sektor = hasil[hasil['Sektor'] == sektor].copy()
 
-    # Buat tabel HTML dengan ticker bisa diklik
     html_sektor = """
     <style>
         table { width: 100%; border-collapse: collapse; font-size: 14px; margin-bottom: 20px; }
@@ -318,5 +270,4 @@ for sektor in sorted(hasil['Sektor'].unique()):
                        f"<td>{row['Expected PER']:.2f}</td></tr>"
 
     html_sektor += "</tbody></table>"
-
     st.markdown(html_sektor, unsafe_allow_html=True)
