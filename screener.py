@@ -182,9 +182,45 @@ hasil = df_clean[
 st.subheader("📈 Hasil Screening")
 st.markdown("Klik ticker untuk detail 👇", unsafe_allow_html=True)
 
-hasil_tampilan = hasil.copy()
-hasil_tampilan['Ticker'] = hasil_tampilan['Ticker'].apply(buat_link_ticker)
-st.dataframe(hasil_tampilan, use_container_width=True, height=350)
+# Buat tabel HTML agar link bisa diklik (dan rapi)
+html_table = """
+<table border="1" style="border-collapse: collapse; width: 100%;">
+    <thead>
+        <tr style="background-color: #f2f2f2;">
+            <th>Ticker</th>
+            <th>Name</th>
+            <th>Price</th>
+            <th>PER</th>
+            <th>PBV</th>
+            <th>ROE (%)</th>
+            <th>Div Yield (%)</th>
+            <th>Sektor</th>
+            <th>Expected PER</th>
+        </tr>
+    </thead>
+    <tbody>
+"""
+
+for _, row in hasil.iterrows():
+    html_table += f"""
+    <tr>
+        <td><a href='?tkr={row['Ticker']}' target='_self'>{row['Ticker']}</a></td>
+        <td>{row['Name']}</td>
+        <td>{row['Price']}</td>
+        <td>{row['PER']:.2f}</td>
+        <td>{row['PBV']:.2f}</td>
+        <td>{row['ROE']:.2f}</td>
+        <td>{row['Div Yield']:.2f}</td>
+        <td>{row['Sektor']}</td>
+        <td>{row['Expected PER']:.2f}</td>
+    </tr>
+    """
+
+html_table += "</tbody></table>"
+
+st.markdown("### 📈 Hasil Screening", unsafe_allow_html=True)
+st.markdown(html_table, unsafe_allow_html=True)
+
 
 # ============================ #
 # 🔍 TAMPILKAN DETAIL TICKER
