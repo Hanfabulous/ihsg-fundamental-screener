@@ -146,9 +146,9 @@ if len(kolom_tersedia) < 3:
     st.stop()
 
 # Filter
-df_clean = df.dropna(subset=['PER', 'PBV', 'ROE', 'Expected PER'])
-df_clean['ROE'] = df_clean['ROE'] * 100
-df_clean['Div Yield'] = df_clean['Div Yield'] * 100
+df_clean = df.dropna(subset=['PER', 'PBV', 'ROE', 'Expected PER']).copy()
+df_clean.loc[:, 'ROE'] = df_clean['ROE'] * 100
+df_clean.loc[:, 'Div Yield'] = df_clean['Div Yield'] * 100
 
 hasil = df_clean[
     (df_clean['Sektor'].isin(sektor_pilihan)) &
