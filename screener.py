@@ -88,41 +88,7 @@ for sektor, daftar in sektor_map.items():
         ticker_jk = t + ".JK"
         tickers.append(ticker_jk)
         ticker_to_sector[ticker_jk] = sektor
-
-You said:
-ya
-
-
-ChatGPT said:
-Berikut adalah skrip Streamlit lengkap untuk screener fundamental saham IHSG, dengan fitur klik per ticker menggunakan tombol interaktif dan halaman detail untuk:
-
-Informasi umum
-
-Grafik pendapatan, laba bersih, PER, PBV, Forward PER, dan Forward PBV selama 8 kuartal terakhir
-
-Tombol kembali ke daftar
-
-✅ Skrip Streamlit Komplet (Dengan Navigasi Ticker Klikable)
-python
-Copy
-Edit
-import streamlit as st
-import yfinance as yf
-import pandas as pd
-import plotly.express as px
-
-# ======================== SETUP ========================
-st.set_page_config(layout="wide", page_title="Screener Fundamental IHSG")
-st.title("📊 Screener Fundamental IHSG")
-
-if 'selected_ticker' not in st.session_state:
-    st.session_state.selected_ticker = None
-
-# ======================== TICKER SETUP ========================
-# Contoh daftar ringkas, sesuaikan dengan sektor_map Anda
-ticker_list = ["BBRI", "BBCA", "PGAS", "ADRO", "UNVR"]
-tickers = [t + ".JK" for t in ticker_list]
-
+        
 # ======================== AMBIL DATA FUNDAMENTAL ========================
 @st.cache_data(ttl=3600)
 def ambil_data(tickers):
