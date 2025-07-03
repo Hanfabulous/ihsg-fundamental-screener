@@ -219,7 +219,26 @@ for _, row in hasil.iterrows():
                   f"<td>{row['Expected PER']:.2f}</td></tr>"
 
 html_table += "</tbody></table>"
-components.html(html_table, height=800, scrolling=True)
+# ============================ #
+# 📊 Tampilkan Tabel AgGrid Interaktif
+# ============================ #
+st.subheader("📈 Hasil Screening")
+st.markdown("Klik ticker untuk melihat detail 👇", unsafe_allow_html=True)
+
+gb = GridOptionsBuilder.from_dataframe(
+    hasil[['Ticker', 'Name', 'Price', 'PER', 'PBV', 'ROE', 'Div Yield', 'Sektor', 'Expected PER']]
+)
+gb.configure_pagination(paginationAutoPageSize=True)
+gb.configure_side_bar()
+gb.configure_default_column(sortable=True, filter=True)
+
+AgGrid(
+    hasil,
+    gridOptions=gb.build(),
+    theme='light',
+    enable_enterprise_modules=False,
+    fit_columns_on_grid_load=True
+)
 
 # ============================ #
 # 🔍 Detail Ticker Saat Diklik
