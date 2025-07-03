@@ -3,6 +3,7 @@ import streamlit as st
 import yfinance as yf
 import pandas as pd
 import numpy as np
+from urllib.parse import urlparse, parse_qs
 
 # ============================ #
 # 📌 KONFIGURASI HALAMAN
@@ -87,6 +88,9 @@ sektor_map = {
                 "FISH", "SIPD", "WMPP", "CRAB", "TRGU", "AGAR", "DPUM", "FAPA", "CBUT", "BEER", "ALTO", "MAXI", "MAGP", "LAPD", "GOLL",
                 "WICO"]
 }
+# ============================ #
+# 📌 KONFIGURASI DAN PETA TICKER
+# ============================ #
 tickers = []
 ticker_to_sector = {}
 for sektor, daftar in sektor_map.items():
@@ -126,13 +130,7 @@ with st.spinner("🔄 Mengambil data Yahoo Finance..."):
     df = ambil_data(tickers)
 
 # ============================ #
-# 🛠️ DEBUG
-# ============================ #
-st.write("🛠️ Kolom tersedia:", df.columns.tolist())
-st.write("Contoh data:", df.head())
-
-# ============================ #
-# 🔢 KONVERSI KE NUMERIK
+# 🔢 KONVERSI KOLOM NUMERIK
 # ============================ #
 kolom_numerik = ['PER', 'PBV', 'ROE', 'Div Yield', 'Expected PER']
 for kolom in kolom_numerik:
@@ -176,19 +174,31 @@ hasil = df_clean[
 ]
 
 # ============================ #
-# 🧩 TOMBOL TICKER: MEMICU DETAIL
+# 🔗 LINKABLE TICKER (Markdown)
 # ============================ #
 st.subheader("📈 Hasil Screening")
+from urllib.parse import urlparse, parse_qs
+query_params = st.query_params
+ticker_qs = query_params.get("tkr", None)
+if ticker_qs:
+    st.session_state["ticker_diklik"] = ticker_qs
 
 for i, row in hasil.sort_values(by="ROE", ascending=False).reset_index(drop=True).iterrows():
-    col1, col2, col3 = st.columns([2, 6, 2])
-    with col1:
-        if st.button(row["Ticker"], key=f"{row['Ticker']}_{i}"):
-            st.session_state["ticker_diklik"] = row["Ticker"]
-    with col2:
-        st.write(row["Name"])
-    with col3:
-        st.write(f"ROE: {row['ROE']:.2f} %")
+    ticker = row["Ticker"]
+    name = row["Name"]
+    roe = row["ROE"]
+    st.markdown(
+        f"""
+        <div style='display: flex; justify-content: space-between;'>
+            <a href='?tkr={ticker}' target='_self' style='font-weight: bold; text-decoration: none; color: #1f77b4;'>
+                {ticker}
+            </a>
+            <span>{name}</span>
+            <span><strong>ROE:</strong> {roe:.2f} %</span>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 # ============================ #
 # 🔍 TAMPILKAN DETAIL TICKER
@@ -208,7 +218,7 @@ def tampilkan_detail_ticker(ticker):
     except Exception as e:
         st.error(f"❌ Gagal mengambil data detail: {e}")
 
-if st.session_state["ticker_diklik"]:
+if st.session_state.get("ticker_diklik"):
     tampilkan_detail_ticker(st.session_state["ticker_diklik"])
 
 # ============================ #
