@@ -88,7 +88,10 @@ for sektor, daftar in sektor_map.items():
         tickers.append(ticker_jk)
         ticker_to_sector[ticker_jk] = sektor
 
-# === Ambil data fundamental dari Yahoo Finance ===
+
+# ============================ #
+# 📥 FUNGSI: AMBIL DATA FUNDAMENTAL
+# ============================ #
 @st.cache_data(ttl=3600)
 def ambil_data(tickers):
     data = []
@@ -110,45 +113,53 @@ def ambil_data(tickers):
             continue
     return pd.DataFrame(data)
 
+# ============================ #
+# ⏳ PROSES: AMBIL DATA DENGAN SPINNER
+# ============================ #
 with st.spinner("🔄 Mengambil data Yahoo Finance..."):
     df = ambil_data(tickers)
 
-# Tampilkan kolom yang tersedia untuk debug
+# ============================ #
+# 🛠️ DEBUG: TAMPILKAN DATA
+# ============================ #
 st.write("🛠️ Kolom tersedia:", df.columns.tolist())
-
-# 👇 Debug: Cek beberapa baris data
 st.write("Contoh data:", df.head())
 
-# Pastikan kolom numerik
-for col in ['PER', 'PBV', 'ROE', 'Div Yield']:
-    if col in df.columns:
-        df[col] = pd.to_numeric(df[col], errors='coerce')
+# ============================ #
+# 🔢 KONVERSI KE NUMERIK
+# ============================ #
+kolom_numerik = ['PER', 'PBV', 'ROE', 'Div Yield', 'Expected PER']
+for kolom in kolom_numerik:
+    if kolom in df.columns:
+        df[kolom] = pd.to_numeric(df[kolom], errors='coerce')
 
-if 'Expected PER' in df.columns:
-    df['Expected PER'] = pd.to_numeric(df['Expected PER'], errors='coerce')
-
-# Sidebar filter
+# ============================ #
+# 🎛️ SIDEBAR: FILTER SCREENING
+# ============================ #
 st.sidebar.header("📌 Filter")
 semua_sektor = sorted(df['Sektor'].dropna().unique())
+
 sektor_pilihan = st.sidebar.multiselect("Pilih Sektor", semua_sektor, default=semua_sektor)
 min_roe = st.sidebar.slider("Min ROE (%)", 0.0, 100.0, 10.0)
 max_per = st.sidebar.slider("Max PER", 0.0, 100.0, 25.0)
 max_pbv = st.sidebar.slider("Max PBV", 0.0, 10.0, 3.0)
 max_forward_per = st.sidebar.slider("Max Expected PER", 0.0, 100.0, 25.0)
 
-# Pastikan semua kolom filter tersedia
+# ============================ #
+# ❗ VALIDASI KETERSEDIAAN KOLOM
+# ============================ #
 kolom_wajib = ['PER', 'PBV', 'ROE']
-kolom_tersedia = [kol for kol in kolom_wajib if kol in df.columns]
-
-if len(kolom_tersedia) < 3:
-    st.error("❌ Kolom PER, PBV, atau ROE tidak tersedia di sebagian besar data.")
+if not all(kol in df.columns for kol in kolom_wajib):
+    st.error("❌ Kolom PER, PBV, atau ROE tidak tersedia.")
     st.dataframe(df)
     st.stop()
 
-# Filter
+# ============================ #
+# 🧹 BERSIHKAN DAN FILTER DATA
+# ============================ #
 df_clean = df.dropna(subset=['PER', 'PBV', 'ROE', 'Expected PER']).copy()
-df_clean.loc[:, 'ROE'] = df_clean['ROE'] * 100
-df_clean.loc[:, 'Div Yield'] = df_clean['Div Yield'] * 100
+df_clean['ROE'] = df_clean['ROE'] * 100
+df_clean['Div Yield'] = df_clean['Div Yield'] * 100
 
 hasil = df_clean[
     (df_clean['Sektor'].isin(sektor_pilihan)) &
@@ -158,13 +169,17 @@ hasil = df_clean[
     (df_clean['Expected PER'] <= max_forward_per)
 ]
 
-# Tampilkan hasil
+# ============================ #
+# 📊 TAMPILKAN HASIL SCREENING
+# ============================ #
 st.subheader("📈 Hasil Screening")
-st.dataframe(hasil.sort_values(by='ROE', ascending=False).reset_index(drop=True))
+st.dataframe(hasil.sort_values(by='ROE', ascending=False).reset_index(drop=True), use_container_width=True)
 
-# Per sektor
+# ============================ #
+# 📂 TAMPILKAN PER SEKTOR
+# ============================ #
 st.markdown("## 📂 Hasil per Sektor")
 for sektor in sorted(hasil['Sektor'].unique()):
     st.markdown(f"### 🔸 {sektor}")
     df_sektor = hasil[hasil['Sektor'] == sektor]
-    st.dataframe(df_sektor.reset_index(drop=True))
+    st.dataframe(df_sektor.reset_index(drop=True), use_container_width=True)
