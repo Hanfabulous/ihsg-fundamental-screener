@@ -3,10 +3,20 @@ import streamlit as st
 import yfinance as yf
 import pandas as pd
 import numpy as np
+from urllib.parse import urlparse, parse_qs
 
-st.set_page_config(page_title="Screener Fundamental IHSG", layout="wide")
-st.title("📊 Screener Fundamental IHSG")
+# ============================ #
+# 📌 KONFIGURASI HALAMAN
+# ============================ #
+st.set_page_config(page_title="Zona Fundamental", layout="wide")
+st.title("📊 ZONA FUNDAMENTAL")
 
+# ============================ #
+# 🧠 INISIALISASI SESSION STATE
+# ============================ #
+if "ticker_diklik" not in st.session_state:
+    st.session_state["ticker_diklik"] = None
+    
 # === Daftar sektor dan ticker (.JK sudah ditambahkan) ===
 sektor_map = {
     "Teknologi": ["GOTO", "BUKA", "EMTK", "WIFI", "WIRG", "MTDL", "DMMX", "DCII", "MLPT", "ELIT", "PTSN", "EDGE", "JATI",
@@ -78,17 +88,20 @@ sektor_map = {
                 "FISH", "SIPD", "WMPP", "CRAB", "TRGU", "AGAR", "DPUM", "FAPA", "CBUT", "BEER", "ALTO", "MAXI", "MAGP", "LAPD", "GOLL",
                 "WICO"]
 }
-
-# Konversi ke .JK dan buat mapping ticker ke sektor
+# ============================ #
+# 📌 KONFIGURASI DAN PETA TICKER
+# ============================ #
 tickers = []
-ticker_to_sector = {}  # mapping ticker -> sektor
+ticker_to_sector = {}
 for sektor, daftar in sektor_map.items():
     for t in daftar:
         ticker_jk = t + ".JK"
         tickers.append(ticker_jk)
         ticker_to_sector[ticker_jk] = sektor
 
-# === Ambil data fundamental dari Yahoo Finance ===
+# ============================ #
+# 📥 FUNGSI AMBIL DATA
+# ============================ #
 @st.cache_data(ttl=3600)
 def ambil_data(tickers):
     data = []
@@ -110,45 +123,50 @@ def ambil_data(tickers):
             continue
     return pd.DataFrame(data)
 
+# ============================ #
+# ⏳ AMBIL DATA DENGAN SPINNER
+# ============================ #
 with st.spinner("🔄 Mengambil data Yahoo Finance..."):
     df = ambil_data(tickers)
 
-# Tampilkan kolom yang tersedia untuk debug
-st.write("🛠️ Kolom tersedia:", df.columns.tolist())
+# ============================ #
+# 🔢 KONVERSI KOLOM NUMERIK
+# ============================ #
+kolom_numerik = ['PER', 'PBV', 'ROE', 'Div Yield', 'Expected PER']
+for kolom in kolom_numerik:
+    if kolom in df.columns:
+        df[kolom] = pd.to_numeric(df[kolom], errors='coerce')
 
-# 👇 Debug: Cek beberapa baris data
-st.write("Contoh data:", df.head())
-
-# Pastikan kolom numerik
-for col in ['PER', 'PBV', 'ROE', 'Div Yield']:
-    if col in df.columns:
-        df[col] = pd.to_numeric(df[col], errors='coerce')
-
-if 'Expected PER' in df.columns:
-    df['Expected PER'] = pd.to_numeric(df['Expected PER'], errors='coerce')
-
-# Sidebar filter
+# ============================ #
+# 🎛️ FILTER DI SIDEBAR
+# ============================ #
 st.sidebar.header("📌 Filter")
 semua_sektor = sorted(df['Sektor'].dropna().unique())
+
 sektor_pilihan = st.sidebar.multiselect("Pilih Sektor", semua_sektor, default=semua_sektor)
 min_roe = st.sidebar.slider("Min ROE (%)", 0.0, 100.0, 10.0)
 max_per = st.sidebar.slider("Max PER", 0.0, 100.0, 25.0)
 max_pbv = st.sidebar.slider("Max PBV", 0.0, 10.0, 3.0)
 max_forward_per = st.sidebar.slider("Max Expected PER", 0.0, 100.0, 25.0)
 
-# Pastikan semua kolom filter tersedia
+# ============================ #
+# ❗ VALIDASI KOLOM WAJIB
+# ============================ #
 kolom_wajib = ['PER', 'PBV', 'ROE']
-kolom_tersedia = [kol for kol in kolom_wajib if kol in df.columns]
-
-if len(kolom_tersedia) < 3:
-    st.error("❌ Kolom PER, PBV, atau ROE tidak tersedia di sebagian besar data.")
+if not all(kol in df.columns for kol in kolom_wajib):
+    st.error("❌ Kolom PER, PBV, atau ROE tidak tersedia.")
     st.dataframe(df)
     st.stop()
 
-# Filter
+def buat_link_ticker(ticker):
+    return f"[{ticker}](?tkr={ticker})"
+    
+# ============================ #
+# 🧹 BERSIHKAN & FILTER DATA
+# ============================ #
 df_clean = df.dropna(subset=['PER', 'PBV', 'ROE', 'Expected PER']).copy()
-df_clean.loc[:, 'ROE'] = df_clean['ROE'] * 100
-df_clean.loc[:, 'Div Yield'] = df_clean['Div Yield'] * 100
+df_clean['ROE'] = df_clean['ROE'] * 100
+df_clean['Div Yield'] = df_clean['Div Yield'] * 100
 
 hasil = df_clean[
     (df_clean['Sektor'].isin(sektor_pilihan)) &
@@ -158,13 +176,66 @@ hasil = df_clean[
     (df_clean['Expected PER'] <= max_forward_per)
 ]
 
-# Tampilkan hasil
-st.subheader("📈 Hasil Screening")
-st.dataframe(hasil.sort_values(by='ROE', ascending=False).reset_index(drop=True))
+hasil_tampilan = hasil.copy()
+hasil_tampilan['Ticker'] = hasil_tampilan['Ticker'].apply(buat_link_ticker)
 
-# Per sektor
+# ============================ #
+# 🔗 LINKABLE TICKER (Markdown)
+# ============================ #
+st.subheader("📈 Hasil Screening")
+st.markdown("Klik ticker untuk detail 👇", unsafe_allow_html=True)
+st.markdown(hasil_tampilan.to_markdown(index=False), unsafe_allow_html=True)
+
+
+query_params = st.query_params
+ticker_qs = query_params.get("tkr", None)
+if ticker_qs:
+    st.session_state["ticker_diklik"] = ticker_qs
+
+for i, row in hasil.sort_values(by="ROE", ascending=False).reset_index(drop=True).iterrows():
+    ticker = row["Ticker"]
+    name = row["Name"]
+    roe = row["ROE"]
+    st.markdown(
+        f"""
+        <div style='display: flex; justify-content: space-between;'>
+            <a href='?tkr={ticker}' target='_self' style='font-weight: bold; text-decoration: none; color: #1f77b4;'>
+                {ticker}
+            </a>
+            <span>{name}</span>
+            <span><strong>ROE:</strong> {roe:.2f} %</span>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+# ============================ #
+# 🔍 TAMPILKAN DETAIL TICKER
+# ============================ #
+def tampilkan_detail_ticker(ticker):
+    st.markdown(f"---\n## 📌 Detail Ticker: `{ticker}`")
+    try:
+        info = yf.Ticker(ticker).info
+        st.markdown(f"**Nama Saham:** {info.get('longName', '-')}")
+        st.markdown(f"**Harga Saat Ini:** {info.get('currentPrice', '-')}")
+        st.markdown(f"**PER:** {info.get('trailingPE', '-')}")
+        st.markdown(f"**PBV:** {info.get('priceToBook', '-')}")
+        st.markdown(f"**ROE:** {round(info.get('returnOnEquity', 0)*100, 2) if info.get('returnOnEquity') else '-'}%")
+        st.markdown(f"**Dividend Yield:** {round(info.get('dividendYield', 0)*100, 2) if info.get('dividendYield') else '-'}%")
+        st.markdown(f"**Forward PER:** {info.get('forwardPE', '-')}")
+        st.markdown(f"**Sektor:** {ticker_to_sector.get(ticker, '-')}")
+    except Exception as e:
+        st.error(f"❌ Gagal mengambil data detail: {e}")
+
+if st.session_state.get("ticker_diklik"):
+    tampilkan_detail_ticker(st.session_state["ticker_diklik"])
+
+# ============================ #
+# 📂 TAMPILKAN PER SEKTOR
+# ============================ #
 st.markdown("## 📂 Hasil per Sektor")
 for sektor in sorted(hasil['Sektor'].unique()):
     st.markdown(f"### 🔸 {sektor}")
-    df_sektor = hasil[hasil['Sektor'] == sektor]
-    st.dataframe(df_sektor.reset_index(drop=True))
+    df_sektor = hasil[hasil['Sektor'] == sektor].copy()
+    df_sektor['Ticker'] = df_sektor['Ticker'].apply(buat_link_ticker)
+    st.markdown(df_sektor.to_markdown(index=False), unsafe_allow_html=True)
