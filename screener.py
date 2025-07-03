@@ -134,8 +134,7 @@ with st.spinner("🔄 Mengambil data Yahoo Finance..."):
 # ============================ #
 kolom_numerik = ['PER', 'PBV', 'ROE', 'Div Yield', 'Expected PER']
 for kol in kolom_numerik:
-    if kol in df.columns:
-        df[kol] = pd.to_numeric(df[kol], errors='coerce')
+    df[kol] = pd.to_numeric(df[kol], errors='coerce')
 
 # ============================ #
 # 📌 Filter di Sidebar
@@ -152,13 +151,13 @@ max_forward_per = st.sidebar.slider("Max Expected PER", 0.0, 100.0, 25.0)
 # ❗ Validasi Kolom Wajib
 # ============================ #
 kolom_wajib = ['PER', 'PBV', 'ROE']
-if not all(kol in df.columns for kol in kolom_wajib):
+if not all(k in df.columns for k in kolom_wajib):
     st.error("❌ Kolom PER, PBV, atau ROE tidak tersedia.")
     st.dataframe(df)
     st.stop()
 
 # ============================ #
-# 🧹 Bersihkan dan Filter Data
+# 🧹 Bersihkan & Filter Data
 # ============================ #
 df_clean = df.dropna(subset=['PER', 'PBV', 'ROE', 'Expected PER']).copy()
 df_clean['ROE'] *= 100
@@ -173,23 +172,25 @@ hasil = df_clean[
 ]
 
 # ============================ #
-# 📊 Tampilkan Tabel Hasil Screening
+# 📊 Tampilkan Hasil Screening
 # ============================ #
 st.subheader("📈 Hasil Screening")
 st.markdown("Klik ticker untuk melihat detail 👇", unsafe_allow_html=True)
 
+# Tabel HTML interaktif
 html_table = """
 <style>
     table { width: 100%; border-collapse: collapse; font-size: 14px; }
-    thead th { background-color: #f2f2f2; padding: 8px; border: 1px solid #ddd; text-align: left; }
-    tbody td { padding: 8px; border: 1px solid #ddd; }
-    tbody tr:nth-child(even) { background-color: #fafafa; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+    thead th { background-color: #f2f2f2; }
+    tr:nth-child(even) { background-color: #f9f9f9; }
     a { color: #1f77b4; text-decoration: none; font-weight: bold; }
 </style>
 <table>
     <thead>
         <tr>
-            <th>Ticker</th><th>Name</th><th>Price</th><th>PER</th><th>PBV</th><th>ROE (%)</th><th>Div Yield (%)</th><th>Sektor</th><th>Expected PER</th>
+            <th>Ticker</th><th>Name</th><th>Price</th><th>PER</th><th>PBV</th><th>ROE (%)</th>
+            <th>Div Yield (%)</th><th>Sektor</th><th>Expected PER</th>
         </tr>
     </thead>
     <tbody>
@@ -197,24 +198,24 @@ html_table = """
 
 for _, row in hasil.iterrows():
     html_table += f"""
-    <tr>
-        <td><a href='?tkr={row['Ticker']}' target='_self'>{row['Ticker']}</a></td>
-        <td>{row['Name']}</td>
-        <td>{row['Price']:.2f}</td>
-        <td>{row['PER']:.2f}</td>
-        <td>{row['PBV']:.2f}</td>
-        <td>{row['ROE']:.2f}</td>
-        <td>{row['Div Yield']:.2f}</td>
-        <td>{row['Sektor']}</td>
-        <td>{row['Expected PER']:.2f}</td>
-    </tr>
+        <tr>
+            <td><a href='?tkr={row['Ticker']}' target='_self'>{row['Ticker']}</a></td>
+            <td>{row['Name']}</td>
+            <td>{row['Price']:.2f}</td>
+            <td>{row['PER']:.2f}</td>
+            <td>{row['PBV']:.2f}</td>
+            <td>{row['ROE']:.2f}</td>
+            <td>{row['Div Yield']:.2f}</td>
+            <td>{row['Sektor']}</td>
+            <td>{row['Expected PER']:.2f}</td>
+        </tr>
     """
 
 html_table += "</tbody></table>"
 st.markdown(html_table, unsafe_allow_html=True)
 
 # ============================ #
-# 🔍 Tampilkan Detail Ticker
+# 🔍 Detail Ticker Saat Diklik
 # ============================ #
 query_params = st.query_params
 ticker_qs = query_params.get("tkr", None)
@@ -240,10 +241,14 @@ if st.session_state.get("ticker_diklik"):
     tampilkan_detail_ticker(st.session_state["ticker_diklik"])
 
 # ============================ #
-# 📂 Tampilkan Hasil per Sektor
+# 📂 Hasil per Sektor
 # ============================ #
 st.markdown("## 📂 Hasil per Sektor")
 for sektor in sorted(hasil['Sektor'].unique()):
     st.markdown(f"### 🔸 {sektor}")
     df_sektor = hasil[hasil['Sektor'] == sektor].copy()
-    st.dataframe(df_sektor[['Ticker', 'Name', 'Price', 'PER', 'PBV', 'ROE', 'Div Yield', 'Expected PER']], use_container_width=True, height=300)
+    st.dataframe(
+        df_sektor[['Ticker', 'Name', 'Price', 'PER', 'PBV', 'ROE', 'Div Yield', 'Expected PER']],
+        use_container_width=True,
+        height=300
+    )
