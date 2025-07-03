@@ -176,7 +176,6 @@ hasil = df_clean[
 # ============================ #
 # 📊 Tampilkan Hasil Screening
 # ============================ #
-st.subheader("📈 Hasil Screening")
 st.markdown("Klik ticker untuk melihat detail 👇", unsafe_allow_html=True)
 
 # ============================ #
