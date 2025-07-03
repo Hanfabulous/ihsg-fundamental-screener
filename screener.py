@@ -177,28 +177,35 @@ hasil = df_clean[
 # ============================ #
 st.subheader("📈 Hasil Screening (Klik Ticker)")
 
-js_clickable_link = JsCode("""
+# 1. Tambahkan kolom baru berisi link HTML
+hasil['Link'] = hasil['Ticker'].apply(
+    lambda x: f"<a href='?tkr={x}' target='_self'>{x}</a>"
+)
+
+# 2. Konfigurasi JavaScript untuk merender HTML di kolom Link
+js_link_renderer = JsCode("""
 function(params) {
-    return `<a href='?tkr=${params.value}' target='_self'>${params.value}</a>`;
+    return params.value;
 }
 """)
 
-# Gunakan dataframe tanpa mengubah nilai kolom Ticker
-df_grid = hasil[['Ticker', 'Name', 'Price', 'PER', 'PBV', 'ROE', 'Div Yield', 'Sektor', 'Expected PER']].copy()
-
-gb = GridOptionsBuilder.from_dataframe(df_grid)
+# 3. Siapkan konfigurasi kolom AgGrid
+gb = GridOptionsBuilder.from_dataframe(
+    hasil[['Link', 'Name', 'Price', 'PER', 'PBV', 'ROE', 'Div Yield', 'Sektor', 'Expected PER']]
+)
 gb.configure_default_column(sortable=True, filter=True, resizable=True)
-gb.configure_column("Ticker", cellRenderer=js_clickable_link)
+gb.configure_column("Link", header_name="Ticker", cellRenderer=js_link_renderer)
 gb.configure_side_bar()
 
+# 4. Render tabel AgGrid
 AgGrid(
-    df_grid,
+    hasil[['Link', 'Name', 'Price', 'PER', 'PBV', 'ROE', 'Div Yield', 'Sektor', 'Expected PER']],
     gridOptions=gb.build(),
     allow_unsafe_jscode=True,
     enable_enterprise_modules=False,
+    height=350,
     fit_columns_on_grid_load=True,
-    update_mode=GridUpdateMode.NO_UPDATE,
-    height=350
+    update_mode=GridUpdateMode.NO_UPDATE
 )
 
 # ============================ #
