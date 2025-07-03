@@ -238,4 +238,11 @@ for sektor in sorted(hasil['Sektor'].unique()):
     st.markdown(f"### 🔸 {sektor}")
     df_sektor = hasil[hasil['Sektor'] == sektor].copy()
     df_sektor['Ticker'] = df_sektor['Ticker'].apply(buat_link_ticker)
-    st.markdown(df_sektor.to_markdown(index=False), unsafe_allow_html=True)
+    
+    markdown_tabel = df_sektor.to_markdown(index=False)
+    scrollable_html = f"""
+    <div style="max-height: 300px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; margin-bottom: 20px;">
+        <pre>{markdown_tabel}</pre>
+    </div>
+    """
+    st.markdown(scrollable_html, unsafe_allow_html=True)
