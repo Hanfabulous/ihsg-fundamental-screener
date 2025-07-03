@@ -184,7 +184,13 @@ hasil_tampilan['Ticker'] = hasil_tampilan['Ticker'].apply(buat_link_ticker)
 # ============================ #
 st.subheader("📈 Hasil Screening")
 st.markdown("Klik ticker untuk detail 👇", unsafe_allow_html=True)
-st.markdown(hasil_tampilan.to_markdown(index=False), unsafe_allow_html=True)
+markdown_tabel = hasil_tampilan.to_markdown(index=False)
+scrollable_html = f"""
+<div style="max-height: 300px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; margin-bottom: 20px;">
+    <pre>{markdown_tabel}</pre>
+</div>
+"""
+st.markdown(scrollable_html, unsafe_allow_html=True)
 
 
 query_params = st.query_params
