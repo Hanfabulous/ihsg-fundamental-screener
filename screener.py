@@ -143,7 +143,20 @@ hasil = df_clean[
 
 # === Tampilkan tabel dan navigasi ===
 st.subheader("📈 Hasil Screening")
-st.dataframe(hasil.sort_values(by='ROE', ascending=False).reset_index(drop=True))
+# Buat salinan hasil
+hasil_sorted = hasil.sort_values(by='ROE', ascending=False).reset_index(drop=True).copy()
+
+# Tambahkan kolom hyperlink
+hasil_sorted['Ticker'] = hasil_sorted['Ticker'].apply(
+    lambda x: f'<a href="?ticker={x}">{x}</a>'
+)
+
+# Tampilkan dengan HTML agar klikable
+st.markdown(
+    hasil_sorted.to_html(escape=False, index=False),
+    unsafe_allow_html=True
+)
+
 
 st.markdown("### 🔍 Klik Ticker untuk Melihat Detail:")
 for i, row in hasil.iterrows():
@@ -151,7 +164,8 @@ for i, row in hasil.iterrows():
     st.markdown(f"- 🔗 [{ticker}](?ticker={ticker})", unsafe_allow_html=True)
 
 # === Halaman Detail Ticker ===
-ticker_param = st.query_params.get("ticker")
+if ticker_param:
+    st.header(f"📌 Detail Ticker: {ticker_param}")
 if ticker_param:
     st.markdown("---")
     st.header(f"📌 Detail Ticker: {ticker_param}")
