@@ -81,7 +81,6 @@ sektor_map = {
                 "WICO"]
 }
 
-# Konversi ke .JK dan buat mapping ticker ke sektor
 tickers = []
 ticker_to_sector = {}
 for sektor, daftar in sektor_map.items():
@@ -90,7 +89,6 @@ for sektor, daftar in sektor_map.items():
         tickers.append(ticker_jk)
         ticker_to_sector[ticker_jk] = sektor
 
-# === Ambil data fundamental dari Yahoo Finance ===
 @st.cache_data(ttl=3600)
 def ambil_data(tickers):
     data = []
@@ -107,89 +105,90 @@ def ambil_data(tickers):
                 'Div Yield': info.get('dividendYield', None),
                 'Sektor': ticker_to_sector.get(t, '-'),
                 'Expected PER': info.get('forwardPE', None),
+                'Expected PBV': info.get('priceToBook', None)  # Tambahkan PBV ke depan jika tersedia
             })
         except:
             continue
     return pd.DataFrame(data)
 
-with st.spinner("🔄 Mengambil data Yahoo Finance..."):
-    df = ambil_data(tickers)
-
-# Pastikan kolom numerik
-for col in ['PER', 'PBV', 'ROE', 'Div Yield']:
-    if col in df.columns:
-        df[col] = pd.to_numeric(df[col], errors='coerce')
-if 'Expected PER' in df.columns:
-    df['Expected PER'] = pd.to_numeric(df['Expected PER'], errors='coerce')
-
-# Sidebar filter
-st.sidebar.header("📌 Filter")
-semua_sektor = sorted(df['Sektor'].dropna().unique())
-sektor_pilihan = st.sidebar.multiselect("Pilih Sektor", semua_sektor, default=semua_sektor)
-min_roe = st.sidebar.slider("Min ROE (%)", 0.0, 100.0, 10.0)
-max_per = st.sidebar.slider("Max PER", 0.0, 100.0, 25.0)
-max_pbv = st.sidebar.slider("Max PBV", 0.0, 10.0, 3.0)
-max_forward_per = st.sidebar.slider("Max Expected PER", 0.0, 100.0, 25.0)
-
-# Filter
-df_clean = df.dropna(subset=['PER', 'PBV', 'ROE', 'Expected PER']).copy()
-df_clean['ROE'] = df_clean['ROE'] * 100
-df_clean['Div Yield'] = df_clean['Div Yield'] * 100
-
-hasil = df_clean[
-    (df_clean['Sektor'].isin(sektor_pilihan)) &
-    (df_clean['ROE'] >= min_roe) &
-    (df_clean['PER'] <= max_per) &
-    (df_clean['PBV'] <= max_pbv) &
-    (df_clean['Expected PER'] <= max_forward_per)
-]
-
-st.subheader("📈 Hasil Screening")
-for i, row in hasil.iterrows():
-    ticker = row['Ticker']
-    st.markdown(f"### [{ticker}](?ticker={ticker})")
-
-st.dataframe(hasil.sort_values(by='ROE', ascending=False).reset_index(drop=True))
-
-# === Detail per ticker jika diklik ===
+# Cek apakah ada parameter ticker di query string
 ticker_param = st.query_params.get("ticker")
+
 if ticker_param:
+    # === Halaman Detail Ticker ===
+    st.markdown(f"[🔙 Kembali ke Screener](?reset=1)")
     st.header(f"📌 Detail Ticker: {ticker_param}")
+
     t = yf.Ticker(ticker_param)
     info = t.info
-
     st.markdown(f"**Nama:** {info.get('longName', '-')}")
-    st.markdown(f"**Harga:** {info.get('currentPrice', '-')} | **Sektor:** {ticker_to_sector.get(ticker_param, '-')}")
-    st.markdown(f"**Dividend Yield:** {round(info.get('dividendYield', 0)*100, 2)}%")
+    st.markdown(f"**Harga Terakhir:** {info.get('currentPrice', '-')} | **Sektor:** {ticker_to_sector.get(ticker_param, '-')}")
 
-    with st.spinner("📊 Mengambil data historis keuangan..."):
-        income = t.quarterly_financials.T
-        balance = t.quarterly_balance_sheet.T
-        cashflow = t.quarterly_cashflow.T
+    div_yield = info.get("dividendYield", 0)
+    if div_yield:
+        st.markdown(f"**Dividend Yield:** {round(div_yield * 100, 2)}%")
+
+    with st.spinner("📊 Mengambil data historis kuartalan..."):
         try:
-            eps = income['Net Income']/balance['Ordinary Shares Number']
-            roe = income['Net Income']/balance['Total Stockholder Equity']
-        except:
-            eps = pd.Series()
-            roe = pd.Series()
+            q_income = t.quarterly_financials.T
+            q_balance = t.quarterly_balance_sheet.T
+            eps = q_income["Net Income"] / q_balance["Ordinary Shares Number"]
+            roe = q_income["Net Income"] / q_balance["Total Stockholder Equity"]
+            per = eps.apply(lambda e: info.get("currentPrice", 0) / e if e else None)
+            pbv = q_balance["Total Assets"] / q_balance["Total Stockholder Equity"]
+        except Exception as e:
+            st.error("Gagal mengambil data historis.")
+            st.stop()
 
-    def plot_graph(df, column, title, ylabel):
-        if column in df.columns:
-            st.plotly_chart(px.bar(df[column].dropna(), title=title, labels={"index": "Tanggal", column: ylabel}))
+    # === Grafik-grafik ===
+    def plot_bar(series, title, ytitle):
+        fig = px.bar(series.dropna(), title=title, labels={'index': 'Tanggal', 'value': ytitle})
+        st.plotly_chart(fig, use_container_width=True)
 
-    plot_graph(income, 'Total Revenue', '📊 Pendapatan (Revenue)', 'Rp')
-    plot_graph(income, 'Net Income', '📊 Laba Bersih (Net Income)', 'Rp')
-    plot_graph(income / balance['Ordinary Shares Number'], 'Net Income', '📊 EPS', 'Rp')
-    plot_graph(income / balance['Total Stockholder Equity'], 'Net Income', '📊 ROE', '%')
-    plot_graph(cashflow, 'Total Cash From Operating Activities', '📊 Operating Cash Flow', 'Rp')
-    plot_graph(cashflow, 'Free Cash Flow', '📊 Free Cash Flow', 'Rp')
-    plot_graph(balance / balance['Total Stockholder Equity'], 'Total Liab', '📊 Debt to Equity Ratio', '%')
+    plot_bar(q_income["Total Revenue"], "📈 Pendapatan (Revenue)", "Rp")
+    plot_bar(q_income["Net Income"], "💰 Laba Bersih (Net Income)", "Rp")
+    plot_bar(eps, "📊 Earnings Per Share (EPS)", "Rp")
+    plot_bar(roe * 100, "📊 Return on Equity (ROE)", "%")
+    plot_bar(per, "📊 PER (Price to Earning Ratio)", "x")
+    plot_bar(pbv, "📊 PBV (Price to Book Value)", "x")
 
-# Per sektor
-st.markdown("## 📂 Hasil per Sektor")
-for sektor in sorted(hasil['Sektor'].unique()):
-    st.markdown(f"### 🔸 {sektor}")
-    df_sektor = hasil[hasil['Sektor'] == sektor]
-    st.dataframe(df_sektor.reset_index(drop=True))
+else:
+    # === Halaman Screener ===
+    with st.spinner("🔄 Mengambil data Yahoo Finance..."):
+        df = ambil_data(tickers)
 
-    st.dataframe(df_sektor.reset_index(drop=True))
+    for col in ['PER', 'PBV', 'ROE', 'Div Yield', 'Expected PER']:
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors='coerce')
+    df['ROE'] = df['ROE'] * 100
+    df['Div Yield'] = df['Div Yield'] * 100
+
+    st.sidebar.header("📌 Filter")
+    sektor_pilihan = st.sidebar.multiselect("Pilih Sektor", sorted(df['Sektor'].dropna().unique()), default=sorted(df['Sektor'].dropna().unique()))
+    min_roe = st.sidebar.slider("Min ROE (%)", 0.0, 100.0, 10.0)
+    max_per = st.sidebar.slider("Max PER", 0.0, 100.0, 25.0)
+    max_pbv = st.sidebar.slider("Max PBV", 0.0, 10.0, 3.0)
+    max_forward_per = st.sidebar.slider("Max Expected PER", 0.0, 100.0, 25.0)
+
+    df_clean = df.dropna(subset=['PER', 'PBV', 'ROE', 'Expected PER']).copy()
+    hasil = df_clean[
+        (df_clean['Sektor'].isin(sektor_pilihan)) &
+        (df_clean['ROE'] >= min_roe) &
+        (df_clean['PER'] <= max_per) &
+        (df_clean['PBV'] <= max_pbv) &
+        (df_clean['Expected PER'] <= max_forward_per)
+    ]
+
+    st.subheader("📈 Hasil Screening")
+    for i, row in hasil.iterrows():
+        ticker = row["Ticker"]
+        st.markdown(f"- 🔎 [{ticker}](?ticker={ticker})")
+
+    st.dataframe(hasil.sort_values(by='ROE', ascending=False).reset_index(drop=True))
+
+    # === Per Sektor ===
+    st.markdown("## 📂 Hasil per Sektor")
+    for sektor in sorted(hasil['Sektor'].unique()):
+        st.markdown(f"### 🔸 {sektor}")
+        df_sektor = hasil[hasil['Sektor'] == sektor]
+        st.dataframe(df_sektor.reset_index(drop=True))
