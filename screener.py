@@ -179,7 +179,7 @@ st.subheader("📈 Hasil Screening (Klik Ticker)")
 
 js_clickable_link = JsCode("""
 function(params) {
-    return `<tr><td><a href='?tkr={row['Ticker']}' target='_self'>{row['Ticker']}</a></td>`;
+    return `<a href='?tkr=${params.value}' target='_self'>${params.value}</a>`;
 }
 """)
 
