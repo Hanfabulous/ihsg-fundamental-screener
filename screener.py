@@ -87,9 +87,6 @@ for sektor, daftar in sektor_map.items():
         tickers.append(ticker_jk)
         ticker_to_sector[ticker_jk] = sektor
 
-# =========================
-# 2️⃣ Ambil Data Fundamental
-# =========================
 @st.cache_data(ttl=3600)
 def ambil_data(tickers):
     data = []
@@ -114,9 +111,6 @@ def ambil_data(tickers):
 with st.spinner("🔄 Mengambil data Yahoo Finance..."):
     df = ambil_data(tickers)
 
-# =========================
-# 3️⃣ Filter & Persiapan Data
-# =========================
 for col in ['PER', 'PBV', 'ROE', 'Div Yield', 'Expected PER']:
     if col in df.columns:
         df[col] = pd.to_numeric(df[col], errors='coerce')
@@ -125,9 +119,6 @@ df_clean = df.dropna(subset=['PER', 'PBV', 'ROE', 'Expected PER']).copy()
 df_clean['ROE'] = df_clean['ROE'] * 100
 df_clean['Div Yield'] = df_clean['Div Yield'] * 100
 
-# =========================
-# 4️⃣ Sidebar Filter
-# =========================
 st.sidebar.header("📌 Filter")
 semua_sektor = sorted(df_clean['Sektor'].dropna().unique())
 sektor_pilihan = st.sidebar.multiselect("Pilih Sektor", semua_sektor, default=semua_sektor)
@@ -144,34 +135,29 @@ hasil = df_clean[
     (df_clean['Expected PER'] <= max_forward_per)
 ].copy()
 
-# =========================
-# 5️⃣ Ticker Clickable
-# =========================
 st.subheader("📈 Hasil Screening")
 
-# Ambil parameter ?ticker=...
-query_params = st.experimental_get_query_params()
-ticker_param = query_params.get("ticker", [None])[0]
+selected_ticker = st.session_state.get("selected_ticker", None)
 
-# Buat hyperlink kolom Ticker
-def make_clickable(val):
-    return f'<a href="?ticker={val}">{val}</a>'
+for i, row in hasil.iterrows():
+    col1, col2 = st.columns([5, 1])
+    with col1:
+        st.markdown(f"**{row['Ticker']}** | {row['Name']}")
+        st.markdown(f"PER: {row['PER']}, PBV: {row['PBV']}, ROE: {round(row['ROE'], 2)}%, Div: {round(row['Div Yield'], 2)}%")
+    with col2:
+        if st.button(f"📊 Lihat", key=row['Ticker']):
+            st.session_state.selected_ticker = row['Ticker']
+            selected_ticker = row['Ticker']
 
-hasil['Ticker'] = hasil['Ticker'].apply(make_clickable)
-st.markdown(hasil.to_html(escape=False, index=False), unsafe_allow_html=True)
-
-# =========================
-# 6️⃣ Tampilkan Detail Ticker
-# =========================
-if ticker_param:
+if selected_ticker:
     st.markdown("---")
-    st.header(f"📌 Detail Ticker: {ticker_param}")
-    
-    t = yf.Ticker(ticker_param)
+    st.header(f"📌 Detail Ticker: {selected_ticker}")
+
+    t = yf.Ticker(selected_ticker)
     info = t.info
 
     st.markdown(f"**Nama:** {info.get('longName', '-')}")
-    st.markdown(f"**Harga Saat Ini:** {info.get('currentPrice', '-')} | **Sektor:** {ticker_to_sector.get(ticker_param, '-')}")
+    st.markdown(f"**Harga Saat Ini:** {info.get('currentPrice', '-')} | **Sektor:** {ticker_to_sector.get(selected_ticker, '-')}")
     st.markdown(f"**Dividend Yield:** {round(info.get('dividendYield', 0) * 100, 2)}%")
 
     with st.spinner("📊 Mengambil data historis kuartalan..."):
