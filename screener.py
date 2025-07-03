@@ -218,9 +218,14 @@ AgGrid(
 # ============================ #
 # Tangkap query param dan simpan ke session
 query_params = st.query_params
-ticker_qs = query_params.get("tkr")
-if ticker_qs:
+ticker_qs = query_params.get("tkr", None)
+
+# Hanya update session dan rerun jika belum ada di session
+if ticker_qs and ticker_qs != st.session_state.get("ticker_diklik"):
     st.session_state["ticker_diklik"] = ticker_qs
+    st.experimental_rerun()
+if st.session_state.get("ticker_diklik"):
+    tampilkan_detail_ticker(st.session_state["ticker_diklik"])
 
 # Fungsi detail saham
 def tampilkan_detail_ticker(ticker):
