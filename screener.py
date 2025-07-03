@@ -174,11 +174,6 @@ hasil = df_clean[
 ]
 
 # ============================ #
-# 📊 Tampilkan Hasil Screening
-# ============================ #
-st.markdown("Klik ticker untuk melihat detail 👇", unsafe_allow_html=True)
-
-# ============================ #
 # 📊 Tampilkan Tabel HTML Screening
 # ============================ #
 html_table = """
@@ -222,7 +217,6 @@ html_table += "</tbody></table>"
 # 📊 Tampilkan Tabel AgGrid Interaktif
 # ============================ #
 st.subheader("📈 Hasil Screening")
-st.markdown("Klik ticker untuk melihat detail 👇", unsafe_allow_html=True)
 
 # Buat konfigurasi grid tanpa pagination
 gb = GridOptionsBuilder.from_dataframe(
