@@ -5,6 +5,7 @@ import pandas as pd
 import numpy as np
 from urllib.parse import urlparse, parse_qs
 import streamlit.components.v1 as components
+from st_aggrid import AgGrid, GridOptionsBuilder, JsCode
 
 # ============================ #
 # 📌 KONFIGURASI HALAMAN
@@ -181,7 +182,6 @@ st.markdown("Klik ticker untuk melihat detail 👇", unsafe_allow_html=True)
 # ============================ #
 # 📊 Tampilkan Tabel HTML Screening
 # ============================ #
-
 html_table = """
 <style>
     table { width: 100%; border-collapse: collapse; font-size: 14px; }
@@ -219,7 +219,6 @@ for _, row in hasil.iterrows():
                   f"<td>{row['Expected PER']:.2f}</td></tr>"
 
 html_table += "</tbody></table>"
-
 components.html(html_table, height=800, scrolling=True)
 
 # ============================ #
