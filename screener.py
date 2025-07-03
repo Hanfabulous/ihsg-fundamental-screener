@@ -183,7 +183,7 @@ st.subheader("📈 Hasil Screening")
 for i, row in hasil.sort_values(by="ROE", ascending=False).reset_index(drop=True).iterrows():
     col1, col2, col3 = st.columns([2, 6, 2])
     with col1:
-        if st.button(row["Ticker"], key=row["Ticker"]):
+        if st.button(row["Ticker"], key=f"{row['Ticker']}_{i}"):
             st.session_state["ticker_diklik"] = row["Ticker"]
     with col2:
         st.write(row["Name"])
