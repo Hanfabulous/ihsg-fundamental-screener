@@ -4,9 +4,18 @@ import yfinance as yf
 import pandas as pd
 import numpy as np
 
+# ============================ #
+# 📌 KONFIGURASI HALAMAN
+# ============================ #
 st.set_page_config(page_title="Screener Fundamental IHSG", layout="wide")
 st.title("📊 Screener Fundamental IHSG")
 
+# ============================ #
+# 🧠 INISIALISASI SESSION STATE
+# ============================ #
+if "ticker_diklik" not in st.session_state:
+    st.session_state["ticker_diklik"] = None
+    
 # === Daftar sektor dan ticker (.JK sudah ditambahkan) ===
 sektor_map = {
     "Teknologi": ["GOTO", "BUKA", "EMTK", "WIFI", "WIRG", "MTDL", "DMMX", "DCII", "MLPT", "ELIT", "PTSN", "EDGE", "JATI",
@@ -79,18 +88,16 @@ sektor_map = {
                 "WICO"]
 }
 
-# Konversi ke .JK dan buat mapping ticker ke sektor
 tickers = []
-ticker_to_sector = {}  # mapping ticker -> sektor
+ticker_to_sector = {}
 for sektor, daftar in sektor_map.items():
     for t in daftar:
         ticker_jk = t + ".JK"
         tickers.append(ticker_jk)
         ticker_to_sector[ticker_jk] = sektor
 
-
 # ============================ #
-# 📥 FUNGSI: AMBIL DATA FUNDAMENTAL
+# 📥 FUNGSI AMBIL DATA
 # ============================ #
 @st.cache_data(ttl=3600)
 def ambil_data(tickers):
@@ -114,13 +121,13 @@ def ambil_data(tickers):
     return pd.DataFrame(data)
 
 # ============================ #
-# ⏳ PROSES: AMBIL DATA DENGAN SPINNER
+# ⏳ AMBIL DATA DENGAN SPINNER
 # ============================ #
 with st.spinner("🔄 Mengambil data Yahoo Finance..."):
     df = ambil_data(tickers)
 
 # ============================ #
-# 🛠️ DEBUG: TAMPILKAN DATA
+# 🛠️ DEBUG
 # ============================ #
 st.write("🛠️ Kolom tersedia:", df.columns.tolist())
 st.write("Contoh data:", df.head())
@@ -134,7 +141,7 @@ for kolom in kolom_numerik:
         df[kolom] = pd.to_numeric(df[kolom], errors='coerce')
 
 # ============================ #
-# 🎛️ SIDEBAR: FILTER SCREENING
+# 🎛️ FILTER DI SIDEBAR
 # ============================ #
 st.sidebar.header("📌 Filter")
 semua_sektor = sorted(df['Sektor'].dropna().unique())
@@ -146,7 +153,7 @@ max_pbv = st.sidebar.slider("Max PBV", 0.0, 10.0, 3.0)
 max_forward_per = st.sidebar.slider("Max Expected PER", 0.0, 100.0, 25.0)
 
 # ============================ #
-# ❗ VALIDASI KETERSEDIAAN KOLOM
+# ❗ VALIDASI KOLOM WAJIB
 # ============================ #
 kolom_wajib = ['PER', 'PBV', 'ROE']
 if not all(kol in df.columns for kol in kolom_wajib):
@@ -155,7 +162,7 @@ if not all(kol in df.columns for kol in kolom_wajib):
     st.stop()
 
 # ============================ #
-# 🧹 BERSIHKAN DAN FILTER DATA
+# 🧹 BERSIHKAN & FILTER DATA
 # ============================ #
 df_clean = df.dropna(subset=['PER', 'PBV', 'ROE', 'Expected PER']).copy()
 df_clean['ROE'] = df_clean['ROE'] * 100
@@ -170,10 +177,40 @@ hasil = df_clean[
 ]
 
 # ============================ #
-# 📊 TAMPILKAN HASIL SCREENING
+# 🧩 TOMBOL TICKER: MEMICU DETAIL
 # ============================ #
 st.subheader("📈 Hasil Screening")
-st.dataframe(hasil.sort_values(by='ROE', ascending=False).reset_index(drop=True), use_container_width=True)
+
+for i, row in hasil.sort_values(by="ROE", ascending=False).reset_index(drop=True).iterrows():
+    col1, col2, col3 = st.columns([2, 6, 2])
+    with col1:
+        if st.button(row["Ticker"], key=row["Ticker"]):
+            st.session_state["ticker_diklik"] = row["Ticker"]
+    with col2:
+        st.write(row["Name"])
+    with col3:
+        st.write(f"ROE: {row['ROE']:.2f} %")
+
+# ============================ #
+# 🔍 TAMPILKAN DETAIL TICKER
+# ============================ #
+def tampilkan_detail_ticker(ticker):
+    st.markdown(f"---\n## 📌 Detail Ticker: `{ticker}`")
+    try:
+        info = yf.Ticker(ticker).info
+        st.markdown(f"**Nama Saham:** {info.get('longName', '-')}")
+        st.markdown(f"**Harga Saat Ini:** {info.get('currentPrice', '-')}")
+        st.markdown(f"**PER:** {info.get('trailingPE', '-')}")
+        st.markdown(f"**PBV:** {info.get('priceToBook', '-')}")
+        st.markdown(f"**ROE:** {round(info.get('returnOnEquity', 0)*100, 2) if info.get('returnOnEquity') else '-'}%")
+        st.markdown(f"**Dividend Yield:** {round(info.get('dividendYield', 0)*100, 2) if info.get('dividendYield') else '-'}%")
+        st.markdown(f"**Forward PER:** {info.get('forwardPE', '-')}")
+        st.markdown(f"**Sektor:** {ticker_to_sector.get(ticker, '-')}")
+    except Exception as e:
+        st.error(f"❌ Gagal mengambil data detail: {e}")
+
+if st.session_state["ticker_diklik"]:
+    tampilkan_detail_ticker(st.session_state["ticker_diklik"])
 
 # ============================ #
 # 📂 TAMPILKAN PER SEKTOR
