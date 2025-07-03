@@ -3,7 +3,6 @@ import streamlit as st
 import yfinance as yf
 import pandas as pd
 import numpy as np
-import plotly.express as px
 
 st.set_page_config(page_title="Screener Fundamental IHSG", layout="wide")
 st.title("📊 Screener Fundamental IHSG")
@@ -79,52 +78,17 @@ sektor_map = {
                 "FISH", "SIPD", "WMPP", "CRAB", "TRGU", "AGAR", "DPUM", "FAPA", "CBUT", "BEER", "ALTO", "MAXI", "MAGP", "LAPD", "GOLL",
                 "WICO"]
 }
-ChatGPT said:
-Baik! Kita akan kembangkan fitur screener.py menjadi lebih interaktif dan nyaman digunakan, yaitu:
 
-✅ Fitur Tambahan yang Akan Ditambahkan
-Sidebar Detail Ticker
-
-Ketika ticker diklik, detail ditampilkan di sidebar untuk pengalaman cepat.
-
-Tombol Reset (🗑️ Hapus Pilihan)
-
-Untuk menghapus pilihan dan kembali ke tampilan awal.
-
-Tombol “Buka di Yahoo Finance”
-
-Untuk melihat saham langsung di halaman Yahoo Finance.
-
-Desain responsif dan rapi.
-
-✅ Versi screener.py yang Sudah Ditingkatkan
-python
-Copy
-Edit
-import streamlit as st
-import yfinance as yf
-import pandas as pd
-import plotly.express as px
-
-st.set_page_config(page_title="📊 Screener IHSG", layout="wide")
-st.title("📊 Screener Fundamental IHSG")
-
-# 1️⃣ Pemetaan sektor dan ticker
-sektor_map = {
-    "Keuangan": ["BBRI", "BBCA", "BMRI", "BBNI", "BRIS"],
-    "Energi": ["ADRO", "PGAS", "PTBA", "MEDC", "ITMG"],
-    "Teknologi": ["GOTO", "BUKA", "DCII", "MTDL", "EMTK"]
-}
-
+# Konversi ke .JK dan buat mapping ticker ke sektor
 tickers = []
-ticker_to_sector = {}
+ticker_to_sector = {}  # mapping ticker -> sektor
 for sektor, daftar in sektor_map.items():
     for t in daftar:
         ticker_jk = t + ".JK"
         tickers.append(ticker_jk)
         ticker_to_sector[ticker_jk] = sektor
 
-# 2️⃣ Ambil data fundamental
+# === Ambil data fundamental dari Yahoo Finance ===
 @st.cache_data(ttl=3600)
 def ambil_data(tickers):
     data = []
@@ -139,8 +103,8 @@ def ambil_data(tickers):
                 'PBV': info.get('priceToBook', None),
                 'ROE': info.get('returnOnEquity', None),
                 'Div Yield': info.get('dividendYield', None),
+                'Sektor': ticker_to_sector.get(t, '-'),
                 'Expected PER': info.get('forwardPE', None),
-                'Sektor': ticker_to_sector.get(t, '-')
             })
         except:
             continue
@@ -149,21 +113,42 @@ def ambil_data(tickers):
 with st.spinner("🔄 Mengambil data Yahoo Finance..."):
     df = ambil_data(tickers)
 
-# 3️⃣ Bersihkan data
-for col in ['PER', 'PBV', 'ROE', 'Div Yield', 'Expected PER']:
-    df[col] = pd.to_numeric(df[col], errors='coerce')
-df_clean = df.dropna(subset=['PER', 'PBV', 'ROE', 'Expected PER']).copy()
-df_clean['ROE'] *= 100
-df_clean['Div Yield'] *= 100
+# Tampilkan kolom yang tersedia untuk debug
+st.write("🛠️ Kolom tersedia:", df.columns.tolist())
 
-# 4️⃣ Sidebar: filter & detail
+# 👇 Debug: Cek beberapa baris data
+st.write("Contoh data:", df.head())
+
+# Pastikan kolom numerik
+for col in ['PER', 'PBV', 'ROE', 'Div Yield']:
+    if col in df.columns:
+        df[col] = pd.to_numeric(df[col], errors='coerce')
+
+if 'Expected PER' in df.columns:
+    df['Expected PER'] = pd.to_numeric(df['Expected PER'], errors='coerce')
+
+# Sidebar filter
 st.sidebar.header("📌 Filter")
-semua_sektor = sorted(df_clean['Sektor'].unique())
+semua_sektor = sorted(df['Sektor'].dropna().unique())
 sektor_pilihan = st.sidebar.multiselect("Pilih Sektor", semua_sektor, default=semua_sektor)
 min_roe = st.sidebar.slider("Min ROE (%)", 0.0, 100.0, 10.0)
 max_per = st.sidebar.slider("Max PER", 0.0, 100.0, 25.0)
 max_pbv = st.sidebar.slider("Max PBV", 0.0, 10.0, 3.0)
 max_forward_per = st.sidebar.slider("Max Expected PER", 0.0, 100.0, 25.0)
+
+# Pastikan semua kolom filter tersedia
+kolom_wajib = ['PER', 'PBV', 'ROE']
+kolom_tersedia = [kol for kol in kolom_wajib if kol in df.columns]
+
+if len(kolom_tersedia) < 3:
+    st.error("❌ Kolom PER, PBV, atau ROE tidak tersedia di sebagian besar data.")
+    st.dataframe(df)
+    st.stop()
+
+# Filter
+df_clean = df.dropna(subset=['PER', 'PBV', 'ROE', 'Expected PER']).copy()
+df_clean.loc[:, 'ROE'] = df_clean['ROE'] * 100
+df_clean.loc[:, 'Div Yield'] = df_clean['Div Yield'] * 100
 
 hasil = df_clean[
     (df_clean['Sektor'].isin(sektor_pilihan)) &
@@ -171,66 +156,15 @@ hasil = df_clean[
     (df_clean['PER'] <= max_per) &
     (df_clean['PBV'] <= max_pbv) &
     (df_clean['Expected PER'] <= max_forward_per)
-].copy()
+]
 
-# 5️⃣ Tampilkan daftar saham
-st.subheader("📈 Hasil Screening Saham")
-st.caption("Klik tombol ticker untuk melihat detail di sidebar kanan:")
+# Tampilkan hasil
+st.subheader("📈 Hasil Screening")
+st.dataframe(hasil.sort_values(by='ROE', ascending=False).reset_index(drop=True))
 
-for i, row in hasil.iterrows():
-    col1, col2, col3 = st.columns([1.5, 2, 6])
-    with col1:
-        if st.button(f"🔍 {row['Ticker']}", key=row['Ticker']):
-            st.session_state["selected_ticker"] = row['Ticker']
-    with col2:
-        st.markdown(f"**{row['Name']}**")
-    with col3:
-        st.markdown(f"PER: {row['PER']} | PBV: {row['PBV']} | ROE: {round(row['ROE'], 2)}%")
-
-# 6️⃣ Sidebar detail saham
-ticker_selected = st.session_state.get("selected_ticker", None)
-if ticker_selected:
-    with st.sidebar.expander(f"📌 Detail Saham: {ticker_selected}", expanded=True):
-        t = yf.Ticker(ticker_selected)
-        info = t.info
-        st.markdown(f"**Nama:** {info.get('longName', '-')}")
-        st.markdown(f"**Harga:** {info.get('currentPrice', '-')} IDR")
-        st.markdown(f"**Sektor:** {ticker_to_sector.get(ticker_selected, '-')}")
-        st.markdown(f"**Dividend Yield:** {round(info.get('dividendYield', 0) * 100, 2)}%")
-
-        yahoo_url = f"https://finance.yahoo.com/quote/{ticker_selected}"
-        st.markdown(f"[🌐 Buka di Yahoo Finance]({yahoo_url})", unsafe_allow_html=True)
-
-        # Tombol reset
-        if st.button("🗑️ Reset Pilihan"):
-            st.session_state["selected_ticker"] = None
-
-# 7️⃣ Detail grafik di bawah jika ingin tetap ditampilkan
-if ticker_selected:
-    st.markdown("---")
-    st.header(f"📊 Grafik Kuartalan Saham: {ticker_selected}")
-    try:
-        income = t.quarterly_financials.T.sort_index()
-        balance = t.quarterly_balance_sheet.T.sort_index()
-        eps = income['Net Income'] / balance['Ordinary Shares Number']
-        roe = income['Net Income'] / balance['Total Stockholder Equity']
-        per = eps / info.get('currentPrice', 1)
-        pbv = balance['Total Assets'] / balance['Total Stockholder Equity']
-    except Exception as e:
-        st.error(f"❌ Gagal ambil data historis: {e}")
-        income = eps = roe = per = pbv = pd.Series()
-
-    def plot_series(series, title, y_label):
-        if not series.empty:
-            fig = px.bar(series, title=title, labels={"index": "Periode", "value": y_label})
-            st.plotly_chart(fig, use_container_width=True)
-
-    col1, col2 = st.columns(2)
-    with col1:
-        plot_series(income['Total Revenue'], "Revenue", "Rp")
-        plot_series(eps, "EPS", "Rp")
-        plot_series(per, "PER", "x")
-    with col2:
-        plot_series(income['Net Income'], "Net Income", "Rp")
-        plot_series(roe * 100, "ROE (%)", "%")
-        plot_series(pbv, "PBV", "x")
+# Per sektor
+st.markdown("## 📂 Hasil per Sektor")
+for sektor in sorted(hasil['Sektor'].unique()):
+    st.markdown(f"### 🔸 {sektor}")
+    df_sektor = hasil[hasil['Sektor'] == sektor]
+    st.dataframe(df_sektor.reset_index(drop=True))
