@@ -180,7 +180,7 @@ st.subheader("📈 Hasil Screening (Klik Ticker)")
 # Konfigurasi kolom Ticker menjadi link dengan JsCode
 js_clickable_link = JsCode("""
 function(params) {
-    return `<a href='?tkr=${params.value}' target='_self'>${params.value}</a>`;
+    return "<tr><td><a href='?tkr={row['Ticker']}' target='_self'>{row['Ticker']}</a></td>";
 }
 """)
 
