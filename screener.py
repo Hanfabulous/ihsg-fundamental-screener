@@ -177,7 +177,10 @@ hasil = df_clean[
 st.subheader("📈 Hasil Screening")
 st.markdown("Klik ticker untuk melihat detail 👇", unsafe_allow_html=True)
 
-# Tabel HTML interaktif
+# ============================ #
+# 📊 Tampilkan Tabel HTML Screening
+# ============================ #
+
 html_table = """
 <style>
     table { width: 100%; border-collapse: collapse; font-size: 14px; }
@@ -187,31 +190,35 @@ html_table = """
     a { color: #1f77b4; text-decoration: none; font-weight: bold; }
 </style>
 <table>
-    <thead>
-        <tr>
-            <th>Ticker</th><th>Name</th><th>Price</th><th>PER</th><th>PBV</th><th>ROE (%)</th>
-            <th>Div Yield (%)</th><th>Sektor</th><th>Expected PER</th>
-        </tr>
-    </thead>
-    <tbody>
+<thead>
+    <tr>
+        <th>Ticker</th>
+        <th>Name</th>
+        <th>Price</th>
+        <th>PER</th>
+        <th>PBV</th>
+        <th>ROE (%)</th>
+        <th>Div Yield (%)</th>
+        <th>Sektor</th>
+        <th>Expected PER</th>
+    </tr>
+</thead>
+<tbody>
 """
 
 for _, row in hasil.iterrows():
-    html_table += f"""
-        <tr>
-            <td><a href='?tkr={row['Ticker']}' target='_self'>{row['Ticker']}</a></td>
-            <td>{row['Name']}</td>
-            <td>{row['Price']:.2f}</td>
-            <td>{row['PER']:.2f}</td>
-            <td>{row['PBV']:.2f}</td>
-            <td>{row['ROE']:.2f}</td>
-            <td>{row['Div Yield']:.2f}</td>
-            <td>{row['Sektor']}</td>
-            <td>{row['Expected PER']:.2f}</td>
-        </tr>
-    """
+    html_table += f"<tr><td><a href='?tkr={row['Ticker']}' target='_self'>{row['Ticker']}</a></td>" \
+                  f"<td>{row['Name']}</td>" \
+                  f"<td>{row['Price']:.2f}</td>" \
+                  f"<td>{row['PER']:.2f}</td>" \
+                  f"<td>{row['PBV']:.2f}</td>" \
+                  f"<td>{row['ROE']:.2f}</td>" \
+                  f"<td>{row['Div Yield']:.2f}</td>" \
+                  f"<td>{row['Sektor']}</td>" \
+                  f"<td>{row['Expected PER']:.2f}</td></tr>"
 
 html_table += "</tbody></table>"
+
 st.markdown(html_table, unsafe_allow_html=True)
 
 # ============================ #
