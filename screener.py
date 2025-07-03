@@ -158,12 +158,12 @@ if not all(kol in df.columns for kol in kolom_wajib):
     st.dataframe(df)
     st.stop()
 
-def buat_link_ticker(ticker):
-    return f"[{ticker}](?tkr={ticker})"
-    
 # ============================ #
 # 🧹 BERSIHKAN & FILTER DATA
 # ============================ #
+def buat_link_ticker(ticker):
+    return f"[{ticker}](?tkr={ticker})"
+
 df_clean = df.dropna(subset=['PER', 'PBV', 'ROE', 'Expected PER']).copy()
 df_clean['ROE'] = df_clean['ROE'] * 100
 df_clean['Div Yield'] = df_clean['Div Yield'] * 100
@@ -176,38 +176,24 @@ hasil = df_clean[
     (df_clean['Expected PER'] <= max_forward_per)
 ]
 
-hasil_tampilan = hasil.copy()
-hasil_tampilan['Ticker'] = hasil_tampilan['Ticker'].apply(buat_link_ticker)
-
 # ============================ #
-# 🔗 LINKABLE TICKER (Markdown)
+# 📈 TAMPILKAN HASIL SCREENING
 # ============================ #
 st.subheader("📈 Hasil Screening")
 st.markdown("Klik ticker untuk detail 👇", unsafe_allow_html=True)
-st.dataframe(hasil_tampilan, use_container_width=True, height=300)
 
+hasil_tampilan = hasil.copy()
+hasil_tampilan['Ticker'] = hasil_tampilan['Ticker'].apply(buat_link_ticker)
+st.dataframe(hasil_tampilan, use_container_width=True, height=350)
+
+# ============================ #
+# 🔍 TAMPILKAN DETAIL TICKER
+# ============================ #
 query_params = st.query_params
 ticker_qs = query_params.get("tkr", None)
 if ticker_qs:
     st.session_state["ticker_diklik"] = ticker_qs
 
-# Tampilkan tabel hasil screening rapi dan bisa discroll
-st.subheader("📈 Hasil Screening")
-st.markdown("Klik ticker untuk detail 👇", unsafe_allow_html=True)
-
-tabel_tampilan = hasil[['Ticker', 'Name', 'ROE']].copy()
-tabel_tampilan['Ticker'] = tabel_tampilan['Ticker'].apply(buat_link_ticker)
-tabel_tampilan['ROE'] = tabel_tampilan['ROE'].map(lambda x: f"{x:.2f} %")
-
-st.dataframe(
-    tabel_tampilan.reset_index(drop=True),
-    use_container_width=True,
-    height=300  # Scroll otomatis jika lebih dari 7 baris
-)
-
-# ============================ #
-# 🔍 TAMPILKAN DETAIL TICKER
-# ============================ #
 def tampilkan_detail_ticker(ticker):
     st.markdown(f"---\n## 📌 Detail Ticker: `{ticker}`")
     try:
@@ -216,9 +202,9 @@ def tampilkan_detail_ticker(ticker):
         st.markdown(f"**Harga Saat Ini:** {info.get('currentPrice', '-')}")
         st.markdown(f"**PER:** {info.get('trailingPE', '-')}")
         st.markdown(f"**PBV:** {info.get('priceToBook', '-')}")
-        st.markdown(f"**ROE:** {round(info.get('returnOnEquity', 0)*100, 2) if info.get('returnOnEquity') else '-'}%")
-        st.markdown(f"**Dividend Yield:** {round(info.get('dividendYield', 0)*100, 2) if info.get('dividendYield') else '-'}%")
-        st.markdown(f"**Forward PER:** {info.get('forwardPE', '-')}")
+        st.markdown(f"**ROE:** {round(info.get('returnOnEquity', 0)*100, 2) if info.get('returnOnEquity') else '-'} %")
+        st.markdown(f"**Dividend Yield:** {round(info.get('dividendYield', 0)*100, 2) if info.get('dividendYield') else '-'} %")
+        st.markdown(f"**Expected PER:** {info.get('forwardPE', '-')}")
         st.markdown(f"**Sektor:** {ticker_to_sector.get(ticker, '-')}")
     except Exception as e:
         st.error(f"❌ Gagal mengambil data detail: {e}")
@@ -234,5 +220,4 @@ for sektor in sorted(hasil['Sektor'].unique()):
     st.markdown(f"### 🔸 {sektor}")
     df_sektor = hasil[hasil['Sektor'] == sektor].copy()
     df_sektor['Ticker'] = df_sektor['Ticker'].apply(buat_link_ticker)
-    
     st.dataframe(df_sektor, use_container_width=True, height=300)
