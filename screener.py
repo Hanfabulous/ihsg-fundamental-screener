@@ -261,14 +261,48 @@ if st.session_state.get("ticker_diklik"):
     tampilkan_detail_ticker(st.session_state["ticker_diklik"])
 
 # ============================ #
-# 📂 Hasil per Sektor
+# 📂 Hasil per Sektor (dengan clickable Ticker)
 # ============================ #
 st.markdown("## 📂 Hasil per Sektor")
+
 for sektor in sorted(hasil['Sektor'].unique()):
     st.markdown(f"### 🔸 {sektor}")
     df_sektor = hasil[hasil['Sektor'] == sektor].copy()
-    st.dataframe(
-        df_sektor[['Ticker', 'Name', 'Price', 'PER', 'PBV', 'ROE', 'Div Yield', 'Expected PER']],
-        use_container_width=True,
-        height=300
-    )
+
+    # Buat tabel HTML dengan ticker bisa diklik
+    html_sektor = """
+    <style>
+        table { width: 100%; border-collapse: collapse; font-size: 14px; margin-bottom: 20px; }
+        th, td { border: 1px solid #ddd; padding: 6px; text-align: center; }
+        thead th { background-color: #f2f2f2; }
+        a { color: #1f77b4; text-decoration: none; font-weight: bold; }
+    </style>
+    <table>
+    <thead>
+        <tr>
+            <th>Ticker</th>
+            <th>Name</th>
+            <th>Price</th>
+            <th>PER</th>
+            <th>PBV</th>
+            <th>ROE (%)</th>
+            <th>Div Yield (%)</th>
+            <th>Expected PER</th>
+        </tr>
+    </thead>
+    <tbody>
+    """
+
+    for _, row in df_sektor.iterrows():
+        html_sektor += f"<tr><td><a href='?tkr={row['Ticker']}' target='_self'>{row['Ticker']}</a></td>" \
+                       f"<td>{row['Name']}</td>" \
+                       f"<td>{row['Price']:.2f}</td>" \
+                       f"<td>{row['PER']:.2f}</td>" \
+                       f"<td>{row['PBV']:.2f}</td>" \
+                       f"<td>{row['ROE']:.2f}</td>" \
+                       f"<td>{row['Div Yield']:.2f}</td>" \
+                       f"<td>{row['Expected PER']:.2f}</td></tr>"
+
+    html_sektor += "</tbody></table>"
+
+    st.markdown(html_sektor, unsafe_allow_html=True)
