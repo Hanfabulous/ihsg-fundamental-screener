@@ -177,30 +177,28 @@ hasil = df_clean[
 # ============================ #
 st.subheader("📈 Hasil Screening (Klik Ticker)")
 
-# Siapkan JsCode untuk kolom 'Ticker' agar bisa diklik
 js_clickable_link = JsCode("""
 function(params) {
     return `<a href='?tkr=${params.value}' target='_self'>${params.value}</a>`;
 }
 """)
 
-# Siapkan konfigurasi grid
-gb = GridOptionsBuilder.from_dataframe(
-    hasil[['Ticker', 'Name', 'Price', 'PER', 'PBV', 'ROE', 'Div Yield', 'Sektor', 'Expected PER']]
-)
+# Gunakan dataframe tanpa mengubah nilai kolom Ticker
+df_grid = hasil[['Ticker', 'Name', 'Price', 'PER', 'PBV', 'ROE', 'Div Yield', 'Sektor', 'Expected PER']].copy()
+
+gb = GridOptionsBuilder.from_dataframe(df_grid)
 gb.configure_default_column(sortable=True, filter=True, resizable=True)
 gb.configure_column("Ticker", cellRenderer=js_clickable_link)
 gb.configure_side_bar()
 
-# Render AgGrid
 AgGrid(
-    hasil,
+    df_grid,
     gridOptions=gb.build(),
     allow_unsafe_jscode=True,
     enable_enterprise_modules=False,
-    height=350,
     fit_columns_on_grid_load=True,
-    update_mode=GridUpdateMode.NO_UPDATE
+    update_mode=GridUpdateMode.NO_UPDATE,
+    height=350
 )
 
 # ============================ #
@@ -220,7 +218,7 @@ def tampilkan_detail_ticker(ticker):
         st.markdown(f"**PER:** {info.get('trailingPE', '-')}")
         st.markdown(f"**PBV:** {info.get('priceToBook', '-')}")
         st.markdown(f"**ROE:** {round(info.get('returnOnEquity', 0)*100, 2) if info.get('returnOnEquity') else '-'} %")
-        st.markdown(f"**Dividend Yield:** {round(info.get('dividendYield', 0), 2) if info.get('dividendYield') else '-'} %")
+        st.markdown(f"**Dividend Yield:** {round(info.get('dividendYield', 0)*100, 2) if info.get('dividendYield') else '-'} %")
         st.markdown(f"**Expected PER:** {info.get('forwardPE', '-')}")
         st.markdown(f"**Sektor:** {ticker_to_sector.get(ticker, '-')}")
     except Exception as e:
@@ -273,4 +271,3 @@ for sektor in sorted(hasil['Sektor'].unique()):
 
     html_sektor += "</tbody></table>"
     st.markdown(html_sektor, unsafe_allow_html=True)
-
