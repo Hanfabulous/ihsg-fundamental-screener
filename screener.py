@@ -4,6 +4,7 @@ import yfinance as yf
 import pandas as pd
 import numpy as np
 from urllib.parse import urlparse, parse_qs
+import streamlit.components.v1 as components
 
 # ============================ #
 # 📌 KONFIGURASI HALAMAN
@@ -219,7 +220,7 @@ for _, row in hasil.iterrows():
 
 html_table += "</tbody></table>"
 
-st.markdown(html_table, unsafe_allow_html=True)
+components.html(html_table, height=800, scrolling=True)
 
 # ============================ #
 # 🔍 Detail Ticker Saat Diklik
