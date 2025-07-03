@@ -176,13 +176,16 @@ hasil = df_clean[
     (df_clean['Expected PER'] <= max_forward_per)
 ]
 
-hasil['Ticker'] = hasil['Ticker'].apply(buat_link_ticker)
+hasil_tampilan = hasil.copy()
+hasil_tampilan['Ticker'] = hasil_tampilan['Ticker'].apply(buat_link_ticker)
 
 # ============================ #
 # 🔗 LINKABLE TICKER (Markdown)
 # ============================ #
 st.subheader("📈 Hasil Screening")
-st.dataframe(hasil.reset_index(drop=True), use_container_width=True)
+st.markdown("Klik ticker untuk detail 👇", unsafe_allow_html=True)
+st.markdown(hasil_tampilan.to_markdown(index=False), unsafe_allow_html=True)
+
 
 query_params = st.query_params
 ticker_qs = query_params.get("tkr", None)
@@ -233,5 +236,7 @@ if st.session_state.get("ticker_diklik"):
 st.markdown("## 📂 Hasil per Sektor")
 for sektor in sorted(hasil['Sektor'].unique()):
     st.markdown(f"### 🔸 {sektor}")
-    df_sektor = hasil[hasil['Sektor'] == sektor]
-    st.dataframe(df_sektor.reset_index(drop=True), use_container_width=True)
+    df_sektor = hasil[hasil['Sektor'] == sektor].copy()
+    df_sektor['Ticker'] = df_sektor['Ticker'].apply(buat_link_ticker)
+    st.markdown(df_sektor.to_markdown(index=False), unsafe_allow_html=True)
+
