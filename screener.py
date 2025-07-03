@@ -5,7 +5,7 @@ import pandas as pd
 import numpy as np
 from urllib.parse import urlparse, parse_qs
 import streamlit.components.v1 as components
-from st_aggrid import AgGrid, GridOptionsBuilder, JsCode
+from st_aggrid import AgGrid, GridOptionsBuilder, JsCode, GridUpdateMode
 
 # ============================ #
 # 📌 KONFIGURASI HALAMAN
@@ -218,21 +218,35 @@ html_table += "</tbody></table>"
 # ============================ #
 st.subheader("📈 Hasil Screening")
 
+# ============================ #
+# 🖱️ Buat kolom Ticker bisa diklik
+# ============================ #
+hasil_clickable = hasil.copy()
+hasil_clickable['Ticker'] = hasil_clickable['Ticker'].apply(
+    lambda x: f"<a href='?tkr={x}' target='_self'>{x}</a>"
+)
+
 # Buat konfigurasi grid tanpa pagination
 gb = GridOptionsBuilder.from_dataframe(
-    hasil[['Ticker', 'Name', 'Price', 'PER', 'PBV', 'ROE', 'Div Yield', 'Sektor', 'Expected PER']]
+    hasil_clickable[['Ticker', 'Name', 'Price', 'PER', 'PBV', 'ROE', 'Div Yield', 'Sektor', 'Expected PER']]
 )
 gb.configure_default_column(sortable=True, filter=True)
+gb.configure_column("Ticker", cellRenderer=JsCode("""
+    function(params) {
+        return params.value;
+    }
+"""))  # biar HTML-nya jalan
 gb.configure_side_bar()
 
-# Render AgGrid dengan tinggi sesuai kira-kira 7 baris (misalnya 350px)
+st.subheader("📈 Hasil Screening (Klik Ticker)")
 AgGrid(
-    hasil,
+    hasil_clickable,
     gridOptions=gb.build(),
-    theme='light',
+    allow_unsafe_jscode=True,
     enable_enterprise_modules=False,
+    height=350,
     fit_columns_on_grid_load=True,
-    height=350  # cukup untuk ~7 baris
+    update_mode=GridUpdateMode.NO_UPDATE
 )
 # ============================ #
 # 🔍 Detail Ticker Saat Diklik
