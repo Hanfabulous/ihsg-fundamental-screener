@@ -232,7 +232,7 @@ def tampilkan_detail_ticker(ticker):
         st.markdown(f"**PER:** {info.get('trailingPE', '-')}")
         st.markdown(f"**PBV:** {info.get('priceToBook', '-')}")
         st.markdown(f"**ROE:** {round(info.get('returnOnEquity', 0)*100, 2) if info.get('returnOnEquity') else '-'} %")
-        st.markdown(f"**Dividend Yield:** {round(info.get('dividendYield', 0)*100, 2) if info.get('dividendYield') else '-'} %")
+        st.markdown(f"**Dividend Yield:** {round(info.get('dividendYield', 0), 2) if info.get('dividendYield') else '-'} %")
         st.markdown(f"**Expected PER:** {info.get('forwardPE', '-')}")
         st.markdown(f"**Sektor:** {ticker_to_sector.get(ticker, '-')}")
     except Exception as e:
