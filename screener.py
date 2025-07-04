@@ -28,6 +28,8 @@ st.markdown(f"🕒 Waktu sekarang: {datetime.now(jakarta_tz).strftime('%H:%M:%S'
 def get_news():
     sumber_rss = {
         "CNBC Indonesia": "https://www.cnbcindonesia.com/rss",
+        "Bisnis.com": "https://www.bisnis.com/rss",
+        "Kontan.co.id": "https://www.kontan.co.id/rss",
         "Yahoo Finance (via Top Stories)": "https://finance.yahoo.com/rss/topstories"
     }
 
@@ -50,9 +52,9 @@ def get_news():
                     elif "enclosures" in entry and entry.enclosures:
                         img_url = entry.enclosures[0].get("href")
 
-                    # Tampilkan berita
+                    # Tampilkan berita dengan gambar kecil
                     if img_url:
-                        st.image(img_url, use_column_width="always")
+                        st.image(img_url, width=120)
                     st.markdown(f"🔹 [{entry.title}]({entry.link})")
                     st.markdown("---")
                     hitung += 1
