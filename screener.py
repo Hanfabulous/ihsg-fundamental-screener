@@ -30,20 +30,27 @@ def get_news():
         "CNBC Indonesia": "https://www.cnbcindonesia.com/rss",
         "Bisnis.com": "https://www.bisnis.com/rss",
         "Kontan.co.id": "https://www.kontan.co.id/rss",
-        "Yahoo Finance (via IHSG)": "https://finance.yahoo.com/rss/topstories"
+        "Yahoo Finance (via Top Stories)": "https://finance.yahoo.com/rss/topstories"
     }
 
-    st.subheader("📰 Berita Terbaru dari Sumber Terpercaya")
+    filter_kata_kunci = ["saham", "market", "ihsg", "bursa", "emiten", "investor", "trading"]
+
+    st.subheader("📰 Berita Pasar Saham Terkini")
 
     for sumber, rss_url in sumber_rss.items():
         st.markdown(f"### 🗞️ {sumber}")
         try:
             feed = feedparser.parse(rss_url)
-            if not feed.entries:
-                st.write("Belum ada berita tersedia.")
-                continue
-            for entry in feed.entries[:5]:
-                st.markdown(f"🔹 [{entry.title}]({entry.link})")
+            hitung = 0
+            for entry in feed.entries[:15]:
+                judul = entry.title.lower()
+                if any(kata in judul for kata in filter_kata_kunci):
+                    st.markdown(f"🔹 [{entry.title}]({entry.link})")
+                    hitung += 1
+                if hitung >= 5:
+                    break
+            if hitung == 0:
+                st.write("Tidak ada berita pasar terkini.")
         except Exception as e:
             st.warning(f"Gagal memuat berita dari {sumber}: {e}")
 
