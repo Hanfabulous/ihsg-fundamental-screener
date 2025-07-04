@@ -70,17 +70,45 @@ def get_news():
 # ========================== #
 # 📈 Fungsi Tampilkan Grafik IHSG
 # ========================== #
-def tes_chart_sederhana():
-    st.subheader("🔧 Tes Plotly Chart IHSG")
-    data = yf.download("^JKSE", period="3mo", interval="1d")
+def tampilkan_chart_ihsg():
+    st.subheader("📈 Grafik IHSG")
+
+    # Ambil data
+    data = yf.download("^JKSE", period="1y", interval="1d")
+
     if data.empty:
-        st.error("Data kosong")
+        st.error("❌ Data IHSG (^JKSE) kosong atau gagal diunduh.")
         return
+
+    st.success("✅ Data IHSG berhasil diambil.")
+
+    # Hitung MA
+    data["MA20"] = data["Close"].rolling(window=20).mean()
+    data["MA50"] = data["Close"].rolling(window=50).mean()
+
+    # Drop NaN agar grafik tidak error
+    data = data.dropna()
+
+    # Debug: Tampilkan 5 baris akhir
+    st.write("📋 Data terbaru:")
+    st.write(data[["Close", "MA20", "MA50"]].tail())
+
+    # Plot
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=data.index, y=data["Close"], mode="lines", name="Close"))
+    fig.add_trace(go.Scatter(x=data.index, y=data["Close"], mode='lines+markers', name='Close', line=dict(color='blue')))
+    fig.add_trace(go.Scatter(x=data.index, y=data["MA20"], mode='lines+markers', name='MA20', line=dict(color='orange')))
+    fig.add_trace(go.Scatter(x=data.index, y=data["MA50"], mode='lines+markers', name='MA50', line=dict(color='green')))
+
+    fig.update_layout(
+        title="📊 Grafik IHSG + MA20 + MA50",
+        xaxis_title="Tanggal",
+        yaxis_title="Harga Penutupan",
+        template="plotly_dark",
+        height=600
+    )
+
     st.plotly_chart(fig, use_container_width=True)
 
-tes_chart_sederhana()
 
 
 # ========================== #
