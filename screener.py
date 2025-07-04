@@ -9,6 +9,7 @@ import pytz
 import yfinance as yf
 import plotly.graph_objects as go
 import pandas as pd
+import feedparser
 
 st.set_page_config(page_title="Investrade Trading Tools", layout="wide")
 st.title("📊 Investrade Trading Tools")
@@ -23,15 +24,31 @@ Tools ini dibuat untuk para trader maupun investor saham Indonesia, di mana anal
 jakarta_tz = pytz.timezone("Asia/Jakarta")
 st.markdown(f"🕒 Waktu sekarang: {datetime.now(jakarta_tz).strftime('%H:%M:%S')} WIB")
 
-# ====== Berita Terbaru ====== #
-st.subheader("📰 Berita Terbaru")
-ihsg = yf.Ticker("^JKSE")
-try:
-    news_items = ihsg.news[:5]
-    for n in news_items:
-        st.markdown(f"🔹 [{n['title']}]({n['link']})")
-except:
-    st.warning("Berita tidak tersedia dari Yahoo Finance.")
+# ====== Fungsi Ambil Berita dari RSS ====== #
+def get_news():
+    sumber_rss = {
+        "CNBC Indonesia": "https://www.cnbcindonesia.com/rss",
+        "Bisnis.com": "https://www.bisnis.com/rss",
+        "Kontan.co.id": "https://www.kontan.co.id/rss",
+        "Yahoo Finance (via IHSG)": "https://finance.yahoo.com/rss/topstories"
+    }
+
+    st.subheader("📰 Berita Terbaru dari Sumber Terpercaya")
+
+    for sumber, rss_url in sumber_rss.items():
+        st.markdown(f"### 🗞️ {sumber}")
+        try:
+            feed = feedparser.parse(rss_url)
+            if not feed.entries:
+                st.write("Belum ada berita tersedia.")
+                continue
+            for entry in feed.entries[:5]:
+                st.markdown(f"🔹 [{entry.title}]({entry.link})")
+        except Exception as e:
+            st.warning(f"Gagal memuat berita dari {sumber}: {e}")
+
+# ====== Tampilkan Berita ====== #
+get_news()
 
 # ====== Chart IHSG ====== #
 st.subheader("📈 Grafik IHSG")
