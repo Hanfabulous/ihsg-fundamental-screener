@@ -27,8 +27,8 @@ st.markdown(f"🕒 Waktu sekarang: {datetime.now(jakarta_tz).strftime('%H:%M:%S'
 # ====== Fungsi Ambil Berita dari RSS ====== #
 def get_news():
     sumber_rss = {
-        "CNBC Indonesia": "https://www.cnbcindonesia.com/rss",
-        "Yahoo Finance (via Top Stories)": "https://finance.yahoo.com/rss/topstories"
+        "https://www.cnbcindonesia.com/rss",
+        "https://finance.yahoo.com/rss/topstories"
     }
 
     filter_kata_kunci = ["saham", "market", "ihsg", "bursa", "emiten", "investor", "trading"]
@@ -52,7 +52,7 @@ def get_news():
 
                     # Tampilkan berita dengan gambar kecil
                     if img_url:
-                        st.image(img_url, width=120)
+                        st.image(img_url, width=150)
                     st.markdown(f"🔹 [{entry.title}]({entry.link})")
                     st.markdown("---")
                     hitung += 1
