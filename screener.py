@@ -18,10 +18,26 @@ Tools ini dibuat untuk para trader maupun investor saham Indonesia, di mana anal
 
 # Jam sekarang
 jakarta_tz = pytz.timezone("Asia/Jakarta")
-st.sidebar.markdown(f"🕒 Waktu sekarang: {datetime.now(jakarta_tz).strftime('%H:%M:%S')} WIB")
+st.markdown(f"🕒 Waktu sekarang: {datetime.now(jakarta_tz).strftime('%H:%M:%S')} WIB")
+
+# ====== Konten Utama Halaman ====== #
+
+st.subheader("📰 Berita Terbaru")
+st.markdown("_🔄 Akan menampilkan feed berita saham dan ekonomi terbaru dari sumber terpercaya._")
+
+st.subheader("📈 Grafik IHSG (Realtime atau Snapshot)")
+st.markdown("_🔄 Akan menampilkan grafik IHSG dari Yahoo Finance / API lainnya._")
+
+st.subheader("🚀 Top 10 Gainer Hari Ini")
+st.markdown("_🔄 Daftar saham dengan kenaikan tertinggi berdasarkan data terbaru._")
+
+st.subheader("📉 Top 10 Loser Hari Ini")
+st.markdown("_🔄 Daftar saham dengan penurunan tertinggi berdasarkan data terbaru._")
 
 # Menu navigasi
-menu = st.sidebar.radio("📁 Menu", ["Trading Page", "Teknikal", "Fundamental"])
+with st.sidebar:
+    st.header("📁 Menu")
+    menu = st.radio("Pilih Halaman", ["Home", "Trading Page", "Teknikal", "Fundamental"])
 
 if menu == "Trading Page":
     st.header("📈 Trading Page")
