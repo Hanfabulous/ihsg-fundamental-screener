@@ -38,7 +38,6 @@ def get_news():
         "CNBC Indonesia": "https://www.cnbcindonesia.com/rss",
         "Yahoo Finance": "https://finance.yahoo.com/rss/topstories"
     }
-
     filter_kata = ["saham", "market", "ihsg", "bursa", "emiten", "investor", "trading"]
 
     col1, col2 = st.columns(2)
@@ -50,29 +49,28 @@ def get_news():
                 hitung = 0
                 for entry in feed.entries[:10]:
                     judul = entry.title.lower()
-                    if any(kata in judul for kata in filter_kata):
+                    if any(k in judul for k in filter_kata):
                         img_url = None
                         if "media_content" in entry:
                             img_url = entry.media_content[0].get("url")
                         elif "enclosures" in entry:
                             img_url = entry.enclosures[0].get("href")
 
-                        # Ambil paragraf pertama dari summary
-                        deskripsi = entry.get("summary", "")
-                        paragraf_pertama = deskripsi.split('</p>')[0].replace("<p>", "").strip()
+                        # Ambil paragraf pertama (summary)
+                        isi = entry.get("summary", "")
+                        paragraf_pertama = isi.split("</p>")[0] if "</p>" in isi else isi.split(".")[0] + "."
 
-                        with st.container():
-                            col_kiri, col_kanan = st.columns([1, 2])
-                            with col_kiri:
-                                if img_url:
-                                    st.image(img_url, width=150)
-                            with col_kanan:
-                                st.markdown(f"🔹 [{entry.title}]({entry.link})", unsafe_allow_html=True)
-                                if paragraf_pertama:
-                                    st.markdown(f"<p style='font-size:14px; color:gray;'>{paragraf_pertama}</p>", unsafe_allow_html=True)
-                        st.markdown("---")
+                        # Tampilkan berita
+                        with kolom.container():
+                            col_img, col_teks = kolom.columns([1, 2])
+                            if img_url:
+                                col_img.image(img_url, width=150)
+                            with col_teks:
+                                col_teks.markdown(f"🔹 **[{entry.title}]({entry.link})**", unsafe_allow_html=True)
+                                col_teks.markdown(f"<p style='font-size:14px'>{paragraf_pertama}</p>", unsafe_allow_html=True)
+
+                        kolom.markdown("---")
                         hitung += 1
-
                     if hitung >= 5:
                         break
                 if hitung == 0:
