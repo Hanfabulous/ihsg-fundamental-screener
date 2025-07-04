@@ -25,7 +25,7 @@ jakarta_tz = pytz.timezone("Asia/Jakarta")
 st.markdown(f"🕒 Waktu sekarang: {datetime.now(jakarta_tz).strftime('%H:%M:%S')} WIB")
 
 # ====== Fungsi Ambil Berita dari RSS ====== #
-def tampilkan_berita_kolom():
+def get_news():
     sumber_rss = {
         "CNBC Indonesia": "https://www.cnbcindonesia.com/rss",
         "Yahoo Finance": "https://finance.yahoo.com/rss/topstories"
