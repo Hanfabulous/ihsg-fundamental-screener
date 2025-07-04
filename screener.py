@@ -44,7 +44,7 @@ def get_news():
             try:
                 feed = feedparser.parse(url)
                 hitung = 0
-                for entry in feed.entries[:15]:
+                for entry in feed.entries[:10]:
                     judul = entry.title.lower()
                     if any(kata in judul for kata in filter_kata_kunci):
                         # Ambil gambar jika ada
