@@ -76,24 +76,28 @@ def tampilkan_chart_ihsg():
 
     if data.empty:
         st.error("❌ Data IHSG (^JKSE) kosong atau gagal diunduh.")
-        st.write("Periksa koneksi internet atau coba buka https://finance.yahoo.com/quote/%5EJKSE")
-    else:
-        st.success("✅ Data IHSG berhasil diambil.")
-        st.dataframe(data.tail())  # Debug: tampilkan data terakhir
+        return
 
-        fig = go.Figure()
-        fig.add_trace(go.Scatter(x=data.index, y=data["Close"], mode='lines', name='Close', line=dict(color='blue')))
-        fig.add_trace(go.Scatter(x=data.index, y=data["Close"].rolling(20).mean(), mode='lines', name='MA20', line=dict(color='orange')))
-        fig.add_trace(go.Scatter(x=data.index, y=data["Close"].rolling(50).mean(), mode='lines', name='MA50', line=dict(color='green')))
-        fig.update_layout(
-            title="📊 IHSG (Jakarta Composite Index) + MA20 + MA50",
-            xaxis_title="Tanggal",
-            yaxis_title="Harga Penutupan",
-            template="plotly_white",
-            height=500
-        )
-        st.plotly_chart(fig, use_container_width=True)
+    st.success("✅ Data IHSG berhasil diambil.")
+    st.dataframe(data.tail())  # Debug: tampilkan data terakhir
 
+    # Hapus NaN dari rolling agar tidak ganggu grafik
+    data["MA20"] = data["Close"].rolling(20).mean()
+    data["MA50"] = data["Close"].rolling(50).mean()
+    data = data.dropna(subset=["MA20", "MA50"])  # ⛑️ penting agar grafik muncul
+
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=data.index, y=data["Close"], mode='lines', name='Close', line=dict(color='blue')))
+    fig.add_trace(go.Scatter(x=data.index, y=data["MA20"], mode='lines', name='MA20', line=dict(color='orange')))
+    fig.add_trace(go.Scatter(x=data.index, y=data["MA50"], mode='lines', name='MA50', line=dict(color='green')))
+    fig.update_layout(
+        title="📊 IHSG (Jakarta Composite Index) + MA20 + MA50",
+        xaxis_title="Tanggal",
+        yaxis_title="Harga Penutupan",
+        template="plotly_white",
+        height=500
+    )
+    st.plotly_chart(fig, use_container_width=True)
 # ========================== #
 # 🚀 Fungsi Gainers & Losers
 # ========================== #
