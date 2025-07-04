@@ -93,14 +93,23 @@ def tampilkan_chart_ihsg():
         return
 
     # Hitung Moving Average
-    data["MA20"] = data["Close"].rolling(window=20).mean()
-    data["MA50"] = data["Close"].rolling(window=50).mean()
+    if "Close" in data.columns:
+        data["MA20"] = data["Close"].rolling(window=20).mean()
+        data["MA50"] = data["Close"].rolling(window=50).mean()
+
+    # Validasi keberadaan kolom sebelum dropna
+    required_cols = ["Close", "MA20", "MA50"]
+    missing_cols = [col for col in required_cols if col not in data.columns]
+
+    if missing_cols:
+        st.error(f"❌ Kolom hilang: {', '.join(missing_cols)}. Tidak bisa melanjutkan chart.")
+        return
 
     # Reset index agar kolom Date bisa digunakan
     data = data.reset_index()
 
-    # Hapus baris yang masih NaN
-    data = data.dropna(subset=["Close", "MA20", "MA50"])
+    # Hapus baris yang masih NaN (karena MA20/50 butuh waktu)
+    data = data.dropna(subset=required_cols)
 
     # Tampilkan data akhir
     st.write("📋 Data IHSG Terakhir:")
