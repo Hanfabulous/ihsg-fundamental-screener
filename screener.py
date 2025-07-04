@@ -62,7 +62,7 @@ def get_news():
                         with kolom.container():
                             col_img, col_teks = kolom.columns([1, 2])
                             if img_url:
-                                col_img.image(img_url, width=200)
+                                col_img.image(img_url, width=100)
                             with col_teks:
                                 col_teks.markdown(f"🔹 **[{entry.title}]({entry.link})**", unsafe_allow_html=True)
                                 col_teks.markdown(f"<p style='font-size:14px'>{paragraf_pertama}</p>", unsafe_allow_html=True)
