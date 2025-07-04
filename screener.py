@@ -87,41 +87,10 @@ def tampilkan_chart_ihsg():
     # Ambil data IHSG
     data = yf.download("^JKSE", period="1y", interval="1d")
 
-    # Validasi data
-    if data.empty or "Close" not in data.columns:
-        st.error("❌ Data IHSG kosong atau gagal diunduh.")
-        return
-
-    # Hitung Moving Average
-    data["MA20"] = data["Close"].rolling(window=20).mean()
-    data["MA50"] = data["Close"].rolling(window=50).mean()
-
-    # Reset index agar kolom Date bisa digunakan
-    data = data.reset_index()
-
-    # Hapus baris yang masih NaN
-    data = data.dropna(subset=["Close", "MA20", "MA50"])
-
-    # Tampilkan data akhir
-    st.write("📋 Data IHSG Terakhir:")
-    st.dataframe(data[["Date", "Close", "MA20", "MA50"]].tail())
-
-    # Plotly chart
-    fig = go.Figure()
-    fig.add_trace(go.Scatter(x=data["Date"], y=data["Close"], name="Close", line=dict(color="blue")))
-    fig.add_trace(go.Scatter(x=data["Date"], y=data["MA20"], name="MA20", line=dict(color="orange")))
-    fig.add_trace(go.Scatter(x=data["Date"], y=data["MA50"], name="MA50", line=dict(color="green")))
-
-    fig.update_layout(
-        title="📊 Grafik IHSG (Close, MA20, MA50)",
-        xaxis_title="Tanggal",
-        yaxis_title="Harga",
-        template="plotly_dark",
-        height=600,
-        xaxis_rangeslider_visible=True
-    )
-
-    st.plotly_chart(fig, use_container_width=True)
+df.columns = ["Close", "High", "Low", "Open", "Volume"]
+df = df.reset_index()
+fig = go.figure(data=[go.Candlestick(x=df['Date'], open=df['Open'], high=df['High'], Low=df['Low'], close=df['Close'])])
+fig.show()
 
 # ========================== #
 # 🚀 Fungsi Gainers & Losers
