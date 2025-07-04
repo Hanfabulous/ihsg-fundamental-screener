@@ -90,54 +90,65 @@ def tampilkan_chart_ihsg():
             st.error("❌ Data IHSG kosong atau gagal diunduh.")
             return
 
-        # Deteksi jika kolom multiindex
+        # Deteksi MultiIndex
         if isinstance(data.columns, pd.MultiIndex):
             data.columns = [f"{col[0]}_{col[1]}" for col in data.columns]
 
-        # Rename jika kolom seperti 'Close_^JKSE'
-        rename_map = {}
-        for col in data.columns:
-            if "_^JKSE" in col:
-                rename_map[col] = col.replace("_^JKSE", "")
+        # Bersihkan suffix seperti _^JKSE
+        rename_map = {col: col.replace("_^JKSE", "") for col in data.columns if "_^JKSE" in col}
         data = data.rename(columns=rename_map)
 
-        # Validasi kolom candlestick
-        required_cols = ["Open", "High", "Low", "Close"]
+        # Validasi kolom OHLCV
+        required_cols = ["Open", "High", "Low", "Close", "Volume"]
         if not all(col in data.columns for col in required_cols):
             st.error("❌ Data candlestick tidak lengkap.")
             st.write("Kolom yang tersedia:", data.columns.tolist())
             return
 
-        # Hitung MA
+        # Tambahkan MA20 dan MA50 untuk chart
         data["MA20"] = data["Close"].rolling(window=20).mean()
         data["MA50"] = data["Close"].rolling(window=50).mean()
 
         # Reset index
         data = data.reset_index()
 
-        # Drop NaN hanya jika MA sudah tersedia
-        data = data.dropna(subset=["MA20", "MA50"])
+        # Hitung Volume Rata-rata 1 bulan (20 hari)
+        data["VolumeAvg20"] = data["Volume"].rolling(window=20).mean()
 
-        # Tampilkan preview data
+        # Drop NaN agar chart valid
+        data_chart = data.dropna(subset=["MA20", "MA50"])
+
+        # ====== ✅ TABEL: Hanya 1 baris terakhir dengan volume avg & volume last
+        latest = data.iloc[-1]
+        tabel_data = pd.DataFrame([{
+            "Date": latest["Date"],
+            "Open": latest["Open"],
+            "High": latest["High"],
+            "Low": latest["Low"],
+            "Close": latest["Close"],
+            "Volume Avg (20 Hari)": latest["VolumeAvg20"],
+            "Volume Hari Ini": latest["Volume"]
+        }])
+
         st.write("📋 Data IHSG Terakhir:")
-        st.dataframe(data[["Date", "Open", "High", "Low", "Close", "MA20", "MA50"]].tail())
+        st.dataframe(tabel_data)
 
-        # Plot chart
+        # ====== 📈 GRAFIK: Tetap pakai candlestick + MA20 + MA50
         fig = go.Figure()
 
         fig.add_trace(go.Candlestick(
-            x=data["Date"],
-            open=data["Open"],
-            high=data["High"],
-            low=data["Low"],
-            close=data["Close"],
+            x=data_chart["Date"],
+            open=data_chart["Open"],
+            high=data_chart["High"],
+            low=data_chart["Low"],
+            close=data_chart["Close"],
             name="Candlestick",
             increasing_line_color="green",
             decreasing_line_color="red"
         ))
 
-        fig.add_trace(go.Scatter(x=data["Date"], y=data["MA20"], name="MA20", line=dict(color='orange')))
-        fig.add_trace(go.Scatter(x=data["Date"], y=data["MA50"], name="MA50", line=dict(color='blue')))
+        fig.add_trace(go.Scatter(x=data_chart["Date"], y=data_chart["MA20"], name="MA20", line=dict(color='orange')))
+        fig.add_trace(go.Scatter(x=data_chart["Date"], y=data_chart["MA50"], name="MA50", line=dict(color='blue')))
 
         fig.update_layout(
             title="📊 Grafik IHSG (Candlestick + MA)",
