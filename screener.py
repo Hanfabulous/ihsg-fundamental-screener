@@ -7,7 +7,6 @@ from datetime import datetime
 import pytz
 import yfinance as yf
 import plotly.graph_objects as go
-import pandas as pd
 import feedparser
 
 # ========================== #
@@ -56,7 +55,6 @@ def get_news():
                             img_url = entry.media_content[0].get("url")
                         elif "enclosures" in entry and entry.enclosures:
                             img_url = entry.enclosures[0].get("href")
-
                         if img_url:
                             kolom.image(img_url, width=200)
                         kolom.markdown(f"🔹 [{entry.title}]({entry.link})", unsafe_allow_html=True)
@@ -74,32 +72,30 @@ def get_news():
 # ========================== #
 def tampilkan_chart_ihsg():
     st.subheader("📈 Grafik IHSG")
-# Ambil data IHSG
-data = yf.download("^JKSE", period="1y", interval="1d")
+    data = yf.download("^JKSE", period="1y", interval="1d")
 
-# Cek apakah data tersedia
-if data.empty:
-    st.error("❌ Data IHSG (^JKSE) kosong atau gagal diunduh.")
-    st.write("Periksa koneksi internet atau coba buka https://finance.yahoo.com/quote/%5EJKSE")
-else:
-    st.success("✅ Data IHSG berhasil diambil.")
-    st.write(data.tail())  # Debug: tampilkan data terakhir
+    if data.empty:
+        st.error("❌ Data IHSG (^JKSE) kosong atau gagal diunduh.")
+        st.write("Periksa koneksi internet atau coba buka https://finance.yahoo.com/quote/%5EJKSE")
+    else:
+        st.success("✅ Data IHSG berhasil diambil.")
+        st.dataframe(data.tail())  # Debug: tampilkan data terakhir
 
-    # Buat grafik menggunakan Plotly
-    fig = go.Figure()
-    fig.add_trace(go.Scatter(x=data.index, y=data["Close"], mode='lines', name='Close', line=dict(color='blue')))
-    fig.add_trace(go.Scatter(x=data.index, y=data["Close"].rolling(20).mean(), mode='lines', name='MA20', line=dict(color='orange')))
-    fig.add_trace(go.Scatter(x=data.index, y=data["Close"].rolling(50).mean(), mode='lines', name='MA50', line=dict(color='green')))
-    fig.update_layout(
-        title="📊 IHSG (Jakarta Composite Index) + MA20 + MA50",
-        xaxis_title="Tanggal",
-        yaxis_title="Harga Penutupan",
-        template="plotly_white"
-    )
-    st.plotly_chart(fig, use_container_width=True)
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=data.index, y=data["Close"], mode='lines', name='Close', line=dict(color='blue')))
+        fig.add_trace(go.Scatter(x=data.index, y=data["Close"].rolling(20).mean(), mode='lines', name='MA20', line=dict(color='orange')))
+        fig.add_trace(go.Scatter(x=data.index, y=data["Close"].rolling(50).mean(), mode='lines', name='MA50', line=dict(color='green')))
+        fig.update_layout(
+            title="📊 IHSG (Jakarta Composite Index) + MA20 + MA50",
+            xaxis_title="Tanggal",
+            yaxis_title="Harga Penutupan",
+            template="plotly_white",
+            height=500
+        )
+        st.plotly_chart(fig, use_container_width=True)
 
 # ========================== #
-# 🚀 Top 10 Gainers & Losers
+# 🚀 Fungsi Gainers & Losers
 # ========================== #
 def tampilkan_top_gainers_losers():
     st.subheader("🚀 Top 10 Gainer Hari Ini & 📉 Top 10 Loser Hari Ini")
@@ -128,32 +124,23 @@ with st.sidebar:
     menu = st.radio("Pilih Halaman", ["Home", "Trading Page", "Teknikal", "Fundamental"])
 
 # ========================== #
-# 🏠 Halaman: Home
+# 🌐 Routing Halaman
 # ========================== #
 if menu == "Home":
     get_news()
     tampilkan_chart_ihsg()
     tampilkan_top_gainers_losers()
 
-# ========================== #
-# 📈 Halaman: Trading Page
-# ========================== #
 elif menu == "Trading Page":
     st.header("📈 Trading Page")
     st.info("Menampilkan Fear & Greed Index, Komoditas, Index Dunia, IHSG, EIDO, Signal Buy, Rekap Ticker Aktif/Tidak Aktif, dan cara menggunakan signal ini.")
     st.markdown("_🔄 Konten halaman ini akan diisi di file Trading_Page.py_")
 
-# ========================== #
-# 📉 Halaman: Teknikal
-# ========================== #
 elif menu == "Teknikal":
     st.header("📉 Analisa Teknikal Saham")
     st.info("Silakan masukkan kode saham (misalnya `BBRI.JK`) untuk melihat chart dan memilih indikator seperti RSI, MACD, Ichimoku, dll.")
     st.markdown("_🔄 Konten halaman ini akan diisi di file Teknikal.py_")
 
-# ========================== #
-# 📊 Halaman: Fundamental
-# ========================== #
 elif menu == "Fundamental":
     st.header("📊 Screener Fundamental Saham")
     st.info("Menampilkan filter fundamental seperti PER, PBV, ROE, Dividend Yield, dll.")
