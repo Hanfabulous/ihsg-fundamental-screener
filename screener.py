@@ -6,7 +6,6 @@ import streamlit as st
 from datetime import datetime
 import pytz
 import yfinance as yf
-import plotly.graph_objects as go
 import feedparser
 import matplotlib.pyplot as plt
 
