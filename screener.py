@@ -57,7 +57,7 @@ def get_news():
                             img_url = entry.enclosures[0].get("href")
 
                         if img_url:
-                            kolom.image(img_url, width=200)
+                            kolom.image(img_url, width=400)
                         kolom.markdown(f"🔹 [{entry.title}]({entry.link})", unsafe_allow_html=True)
                         kolom.markdown("---")
                         hitung += 1
