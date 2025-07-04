@@ -3,32 +3,6 @@
 # ===================================== #
 
 import streamlit as st
-
-# ⬇️ Tambahkan di sini
-st.markdown("""
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono&display=swap');
-
-        html, body, [class*="css"]  {
-            font-family: 'IBM Plex Mono', monospace;
-        }
-
-        h1, h2, h3, h4, h5, h6 {
-            font-family: 'IBM Plex Mono', monospace;
-            font-weight: 700;
-        }
-
-        .stMarkdown p {
-            font-size: 16px;
-        }
-
-        .stDataFrame div {
-            font-family: 'IBM Plex Mono', monospace;
-            font-size: 15px;
-        }
-    </style>
-""", unsafe_allow_html=True)
-
 from datetime import datetime
 import pytz
 import yfinance as yf
