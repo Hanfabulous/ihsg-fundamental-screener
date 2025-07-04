@@ -50,24 +50,25 @@ def get_news():
                 for entry in feed.entries[:10]:
                     judul = entry.title.lower()
                     if any(k in judul for k in filter_kata):
+                        # Ambil gambar
                         img_url = None
                         if "media_content" in entry:
                             img_url = entry.media_content[0].get("url")
                         elif "enclosures" in entry:
                             img_url = entry.enclosures[0].get("href")
 
-                        # Ambil paragraf pertama (summary)
-                        isi = entry.get("summary", "")
-                        paragraf_pertama = isi.split("</p>")[0] if "</p>" in isi else isi.split(".")[0] + "."
+                        # Ambil ringkasan jika tersedia
+                        ringkasan = entry.get("summary", "").strip()
+                        if ringkasan == "":
+                            ringkasan = "Tidak tersedia ringkasan berita."
 
-                        # Tampilkan berita
+                        # Tampilkan layout gambar + ringkasan
                         with kolom.container():
-                            col_img, col_teks = kolom.columns([1, 2])
+                            col_img, col_txt = kolom.columns([1, 2])
                             if img_url:
-                                col_img.image(img_url, width=300)
-                            with col_teks:
-                                col_teks.markdown(f"🔹 **[{entry.title}]({entry.link})**", unsafe_allow_html=True)
-                                col_teks.markdown(f"<p style='font-size:14px'>{paragraf_pertama}</p>", unsafe_allow_html=True)
+                                col_img.image(img_url, width=150)
+                            col_txt.markdown(f"🔹 **[{entry.title}]({entry.link})**", unsafe_allow_html=True)
+                            col_txt.markdown(f"<div style='font-size:14px'>{ringkasan}</div>", unsafe_allow_html=True)
 
                         kolom.markdown("---")
                         hitung += 1
