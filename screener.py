@@ -28,7 +28,7 @@ st.markdown(f"🕒 Waktu sekarang: {datetime.now(jakarta_tz).strftime('%H:%M:%S'
 def get_news():
     sumber_rss = {
         "CNBC Indonesia": "https://www.cnbcindonesia.com/rss",
-        "Yahoo Finance": "https://finance.yahoo.com/rss/topstories"
+        "Yahoo Finance (via Top Stories)": "https://finance.yahoo.com/rss/topstories"
     }
 
     filter_kata_kunci = ["saham", "market", "ihsg", "bursa", "emiten", "investor", "trading"]
