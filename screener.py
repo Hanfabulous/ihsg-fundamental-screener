@@ -72,13 +72,16 @@ get_news()
 # ====== Chart IHSG ====== #
 st.subheader("📈 Grafik IHSG")
 try:
-    data = yf.download("^JKSE", period="6mo", interval="1d")
-    fig = go.Figure()
-    fig.add_trace(go.Scatter(x=data.index, y=data['Close'], mode='lines', name='IHSG'))
-    fig.update_layout(title="Chart IHSG", xaxis_title="Tanggal", yaxis_title="Harga")
-    st.plotly_chart(fig, use_container_width=True)
-except:
-    st.warning("Gagal mengambil data IHSG.")
+    data = yf.download("^JKSE", period="1y", interval="1d")
+    if data.empty:
+        st.error("❌ Data IHSG kosong. Mungkin Yahoo Finance sedang bermasalah.")
+    else:
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=data.index, y=data['Close'], mode='lines', name='IHSG'))
+        fig.update_layout(title="Chart IHSG", xaxis_title="Tanggal", yaxis_title="Harga")
+        st.plotly_chart(fig, use_container_width=True)
+except Exception as e:
+    st.warning(f"Gagal mengambil data IHSG: {e}")
 
 # ====== Top 10 Gainer & Loser ====== #
 st.subheader("🚀 Top 10 Gainer Hari Ini & 📉 Top 10 Loser Hari Ini")
