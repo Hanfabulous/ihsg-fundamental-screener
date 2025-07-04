@@ -6,4 +6,4 @@ tabulate
 streamlit-aggrid
 feedparser
 pytz
-matplotlib
+plotly
