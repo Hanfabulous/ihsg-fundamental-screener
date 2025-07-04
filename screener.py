@@ -90,29 +90,35 @@ def tampilkan_chart_ihsg():
             st.error("❌ Data IHSG kosong atau gagal diunduh.")
             return
 
-        # Deteksi dan perbaiki kolom seperti 'Close_^JKSE' → 'Close'
+        # Deteksi jika kolom multiindex
+        if isinstance(data.columns, pd.MultiIndex):
+            data.columns = [f"{col[0]}_{col[1]}" for col in data.columns]
+
+        # Rename jika kolom seperti 'Close_^JKSE'
         rename_map = {}
         for col in data.columns:
             if "_^JKSE" in col:
                 rename_map[col] = col.replace("_^JKSE", "")
         data = data.rename(columns=rename_map)
 
+        # Validasi kolom candlestick
         required_cols = ["Open", "High", "Low", "Close"]
-        for col in required_cols:
-            if col not in data.columns:
-                st.error(f"❌ Data candlestick tidak lengkap. Kolom {col} tidak ditemukan.")
-                st.write("Kolom yang tersedia:", data.columns.tolist())
-                return
+        if not all(col in data.columns for col in required_cols):
+            st.error("❌ Data candlestick tidak lengkap.")
+            st.write("Kolom yang tersedia:", data.columns.tolist())
+            return
 
         # Hitung MA
         data["MA20"] = data["Close"].rolling(window=20).mean()
         data["MA50"] = data["Close"].rolling(window=50).mean()
+
+        # Reset index
         data = data.reset_index()
 
-        # Hapus baris yang masih mengandung NaN pada MA
+        # Drop NaN hanya jika MA sudah tersedia
         data = data.dropna(subset=["MA20", "MA50"])
 
-        # Preview tabel
+        # Tampilkan preview data
         st.write("📋 Data IHSG Terakhir:")
         st.dataframe(data[["Date", "Open", "High", "Low", "Close", "MA20", "MA50"]].tail())
 
@@ -130,24 +136,16 @@ def tampilkan_chart_ihsg():
             decreasing_line_color="red"
         ))
 
-        fig.add_trace(go.Scatter(
-            x=data["Date"], y=data["MA20"],
-            line=dict(color='orange', width=1.5),
-            name="MA20"
-        ))
-        fig.add_trace(go.Scatter(
-            x=data["Date"], y=data["MA50"],
-            line=dict(color='blue', width=1.5),
-            name="MA50"
-        ))
+        fig.add_trace(go.Scatter(x=data["Date"], y=data["MA20"], name="MA20", line=dict(color='orange')))
+        fig.add_trace(go.Scatter(x=data["Date"], y=data["MA50"], name="MA50", line=dict(color='blue')))
 
         fig.update_layout(
             title="📊 Grafik IHSG (Candlestick + MA)",
             xaxis_title="Tanggal",
             yaxis_title="Harga",
             template="plotly_dark",
-            xaxis_rangeslider_visible=False,
-            height=600
+            height=600,
+            xaxis_rangeslider_visible=False
         )
 
         st.plotly_chart(fig, use_container_width=True)
