@@ -6,6 +6,9 @@
 import streamlit as st
 from datetime import datetime
 import pytz
+import yfinance as yf
+import plotly.graph_objects as go
+import pandas as pd
 
 st.set_page_config(page_title="Investrade Trading Tools", layout="wide")
 st.title("📊 Investrade Trading Tools")
@@ -20,21 +23,48 @@ Tools ini dibuat untuk para trader maupun investor saham Indonesia, di mana anal
 jakarta_tz = pytz.timezone("Asia/Jakarta")
 st.markdown(f"🕒 Waktu sekarang: {datetime.now(jakarta_tz).strftime('%H:%M:%S')} WIB")
 
-# ====== Konten Utama Halaman ====== #
-
+# ====== Berita Terbaru ====== #
 st.subheader("📰 Berita Terbaru")
-st.markdown("_🔄 Akan menampilkan feed berita saham dan ekonomi terbaru dari sumber terpercaya._")
+ihsg = yf.Ticker("^JKSE")
+try:
+    news_items = ihsg.news[:5]
+    for n in news_items:
+        st.markdown(f"🔹 [{n['title']}]({n['link']})")
+except:
+    st.warning("Berita tidak tersedia dari Yahoo Finance.")
 
-st.subheader("📈 Grafik IHSG (Realtime atau Snapshot)")
-st.markdown("_🔄 Akan menampilkan grafik IHSG dari Yahoo Finance / API lainnya._")
+# ====== Chart IHSG ====== #
+st.subheader("📈 Grafik IHSG")
+try:
+    data = yf.download("^JKSE", period="6mo", interval="1d")
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=data.index, y=data['Close'], mode='lines', name='IHSG'))
+    fig.update_layout(title="Chart IHSG", xaxis_title="Tanggal", yaxis_title="Harga")
+    st.plotly_chart(fig, use_container_width=True)
+except:
+    st.warning("Gagal mengambil data IHSG.")
 
-st.subheader("🚀 Top 10 Gainer Hari Ini")
-st.markdown("_🔄 Daftar saham dengan kenaikan tertinggi berdasarkan data terbaru._")
+# ====== Top 10 Gainer & Loser ====== #
+st.subheader("🚀 Top 10 Gainer Hari Ini & 📉 Top 10 Loser Hari Ini")
 
-st.subheader("📉 Top 10 Loser Hari Ini")
-st.markdown("_🔄 Daftar saham dengan penurunan tertinggi berdasarkan data terbaru._")
+tickers = ["BBRI.JK", "BBCA.JK", "PGAS.JK", "TLKM.JK", "ANTM.JK", "UNVR.JK", "ASII.JK", "BMRI.JK", "MDKA.JK", "ADRO.JK"]
+try:
+    harga = yf.download(tickers, period="2d", interval="1d")["Close"]
+    returns = harga.pct_change().iloc[-1].dropna().sort_values(ascending=False)
 
-# Menu navigasi
+    col1, col2 = st.columns(2)
+    with col1:
+        st.markdown("### 🚀 Gainers")
+        for idx, val in returns.head(10).items():
+            st.markdown(f"**{idx}**: {val*100:.2f}%")
+    with col2:
+        st.markdown("### 📉 Losers")
+        for idx, val in returns.tail(10).items():
+            st.markdown(f"**{idx}**: {val*100:.2f}%")
+except:
+    st.warning("Gagal menghitung Top Gainer dan Loser.")
+
+# ====== Navigasi Menu ====== #
 with st.sidebar:
     st.header("📁 Menu")
     menu = st.radio("Pilih Halaman", ["Home", "Trading Page", "Teknikal", "Fundamental"])
