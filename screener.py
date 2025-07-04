@@ -82,61 +82,57 @@ def get_news():
 def tampilkan_chart_ihsg():
     st.subheader("📈 Grafik IHSG")
 
-    # Ambil data
     data = yf.download("^JKSE", period="1y", interval="1d")
 
+    # Pastikan data tidak kosong
     if data.empty or "Close" not in data.columns:
         st.error("❌ Data IHSG kosong atau gagal diunduh.")
         return
 
-    # Hitung Moving Average
-    try:
-        data["MA20"] = data["Close"].rolling(window=20).mean()
-        data["MA50"] = data["Close"].rolling(window=50).mean()
-    except Exception as e:
-        st.warning(f"Gagal menghitung MA: {e}")
-        return
+    # Hitung MA
+    data["MA20"] = data["Close"].rolling(window=20).mean()
+    data["MA50"] = data["Close"].rolling(window=50).mean()
 
-    # Reset index (pastikan Date tetap ada)
-    if "Date" not in data.columns:
-        data = data.reset_index()
+    data = data.reset_index()
 
-    # Filter kolom yang valid dan tidak seluruhnya NaN
+    # Cek kolom mana yang valid dan tidak semuanya NaN
     available_cols = []
     for col in ["Close", "MA20", "MA50"]:
         if col in data.columns:
-            try:
-                if data[col].notna().sum() > 0:
-                    available_cols.append(col)
-            except Exception as e:
-                st.warning(f"Kolom {col} error saat validasi: {e}")
-
+            valid = data[col].notna().any()
+            if valid:
+                available_cols.append(col)
+            else:
+                st.warning(f"Kolom {col} hanya berisi NaN.")
+        else:
+            st.warning(f"Kolom {col} tidak ditemukan.")
 
     if not available_cols:
-        st.warning("Tidak ada kolom valid untuk ditampilkan.")
+        st.warning("❌ Tidak ada kolom valid untuk ditampilkan.")
         st.dataframe(data.head())
         return
 
-    # Drop NaN secara aman
+    # Bersihkan baris NaN dari kolom valid
     try:
         data = data.dropna(subset=available_cols)
     except Exception as e:
-        st.warning(f"Gagal membersihkan data NaN: {e}")
+        st.warning(f"Gagal membersihkan data NaN: {available_cols} ➜ {e}")
         st.dataframe(data.head())
         return
 
-    # Preview
+    if data.empty:
+        st.warning("📉 Tidak ada data IHSG yang cukup setelah pembersihan NaN.")
+        return
+
+    # Tampilkan tabel
     st.write("📋 Data IHSG Terakhir:")
     st.dataframe(data[["Date"] + available_cols].tail())
 
-    # Buat grafik
+    # Plot
     fig = go.Figure()
-    if "Close" in available_cols:
-        fig.add_trace(go.Scatter(x=data["Date"], y=data["Close"], name="Close", line=dict(color="blue")))
-    if "MA20" in available_cols:
-        fig.add_trace(go.Scatter(x=data["Date"], y=data["MA20"], name="MA20", line=dict(color="orange")))
-    if "MA50" in available_cols:
-        fig.add_trace(go.Scatter(x=data["Date"], y=data["MA50"], name="MA50", line=dict(color="green")))
+    warna = {"Close": "blue", "MA20": "orange", "MA50": "green"}
+    for col in available_cols:
+        fig.add_trace(go.Scatter(x=data["Date"], y=data[col], name=col, line=dict(color=warna.get(col, "gray"))))
 
     fig.update_layout(
         title="📊 Grafik IHSG (Close, MA20, MA50)",
