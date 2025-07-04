@@ -84,7 +84,7 @@ def tampilkan_chart_ihsg():
     st.subheader("📈 Grafik IHSG (Candlestick + MA20 + MA50)")
 
     try:
-        data = yf.download("^JKSE", period="1y", interval="1d")
+        data = yf.download("^JKSE", period="2y", interval="1d")
 
         if data.empty:
             st.error("❌ Data IHSG kosong atau gagal diunduh.")
