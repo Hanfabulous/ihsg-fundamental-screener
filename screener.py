@@ -15,7 +15,7 @@ import plotly.graph_objects as go
 st.set_page_config(page_title="Investrade Trading Tools", layout="wide")
 
 # ========================== #
-# 🏷️ Header & Waktu
+# 🕒 Header Waktu
 # ========================== #
 col_kiri, col_kanan = st.columns([3, 1])
 with col_kiri:
@@ -55,12 +55,8 @@ def get_news():
                             img_url = entry.media_content[0].get("url")
                         elif "enclosures" in entry:
                             img_url = entry.enclosures[0].get("href")
-
-                        # Ambil paragraf pertama (summary)
                         isi = entry.get("summary", "")
                         paragraf_pertama = isi.split("</p>")[0] if "</p>" in isi else isi.split(".")[0] + "."
-
-                        # Tampilkan berita
                         with kolom.container():
                             col_img, col_teks = kolom.columns([1, 2])
                             if img_url:
@@ -68,7 +64,6 @@ def get_news():
                             with col_teks:
                                 col_teks.markdown(f"🔹 **[{entry.title}]({entry.link})**", unsafe_allow_html=True)
                                 col_teks.markdown(f"<p style='font-size:14px'>{paragraf_pertama}</p>", unsafe_allow_html=True)
-
                         kolom.markdown("---")
                         hitung += 1
                     if hitung >= 5:
@@ -84,28 +79,18 @@ def get_news():
 def tampilkan_chart_ihsg():
     st.subheader("📈 Grafik IHSG")
 
-    # Ambil data
     data = yf.download("^JKSE", period="1y", interval="1d")
-
     if data.empty or "Close" not in data.columns:
         st.error("❌ Data IHSG kosong atau gagal diunduh.")
         return
 
-    # ⛑️ Hitung MA sebelum reset_index
     data["MA20"] = data["Close"].rolling(window=20).mean()
     data["MA50"] = data["Close"].rolling(window=50).mean()
+    data_clean = data.dropna(subset=["Close", "MA20", "MA50"]).reset_index()
 
-    # 🔐 Drop baris NaN di sini (pastikan kolom MA sudah ada!)
-    data_clean = data.dropna(subset=["Close", "MA20", "MA50"])
-
-    # 🔄 Reset index (buat Date jadi kolom eksplisit)
-    data_clean = data_clean.reset_index()
-
-    # ✅ Debug tampilkan data
     st.write("📋 Data IHSG Terakhir:")
     st.dataframe(data_clean[["Date", "Close", "MA20", "MA50"]].tail())
 
-    # 📊 Plot
     fig = go.Figure()
     fig.add_trace(go.Scatter(x=data_clean["Date"], y=data_clean["Close"], name="Close", line=dict(color="blue")))
     fig.add_trace(go.Scatter(x=data_clean["Date"], y=data_clean["MA20"], name="MA20", line=dict(color="orange")))
@@ -121,6 +106,7 @@ def tampilkan_chart_ihsg():
     )
 
     st.plotly_chart(fig, use_container_width=True)
+
 # ========================== #
 # 🚀 Fungsi Gainers & Losers
 # ========================== #
@@ -130,7 +116,6 @@ def tampilkan_top_gainers_losers():
     try:
         harga = yf.download(tickers, period="2d", interval="1d")["Close"]
         returns = harga.pct_change().iloc[-1].dropna().sort_values(ascending=False)
-
         col1, col2 = st.columns(2)
         with col1:
             st.markdown("### 🚀 Gainers")
@@ -154,9 +139,13 @@ with st.sidebar:
 # 🌐 Routing Halaman
 # ========================== #
 if menu == "Home":
-    get_news()
-    tampilkan_chart_ihsg()
-    tampilkan_top_gainers_losers()
+    st.markdown("## 🏠 Dashboard Utama")
+    col_kiri, col_kanan = st.columns([2, 3])
+    with col_kiri:
+        tampilkan_chart_ihsg()
+        tampilkan_top_gainers_losers()
+    with col_kanan:
+        get_news()
 
 elif menu == "Trading Page":
     st.header("📈 Trading Page")
@@ -172,6 +161,3 @@ elif menu == "Fundamental":
     st.header("📊 Screener Fundamental Saham")
     st.info("Filter berdasarkan PER, PBV, ROE, Dividend Yield, dan lainnya.")
     st.markdown("_🛠️ Akan diisi dari file `Fundamental.py`_")
-    st.header("📊 Screener Fundamental Saham")
-    st.info("Menampilkan filter fundamental seperti PER, PBV, ROE, Dividend Yield, dll.")
-    st.markdown("_🔄 Konten halaman ini akan diisi di file Fundamental.py_")
