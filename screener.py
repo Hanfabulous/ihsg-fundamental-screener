@@ -81,36 +81,32 @@ def tampilkan_chart_ihsg():
         return
 
     st.success("✅ Data IHSG berhasil diambil.")
-    st.dataframe(data.tail())
 
-    # Cek apakah 'Close' kolom tersedia
-    if "Close" not in data.columns:
-        st.error("❌ Data tidak mengandung kolom 'Close'")
-        return
-
-    # Buat MA20 dan MA50
+    # Hitung MA
     data["MA20"] = data["Close"].rolling(window=20).mean()
     data["MA50"] = data["Close"].rolling(window=50).mean()
 
-    # Hapus baris yang masih mengandung NaN agar tidak ganggu grafik
-    data_filtered = data.dropna()
+    # Drop NaN agar grafik tidak error
+    data = data.dropna()
 
-    # Cek hasil rolling dan NaN
-    st.write(data_filtered[["Close", "MA20", "MA50"]].tail())
+    # Debug: Tampilkan 5 baris akhir
+    st.write("📋 Data terbaru:")
+    st.write(data[["Close", "MA20", "MA50"]].tail())
 
-    # Plot grafik
+    # Plot
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=data_filtered.index, y=data_filtered["Close"], mode='lines', name='Close', line=dict(color='blue')))
-    fig.add_trace(go.Scatter(x=data_filtered.index, y=data_filtered["MA20"], mode='lines', name='MA20', line=dict(color='orange')))
-    fig.add_trace(go.Scatter(x=data_filtered.index, y=data_filtered["MA50"], mode='lines', name='MA50', line=dict(color='green')))
+    fig.add_trace(go.Scatter(x=data.index, y=data["Close"], mode='lines+markers', name='Close', line=dict(color='blue')))
+    fig.add_trace(go.Scatter(x=data.index, y=data["MA20"], mode='lines+markers', name='MA20', line=dict(color='orange')))
+    fig.add_trace(go.Scatter(x=data.index, y=data["MA50"], mode='lines+markers', name='MA50', line=dict(color='green')))
 
     fig.update_layout(
-        title="📊 IHSG (Jakarta Composite Index) + MA20 + MA50",
+        title="📊 Grafik IHSG + MA20 + MA50",
         xaxis_title="Tanggal",
         yaxis_title="Harga Penutupan",
-        template="plotly_white",
-        height=500
+        template="plotly_dark",
+        height=600
     )
+
     st.plotly_chart(fig, use_container_width=True)
 
 # ========================== #
