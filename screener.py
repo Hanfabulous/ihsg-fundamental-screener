@@ -72,13 +72,15 @@ get_news()
 # ====== Chart IHSG ====== #
 st.subheader("📈 Grafik IHSG")
 try:
-    data = yf.download("^JKSE", period="1y", interval="1d")
+    data = yf.download("JKSE.JK", period="1y", interval="1d")
     if data.empty:
-        st.error("❌ Data IHSG kosong. Mungkin Yahoo Finance sedang bermasalah.")
+        st.error("❌ Data IHSG (JKSE.JK) kosong. Mungkin Yahoo Finance sedang bermasalah.")
     else:
         fig = go.Figure()
-        fig.add_trace(go.Scatter(x=data.index, y=data['Close'], mode='lines', name='IHSG'))
-        fig.update_layout(title="Chart IHSG", xaxis_title="Tanggal", yaxis_title="Harga")
+        fig.add_trace(go.Scatter(x=data.index, y=data['Close'], mode='lines', name='Close'))
+        fig.add_trace(go.Scatter(x=data.index, y=data['Close'].rolling(window=20).mean(), mode='lines', name='MA20'))
+        fig.add_trace(go.Scatter(x=data.index, y=data['Close'].rolling(window=50).mean(), mode='lines', name='MA50'))
+        fig.update_layout(title="Chart IHSG + MA20 + MA50", xaxis_title="Tanggal", yaxis_title="Harga")
         st.plotly_chart(fig, use_container_width=True)
 except Exception as e:
     st.warning(f"Gagal mengambil data IHSG: {e}")
