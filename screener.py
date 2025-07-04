@@ -84,58 +84,43 @@ def tampilkan_chart_ihsg():
     st.subheader("📈 Grafik IHSG")
 
     try:
-        # Ambil data dari Yahoo Finance
         data = yf.download("^JKSE", period="1y", interval="1d")
 
-        if data.empty or "Close" not in data.columns:
+        if data.empty:
             st.error("❌ Data IHSG kosong atau gagal diunduh.")
             return
 
-        # Pastikan hanya kolom Close yang digunakan untuk hitung MA
-        close_series = data["Close"]
-        if not isinstance(close_series, pd.Series):
-            st.error("Kolom Close bukan Series.")
-            st.dataframe(data.head())
+        # Flatten kolom jika multiindex
+        if isinstance(data.columns, pd.MultiIndex):
+            data.columns = ['_'.join([str(i) for i in col if i]) for col in data.columns]
+
+        # Cari kolom close yang cocok
+        close_col = [col for col in data.columns if "close" in col.lower()]
+        if not close_col:
+            st.error("❌ Kolom Close tidak ditemukan setelah flatten.")
+            st.write("Kolom yang tersedia:", data.columns.tolist())
             return
+
+        close_col = close_col[0]  # Ambil yang pertama
 
         # Hitung MA
-        data["MA20"] = close_series.rolling(window=20).mean()
-        data["MA50"] = close_series.rolling(window=50).mean()
+        data["MA20"] = data[close_col].rolling(window=20).mean()
+        data["MA50"] = data[close_col].rolling(window=50).mean()
 
-        # Reset index agar kolom Date muncul
         data = data.reset_index()
 
-        # Pastikan kolom yang tersedia tidak kosong dan Series
-        available_cols = []
-        for col in ["Close", "MA20", "MA50"]:
-            if col in data.columns and isinstance(data[col], pd.Series) and data[col].notna().any():
-                available_cols.append(col)
+        # Drop NaN
+        data = data.dropna(subset=[close_col, "MA20", "MA50"])
 
-        if not available_cols:
-            st.warning("Tidak ada kolom valid untuk ditampilkan.")
-            st.dataframe(data.head())
-            return
-
-        # Drop NaN dari kolom-kolom valid
-        try:
-            data = data.dropna(subset=available_cols)
-        except Exception as e:
-            st.warning(f"Gagal membersihkan data NaN: {available_cols} ➜ {e}")
-            st.dataframe(data.head())
-            return
-
-        # Tampilkan preview data
+        # Tampilkan preview
         st.write("📋 Data IHSG Terakhir:")
-        st.dataframe(data[["Date"] + available_cols].tail())
+        st.dataframe(data[["Date", close_col, "MA20", "MA50"]].tail())
 
-        # Plot grafik
+        # Plot
         fig = go.Figure()
-        if "Close" in available_cols:
-            fig.add_trace(go.Scatter(x=data["Date"], y=data["Close"], name="Close", line=dict(color="blue")))
-        if "MA20" in available_cols:
-            fig.add_trace(go.Scatter(x=data["Date"], y=data["MA20"], name="MA20", line=dict(color="orange")))
-        if "MA50" in available_cols:
-            fig.add_trace(go.Scatter(x=data["Date"], y=data["MA50"], name="MA50", line=dict(color="green")))
+        fig.add_trace(go.Scatter(x=data["Date"], y=data[close_col], name="Close", line=dict(color="blue")))
+        fig.add_trace(go.Scatter(x=data["Date"], y=data["MA20"], name="MA20", line=dict(color="orange")))
+        fig.add_trace(go.Scatter(x=data["Date"], y=data["MA50"], name="MA50", line=dict(color="green")))
 
         fig.update_layout(
             title="📊 Grafik IHSG (Close, MA20, MA50)",
@@ -149,7 +134,8 @@ def tampilkan_chart_ihsg():
         st.plotly_chart(fig, use_container_width=True)
 
     except Exception as e:
-        st.error(f"❌ Gagal memuat grafik IHSG: {e}")
+        st.error(f"❌ Gagal menampilkan grafik IHSG: {e}")
+
 
 # ========================== #
 # 🚀 Fungsi Gainers & Losers
