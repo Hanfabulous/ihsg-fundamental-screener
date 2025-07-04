@@ -105,9 +105,12 @@ def tampilkan_chart_ihsg():
     available_cols = []
     for col in ["Close", "MA20", "MA50"]:
         if col in data.columns:
-            col_data = data[col]
-            if hasattr(col_data, 'notna') and col_data.notna().sum() > 0:
-                available_cols.append(col)
+            try:
+                if data[col].notna().sum() > 0:
+                    available_cols.append(col)
+            except Exception as e:
+                st.warning(f"Kolom {col} error saat validasi: {e}")
+
 
     if not available_cols:
         st.warning("Tidak ada kolom valid untuk ditampilkan.")
