@@ -81,7 +81,7 @@ def get_news():
 # 📈 Fungsi Grafik IHSG
 # ========================== #
 def tampilkan_chart_ihsg():
-    st.subheader("📈 Grafik IHSG")
+    st.subheader("📈 Grafik IHSG (Candlestick + MA20 + MA50)")
 
     try:
         data = yf.download("^JKSE", period="1y", interval="1d")
@@ -94,48 +94,66 @@ def tampilkan_chart_ihsg():
         if isinstance(data.columns, pd.MultiIndex):
             data.columns = ['_'.join([str(i) for i in col if i]) for col in data.columns]
 
-        # Cari kolom close yang cocok
-        close_col = [col for col in data.columns if "close" in col.lower()]
-        if not close_col:
-            st.error("❌ Kolom Close tidak ditemukan setelah flatten.")
+        # Pastikan semua kolom candlestick tersedia
+        required_cols = ["Open", "High", "Low", "Close"]
+        actual_cols = [col for col in data.columns if col.lower() in [x.lower() for x in required_cols]]
+        if len(actual_cols) < 4:
+            st.error("❌ Data candlestick tidak lengkap.")
             st.write("Kolom yang tersedia:", data.columns.tolist())
             return
 
-        close_col = close_col[0]  # Ambil yang pertama
-
-        # Hitung MA
-        data["MA20"] = data[close_col].rolling(window=20).mean()
-        data["MA50"] = data[close_col].rolling(window=50).mean()
+        # Hitung Moving Average
+        data["MA20"] = data["Close"].rolling(window=20).mean()
+        data["MA50"] = data["Close"].rolling(window=50).mean()
 
         data = data.reset_index()
 
-        # Drop NaN
-        data = data.dropna(subset=[close_col, "MA20", "MA50"])
+        # Hapus NaN pada MA
+        data = data.dropna(subset=["MA20", "MA50"])
 
-        # Tampilkan preview
+        # Preview data
         st.write("📋 Data IHSG Terakhir:")
-        st.dataframe(data[["Date", close_col, "MA20", "MA50"]].tail())
+        st.dataframe(data[["Date", "Open", "High", "Low", "Close", "MA20", "MA50"]].tail())
 
-        # Plot
+        # Candlestick Chart
         fig = go.Figure()
-        fig.add_trace(go.Scatter(x=data["Date"], y=data[close_col], name="Close", line=dict(color="blue")))
-        fig.add_trace(go.Scatter(x=data["Date"], y=data["MA20"], name="MA20", line=dict(color="orange")))
-        fig.add_trace(go.Scatter(x=data["Date"], y=data["MA50"], name="MA50", line=dict(color="green")))
+
+        fig.add_trace(go.Candlestick(
+            x=data["Date"],
+            open=data["Open"],
+            high=data["High"],
+            low=data["Low"],
+            close=data["Close"],
+            name="Candlestick",
+            increasing_line_color="green",
+            decreasing_line_color="red"
+        ))
+
+        # Tambahkan MA20 dan MA50
+        fig.add_trace(go.Scatter(
+            x=data["Date"], y=data["MA20"],
+            line=dict(color='orange', width=1.5),
+            name="MA20"
+        ))
+        fig.add_trace(go.Scatter(
+            x=data["Date"], y=data["MA50"],
+            line=dict(color='blue', width=1.5),
+            name="MA50"
+        ))
 
         fig.update_layout(
-            title="📊 Grafik IHSG (Close, MA20, MA50)",
+            title="📊 Grafik IHSG (Candlestick + MA)",
             xaxis_title="Tanggal",
             yaxis_title="Harga",
             template="plotly_dark",
-            height=600,
-            xaxis_rangeslider_visible=True
+            xaxis_rangeslider_visible=False,
+            height=600
         )
 
         st.plotly_chart(fig, use_container_width=True)
 
     except Exception as e:
         st.error(f"❌ Gagal menampilkan grafik IHSG: {e}")
-
 
 # ========================== #
 # 🚀 Fungsi Gainers & Losers
