@@ -84,26 +84,43 @@ def get_news():
 def tampilkan_chart_ihsg():
     st.subheader("📈 Grafik IHSG")
 
+    # Ambil data IHSG
     data = yf.download("^JKSE", period="1y", interval="1d")
 
-    if data.empty:
+    # Validasi data
+    if data.empty or "Close" not in data.columns:
         st.error("❌ Data IHSG kosong atau gagal diunduh.")
         return
 
-    data["MA20"] = data["Close"].rolling(20).mean()
-    data["MA50"] = data["Close"].rolling(50).mean()
-    data = data.dropna()
+    # Hitung Moving Average
+    data["MA20"] = data["Close"].rolling(window=20).mean()
+    data["MA50"] = data["Close"].rolling(window=50).mean()
 
+    # Reset index agar kolom Date bisa digunakan
+    data = data.reset_index()
+
+    # Hapus baris yang masih NaN
+    data = data.dropna(subset=["Close", "MA20", "MA50"])
+
+    # Tampilkan data akhir
     st.write("📋 Data IHSG Terakhir:")
-    st.dataframe(data[["Close", "MA20", "MA50"]].tail())
+    st.dataframe(data[["Date", "Close", "MA20", "MA50"]].tail())
 
+    # Plotly chart
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=data.index, y=data["Close"], name="Close", line=dict(color="blue")))
-    fig.add_trace(go.Scatter(x=data.index, y=data["MA20"], name="MA20", line=dict(color="orange")))
-    fig.add_trace(go.Scatter(x=data.index, y=data["MA50"], name="MA50", line=dict(color="green")))
-    fig.update_layout(title="📊 Grafik IHSG (Close, MA20, MA50)",
-                      xaxis_title="Tanggal", yaxis_title="Harga",
-                      template="plotly_dark", height=600)
+    fig.add_trace(go.Scatter(x=data["Date"], y=data["Close"], name="Close", line=dict(color="blue")))
+    fig.add_trace(go.Scatter(x=data["Date"], y=data["MA20"], name="MA20", line=dict(color="orange")))
+    fig.add_trace(go.Scatter(x=data["Date"], y=data["MA50"], name="MA50", line=dict(color="green")))
+
+    fig.update_layout(
+        title="📊 Grafik IHSG (Close, MA20, MA50)",
+        xaxis_title="Tanggal",
+        yaxis_title="Harga",
+        template="plotly_dark",
+        height=600,
+        xaxis_rangeslider_visible=True
+    )
+
     st.plotly_chart(fig, use_container_width=True)
 
 # ========================== #
