@@ -8,7 +8,6 @@ import pytz
 import yfinance as yf
 import feedparser
 import plotly.graph_objects as go
-import urllib.parse
 
 # ========================== #
 # 🔧 Konfigurasi Awal
@@ -32,95 +31,87 @@ with col_kanan:
     st.markdown(f"<p style='text-align:right; font-weight:bold; font-size:24px;'>🕒 Waktu sekarang: {jam_sekarang} WIB</p>", unsafe_allow_html=True)
 
 # ========================== #
-# 📰 Fungsi Tampilkan Berita Saham
+# 🗞️ Fungsi Ambil Berita
 # ========================== #
-def tampilkan_berita(col_target):
-    st.markdown("## 🗞️ Berita Pasar Terkini")
+def get_news():
+    sumber_rss = {
+        "CNBC Indonesia": "https://www.cnbcindonesia.com/rss",
+        "Yahoo Finance": "https://finance.yahoo.com/rss/topstories"
+    }
+    filter_kata = ["saham", "market", "ihsg", "bursa", "emiten", "investor", "trading"]
 
-    def ambil_dari_rss(nama, url):
-        try:
-            feed = feedparser.parse(url)
-            hasil = []
+    col1, col2 = st.columns(2)
+    for (nama, url), kolom in zip(sumber_rss.items(), [col1, col2]):
+        with kolom:
+            kolom.markdown(f"### 🗞️ {nama}")
+            try:
+                feed = feedparser.parse(url)
+                hitung = 0
+                for entry in feed.entries[:10]:
+                    judul = entry.title.lower()
+                    if any(k in judul for k in filter_kata):
+                        img_url = None
+                        if "media_content" in entry:
+                            img_url = entry.media_content[0].get("url")
+                        elif "enclosures" in entry:
+                            img_url = entry.enclosures[0].get("href")
 
-            for entry in feed.entries[:10]:
-                judul = entry.title.lower()
-                if any(k in judul for k in ["saham", "market", "ihsg", "bursa", "emiten", "investor", "trading"]):
-                    img_url = None
-                    if "media_content" in entry:
-                        img_url = entry.media_content[0].get("url")
-                    elif "enclosures" in entry:
-                        img_url = entry.enclosures[0].get("href")
-                    isi = entry.get("summary", "")
-                    paragraf_pertama = isi.split("</p>")[0] if "</p>" in isi else isi.split(".")[0] + "."
-                    hasil.append({
-                        "title": entry.title,
-                        "link": entry.link,
-                        "summary": paragraf_pertama,
-                        "img": img_url
-                    })
-                    if len(hasil) >= 3:
+                        # Ambil paragraf pertama (summary)
+                        isi = entry.get("summary", "")
+                        paragraf_pertama = isi.split("</p>")[0] if "</p>" in isi else isi.split(".")[0] + "."
+
+                        # Tampilkan berita
+                        with kolom.container():
+                            col_img, col_teks = kolom.columns([1, 2])
+                            if img_url:
+                                col_img.image(img_url, width=300)
+                            with col_teks:
+                                col_teks.markdown(f"🔹 **[{entry.title}]({entry.link})**", unsafe_allow_html=True)
+                                col_teks.markdown(f"<p style='font-size:14px'>{paragraf_pertama}</p>", unsafe_allow_html=True)
+
+                        kolom.markdown("---")
+                        hitung += 1
+                    if hitung >= 5:
                         break
-            return hasil
-        except:
-            return []
-
-    def ambil_dari_google_news(topik="saham indonesia"):
-        hasil = []
-        try:
-            q = urllib.parse.quote(topik)
-            rss_url = f"https://news.google.com/rss/search?q={q}&hl=id&gl=ID&ceid=ID:id"
-            feed = feedparser.parse(rss_url)
-            for entry in feed.entries[:5]:
-                summary = entry.summary.split(".")[0] + "."
-                hasil.append({
-                    "title": entry.title,
-                    "link": entry.link,
-                    "summary": summary,
-                    "img": "https://upload.wikimedia.org/wikipedia/commons/0/0b/Google_News_icon.png"
-                })
-            return hasil
-        except:
-            return []
-
-    semua_berita = []
-    semua_berita += ambil_dari_rss("CNBC", "https://www.cnbcindonesia.com/rss")
-    semua_berita += ambil_dari_rss("Yahoo", "https://finance.yahoo.com/rss/topstories")
-    if not semua_berita:
-        semua_berita = ambil_dari_google_news()
-
-    if semua_berita:
-        for berita in semua_berita:
-            with col_target.container():
-                col_img, col_teks = col_target.columns([1, 3])
-                if berita["img"]:
-                    col_img.image(berita["img"], width=100)
-                with col_teks:
-                    col_teks.markdown(f"🔹 **[{berita['title']}]({berita['link']})**", unsafe_allow_html=True)
-                    col_teks.markdown(f"<p style='font-size:14px'>{berita['summary']}</p>", unsafe_allow_html=True)
-            col_target.markdown("---")
-    else:
-        col_target.info("Tidak ada berita yang bisa ditampilkan.")
+                if hitung == 0:
+                    kolom.info("Tidak ada berita relevan.")
+            except Exception as e:
+                kolom.warning(f"Gagal ambil berita dari {nama}: {e}")
 
 # ========================== #
 # 📈 Fungsi Grafik IHSG
 # ========================== #
 def tampilkan_chart_ihsg():
     st.subheader("📈 Grafik IHSG")
+
+    # Ambil data IHSG
     data = yf.download("^JKSE", period="1y", interval="1d")
+
+    # Validasi data
     if data.empty or "Close" not in data.columns:
         st.error("❌ Data IHSG kosong atau gagal diunduh.")
         return
+
+    # Hitung Moving Average
     data["MA20"] = data["Close"].rolling(window=20).mean()
     data["MA50"] = data["Close"].rolling(window=50).mean()
-    data_clean = data.dropna(subset=["Close", "MA20", "MA50"]).reset_index()
 
+    # Reset index agar kolom Date bisa digunakan
+    data = data.reset_index()
+
+    # Hapus baris yang masih NaN
+    data = data.dropna(subset=["Close", "MA20", "MA50"])
+
+    # Tampilkan data akhir
     st.write("📋 Data IHSG Terakhir:")
-    st.dataframe(data_clean[["Date", "Close", "MA20", "MA50"]].tail())
+    st.dataframe(data[["Date", "Close", "MA20", "MA50"]].tail())
 
+    # Plotly chart
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=data_clean["Date"], y=data_clean["Close"], name="Close", line=dict(color="blue")))
-    fig.add_trace(go.Scatter(x=data_clean["Date"], y=data_clean["MA20"], name="MA20", line=dict(color="orange")))
-    fig.add_trace(go.Scatter(x=data_clean["Date"], y=data_clean["MA50"], name="MA50", line=dict(color="green")))
+    fig.add_trace(go.Scatter(x=data["Date"], y=data["Close"], name="Close", line=dict(color="blue")))
+    fig.add_trace(go.Scatter(x=data["Date"], y=data["MA20"], name="MA20", line=dict(color="orange")))
+    fig.add_trace(go.Scatter(x=data["Date"], y=data["MA50"], name="MA50", line=dict(color="green")))
+
     fig.update_layout(
         title="📊 Grafik IHSG (Close, MA20, MA50)",
         xaxis_title="Tanggal",
@@ -129,6 +120,7 @@ def tampilkan_chart_ihsg():
         height=600,
         xaxis_rangeslider_visible=True
     )
+
     st.plotly_chart(fig, use_container_width=True)
 
 # ========================== #
@@ -140,6 +132,7 @@ def tampilkan_top_gainers_losers():
     try:
         harga = yf.download(tickers, period="2d", interval="1d")["Close"]
         returns = harga.pct_change().iloc[-1].dropna().sort_values(ascending=False)
+
         col1, col2 = st.columns(2)
         with col1:
             st.markdown("### 🚀 Gainers")
@@ -163,14 +156,9 @@ with st.sidebar:
 # 🌐 Routing Halaman
 # ========================== #
 if menu == "Home":
-    col_kiri, col_kanan = st.columns([2, 3])
-
-    with col_kiri:
-        tampilkan_chart_ihsg()
-        tampilkan_top_gainers_losers()
-
-    with col_kanan:
-        tampilkan_berita(col_kanan)
+    get_news()
+    tampilkan_chart_ihsg()
+    tampilkan_top_gainers_losers()
 
 elif menu == "Trading Page":
     st.header("📈 Trading Page")
@@ -186,3 +174,6 @@ elif menu == "Fundamental":
     st.header("📊 Screener Fundamental Saham")
     st.info("Filter berdasarkan PER, PBV, ROE, Dividend Yield, dan lainnya.")
     st.markdown("_🛠️ Akan diisi dari file `Fundamental.py`_")
+    st.header("📊 Screener Fundamental Saham")
+    st.info("Menampilkan filter fundamental seperti PER, PBV, ROE, Dividend Yield, dll.")
+    st.markdown("_🔄 Konten halaman ini akan diisi di file Fundamental.py_")
