@@ -87,39 +87,46 @@ def tampilkan_chart_ihsg():
     # Ambil data IHSG
     data = yf.download("^JKSE", period="1y", interval="1d")
 
-    # Validasi data
+    # Validasi awal
     if data.empty or "Close" not in data.columns:
         st.error("❌ Data IHSG kosong atau gagal diunduh.")
         return
 
-    # Hitung Moving Average
+    # Hitung MA jika kolom Close tersedia
     if "Close" in data.columns:
         data["MA20"] = data["Close"].rolling(window=20).mean()
         data["MA50"] = data["Close"].rolling(window=50).mean()
 
-    # Validasi keberadaan kolom sebelum dropna
-    required_cols = ["Close", "MA20", "MA50"]
-    missing_cols = [col for col in required_cols if col not in data.columns]
-
-    if missing_cols:
-        st.error(f"❌ Kolom hilang: {', '.join(missing_cols)}. Tidak bisa melanjutkan chart.")
-        return
-
-    # Reset index agar kolom Date bisa digunakan
+    # Reset index
     data = data.reset_index()
 
-    # Hapus baris yang masih NaN (karena MA20/50 butuh waktu)
-    data = data.dropna(subset=required_cols)
+    # Hanya pakai kolom yang ada
+    available_cols = [col for col in ["Close", "MA20", "MA50"] if col in data.columns]
 
-    # Tampilkan data akhir
+    if not available_cols:
+        st.warning("Tidak ada kolom harga atau MA yang tersedia untuk ditampilkan.")
+        st.dataframe(data.tail())
+        return
+
+    # Hapus NaN hanya dari kolom yang tersedia
+    data = data.dropna(subset=available_cols)
+
+    # Tampilkan preview data
     st.write("📋 Data IHSG Terakhir:")
-    st.dataframe(data[["Date", "Close", "MA20", "MA50"]].tail())
+    st.dataframe(data[["Date"] + available_cols].tail())
 
-    # Plotly chart
+    # Plot grafik
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=data["Date"], y=data["Close"], name="Close", line=dict(color="blue")))
-    fig.add_trace(go.Scatter(x=data["Date"], y=data["MA20"], name="MA20", line=dict(color="orange")))
-    fig.add_trace(go.Scatter(x=data["Date"], y=data["MA50"], name="MA50", line=dict(color="green")))
+
+    # Tambahkan grafik Close jika ada
+    if "Close" in available_cols:
+        fig.add_trace(go.Scatter(x=data["Date"], y=data["Close"], name="Close", line=dict(color="blue")))
+
+    if "MA20" in available_cols:
+        fig.add_trace(go.Scatter(x=data["Date"], y=data["MA20"], name="MA20", line=dict(color="orange")))
+
+    if "MA50" in available_cols:
+        fig.add_trace(go.Scatter(x=data["Date"], y=data["MA50"], name="MA50", line=dict(color="green")))
 
     fig.update_layout(
         title="📊 Grafik IHSG (Close, MA20, MA50)",
@@ -131,7 +138,6 @@ def tampilkan_chart_ihsg():
     )
 
     st.plotly_chart(fig, use_container_width=True)
-
 # ========================== #
 # 🚀 Fungsi Gainers & Losers
 # ========================== #
