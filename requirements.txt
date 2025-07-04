@@ -6,4 +6,4 @@ tabulate
 streamlit-aggrid
 feedparser
 pytz
-plotly
+plotly==5.21.0
