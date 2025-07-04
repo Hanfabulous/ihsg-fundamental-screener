@@ -144,7 +144,7 @@ if menu == "Home":
         tampilkan_chart_ihsg()
         tampilkan_top_gainers_losers()
     with col_kanan:
-        get_news()
+        get_news(col_kanan)
 
 elif menu == "Trading Page":
     st.header("📈 Trading Page")
