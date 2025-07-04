@@ -90,32 +90,33 @@ def tampilkan_chart_ihsg():
             st.error("❌ Data IHSG kosong atau gagal diunduh.")
             return
 
-        # Flatten kolom jika multiindex
-        if isinstance(data.columns, pd.MultiIndex):
-            data.columns = ['_'.join([str(i) for i in col if i]) for col in data.columns]
+        # Deteksi dan perbaiki kolom seperti 'Close_^JKSE' → 'Close'
+        rename_map = {}
+        for col in data.columns:
+            if "_^JKSE" in col:
+                rename_map[col] = col.replace("_^JKSE", "")
+        data = data.rename(columns=rename_map)
 
-        # Pastikan semua kolom candlestick tersedia
         required_cols = ["Open", "High", "Low", "Close"]
-        actual_cols = [col for col in data.columns if col.lower() in [x.lower() for x in required_cols]]
-        if len(actual_cols) < 4:
-            st.error("❌ Data candlestick tidak lengkap.")
-            st.write("Kolom yang tersedia:", data.columns.tolist())
-            return
+        for col in required_cols:
+            if col not in data.columns:
+                st.error(f"❌ Data candlestick tidak lengkap. Kolom {col} tidak ditemukan.")
+                st.write("Kolom yang tersedia:", data.columns.tolist())
+                return
 
-        # Hitung Moving Average
+        # Hitung MA
         data["MA20"] = data["Close"].rolling(window=20).mean()
         data["MA50"] = data["Close"].rolling(window=50).mean()
-
         data = data.reset_index()
 
-        # Hapus NaN pada MA
+        # Hapus baris yang masih mengandung NaN pada MA
         data = data.dropna(subset=["MA20", "MA50"])
 
-        # Preview data
+        # Preview tabel
         st.write("📋 Data IHSG Terakhir:")
         st.dataframe(data[["Date", "Open", "High", "Low", "Close", "MA20", "MA50"]].tail())
 
-        # Candlestick Chart
+        # Plot chart
         fig = go.Figure()
 
         fig.add_trace(go.Candlestick(
@@ -129,7 +130,6 @@ def tampilkan_chart_ihsg():
             decreasing_line_color="red"
         ))
 
-        # Tambahkan MA20 dan MA50
         fig.add_trace(go.Scatter(
             x=data["Date"], y=data["MA20"],
             line=dict(color='orange', width=1.5),
