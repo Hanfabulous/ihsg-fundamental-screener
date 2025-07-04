@@ -56,15 +56,13 @@ def get_news():
                         elif "enclosures" in entry:
                             img_url = entry.enclosures[0].get("href")
 
-                        # Ambil paragraf pertama (summary)
                         isi = entry.get("summary", "")
                         paragraf_pertama = isi.split("</p>")[0] if "</p>" in isi else isi.split(".")[0] + "."
 
-                        # Tampilkan berita
                         with kolom.container():
                             col_img, col_teks = kolom.columns([1, 2])
                             if img_url:
-                                col_img.image(img_url, width=300)
+                                col_img.image(img_url, width=200)
                             with col_teks:
                                 col_teks.markdown(f"🔹 **[{entry.title}]({entry.link})**", unsafe_allow_html=True)
                                 col_teks.markdown(f"<p style='font-size:14px'>{paragraf_pertama}</p>", unsafe_allow_html=True)
@@ -84,49 +82,41 @@ def get_news():
 def tampilkan_chart_ihsg():
     st.subheader("📈 Grafik IHSG")
 
-    # Ambil data IHSG
     data = yf.download("^JKSE", period="1y", interval="1d")
 
-    # Validasi awal
     if data.empty or "Close" not in data.columns:
         st.error("❌ Data IHSG kosong atau gagal diunduh.")
         return
 
-    # Hitung MA hanya jika kolom Close ada
-    data["MA20"] = data["Close"].rolling(window=20).mean() if "Close" in data.columns else None
-    data["MA50"] = data["Close"].rolling(window=50).mean() if "Close" in data.columns else None
-
-    # Reset index
+    data["MA20"] = data["Close"].rolling(window=20).mean()
+    data["MA50"] = data["Close"].rolling(window=50).mean()
     data = data.reset_index()
 
-    # Buat daftar kolom yang memang tersedia DAN tidak semuanya NaN
     available_cols = []
     for col in ["Close", "MA20", "MA50"]:
-        if col in data.columns and not data[col].isna().all():
+        if col in data.columns and data[col].notna().sum() > 0:
             available_cols.append(col)
 
-    # Validasi lagi
     if not available_cols:
-        st.warning("Tidak ada kolom valid (Close, MA20, MA50) untuk ditampilkan.")
-        st.dataframe(data.tail())
+        st.warning("Tidak ada kolom valid untuk ditampilkan.")
+        st.dataframe(data.head())
         return
 
-    # Hapus baris NaN dari kolom yang tersedia
-    data = data.dropna(subset=available_cols)
+    try:
+        data = data.dropna(subset=available_cols)
+    except Exception as e:
+        st.warning(f"Gagal memproses data IHSG: {e}")
+        st.dataframe(data.head())
+        return
 
-    # Tampilkan preview data
     st.write("📋 Data IHSG Terakhir:")
     st.dataframe(data[["Date"] + available_cols].tail())
 
-    # Plot grafik
     fig = go.Figure()
-
     if "Close" in available_cols:
         fig.add_trace(go.Scatter(x=data["Date"], y=data["Close"], name="Close", line=dict(color="blue")))
-
     if "MA20" in available_cols:
         fig.add_trace(go.Scatter(x=data["Date"], y=data["MA20"], name="MA20", line=dict(color="orange")))
-
     if "MA50" in available_cols:
         fig.add_trace(go.Scatter(x=data["Date"], y=data["MA50"], name="MA50", line=dict(color="green")))
 
@@ -192,6 +182,3 @@ elif menu == "Fundamental":
     st.header("📊 Screener Fundamental Saham")
     st.info("Filter berdasarkan PER, PBV, ROE, Dividend Yield, dan lainnya.")
     st.markdown("_🛠️ Akan diisi dari file `Fundamental.py`_")
-    st.header("📊 Screener Fundamental Saham")
-    st.info("Menampilkan filter fundamental seperti PER, PBV, ROE, Dividend Yield, dll.")
-    st.markdown("_🔄 Konten halaman ini akan diisi di file Fundamental.py_")
