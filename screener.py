@@ -116,16 +116,7 @@ def tampilkan_chart_ihsg():
         # ✅ Data IHSG Hari Terakhir
         # ============================= #
         last_valid_row = data[data["Volume"].notna()].iloc[-1]
-
-        last_data = {
-            "Tanggal": last_valid_row["Date"].date(),
-            "Open": last_valid_row["Open"],
-            "High": last_valid_row["High"],
-            "Low": last_valid_row["Low"],
-            "Close": last_valid_row["Close"],
-            "Volume Hari Ini": last_valid_row["Volume"],
-            "Rata-Rata Volume (20 Hari)": last_valid_row["VolumeAvg20"]
-        }
+        
         st.write("📋 Data IHSG Terakhir:")
         st.dataframe(pd.DataFrame([last_data]))
 
@@ -133,7 +124,7 @@ def tampilkan_chart_ihsg():
         # ✅ 7 Hari Terakhir
         # ============================= #
         st.markdown("### 📆 Data IHSG 7 Hari Terakhir:")
-        st.dataframe(data[["Date", "Open", "High", "Low", "Close", "Volume"]].dropna().tail(7).reset_index(drop=True))
+        st.dataframe(data[["Date", "Open", "High", "Low", "Close", "VolumeAvg20", "Volume" ]].dropna().tail(7).reset_index(drop=True))
 
         # ============================= #
         # 📈 Plot Candlestick + MA
