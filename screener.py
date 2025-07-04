@@ -72,8 +72,8 @@ def get_news():
 # ========================== #
 def tampilkan_chart_ihsg():
     st.subheader("📈 Grafik IHSG")
-    
-    # Ambil data IHSG
+
+    # Ambil data
     data = yf.download("^JKSE", period="1y", interval="1d")
 
     if data.empty:
@@ -83,25 +83,27 @@ def tampilkan_chart_ihsg():
     st.success("✅ Data IHSG berhasil diambil.")
     st.dataframe(data.tail())
 
-    # ⛏️ Buat kolom MA dulu SEBELUM dropna
-    ma20 = data["Close"].rolling(window=20).mean()
-    ma50 = data["Close"].rolling(window=50).mean()
+    # Cek apakah 'Close' kolom tersedia
+    if "Close" not in data.columns:
+        st.error("❌ Data tidak mengandung kolom 'Close'")
+        return
 
-    # Gabungkan ke DataFrame
-    data["MA20"] = ma20
-    data["MA50"] = ma50
+    # Buat MA20 dan MA50
+    data["MA20"] = data["Close"].rolling(window=20).mean()
+    data["MA50"] = data["Close"].rolling(window=50).mean()
 
-    # 💡 Sekarang baru bisa drop NaN
-    data_filtered = data.dropna(subset=["MA20", "MA50"])
+    # Hapus baris yang masih mengandung NaN agar tidak ganggu grafik
+    data_filtered = data.dropna()
 
-    # Tampilkan 5 baris terakhir sebagai debug
+    # Cek hasil rolling dan NaN
     st.write(data_filtered[["Close", "MA20", "MA50"]].tail())
 
-    # 🧾 Plot grafik
+    # Plot grafik
     fig = go.Figure()
     fig.add_trace(go.Scatter(x=data_filtered.index, y=data_filtered["Close"], mode='lines', name='Close', line=dict(color='blue')))
     fig.add_trace(go.Scatter(x=data_filtered.index, y=data_filtered["MA20"], mode='lines', name='MA20', line=dict(color='orange')))
     fig.add_trace(go.Scatter(x=data_filtered.index, y=data_filtered["MA50"], mode='lines', name='MA50', line=dict(color='green')))
+
     fig.update_layout(
         title="📊 IHSG (Jakarta Composite Index) + MA20 + MA50",
         xaxis_title="Tanggal",
