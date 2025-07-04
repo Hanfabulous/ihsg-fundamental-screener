@@ -72,7 +72,7 @@ get_news()
 # ====== Chart IHSG ====== #
 st.subheader("📈 Grafik IHSG")
 try:
-    data = yf.download("JKSE", period="1y", interval="1d")
+    data = yf.download("^JKSE", period="1y", interval="1d")
     if data.empty:
         st.error("❌ Data IHSG (JKSE) kosong. Mungkin Yahoo Finance sedang bermasalah.")
     else:
