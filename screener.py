@@ -12,17 +12,20 @@ import pandas as pd
 import feedparser
 
 st.set_page_config(page_title="Investrade Trading Tools", layout="wide")
-st.title("📊 Investrade Trading Tools")
 
-st.markdown("""
-Selamat datang di tools trading saham IHSG.
+# ====== Judul dan Header Utama ====== #
+col_kiri, col_kanan = st.columns([3, 1])
+with col_kiri:
+    st.markdown("""
+    <h1 style='font-size: 36px;'>📊 Investrade Trading Tools</h1>
+    <p style='font-size: 22px;'>Selamat datang di tools trading saham IHSG.<br><br>
+    Tools ini dibuat untuk para trader maupun investor saham Indonesia, di mana analisa prediksi di tools ini menggunakan bantuan <strong>Machine Learning</strong>.</p>
+    """, unsafe_allow_html=True)
 
-Tools ini dibuat untuk para trader maupun investor saham Indonesia, di mana analisa prediksi di tools ini menggunakan bantuan **Machine Learning**.
-""")
-
-# Jam sekarang
-jakarta_tz = pytz.timezone("Asia/Jakarta")
-st.markdown(f"🕒 Waktu sekarang: {datetime.now(jakarta_tz).strftime('%H:%M:%S')} WIB")
+with col_kanan:
+    jakarta_tz = pytz.timezone("Asia/Jakarta")
+    jam_sekarang = datetime.now(jakarta_tz).strftime('%H:%M:%S')
+    st.markdown(f"<p style='text-align:right; font-weight:bold; font-size:24px;'>🕒 Waktu sekarang: {jam_sekarang} WIB</p>", unsafe_allow_html=True)
 
 # ====== Fungsi Ambil Berita dari RSS ====== #
 def get_news():
