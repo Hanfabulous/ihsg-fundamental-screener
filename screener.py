@@ -300,8 +300,6 @@ if menu == "Home":
     get_news()
     tampilkan_chart_ihsg()
     tampilkan_top_gainers_losers()
-# Auto-refresh tiap 5 menit (300 detik)
-st_autorefresh = st.experimental_memo(ttl=60)  # TTL = waktu cache
 
 elif menu == "Trading Page":
     st.header("📈 Trading Page")
