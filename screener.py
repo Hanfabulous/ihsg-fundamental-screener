@@ -95,15 +95,21 @@ def tampilkan_chart_ihsg():
 
     data = data.reset_index()
 
-    # Cek kolom mana yang valid dan tidak semuanya NaN
+
+   # ========================= #
+    # Cek Kolom Valid
+    # ========================= #
     available_cols = []
     for col in ["Close", "MA20", "MA50"]:
         if col in data.columns:
-            valid = data[col].notna().any()
-            if valid:
+            col_data = data[col]
+            # Pastikan hanya Series, lalu validasi .notna().any()
+            if isinstance(col_data, pd.Series) and col_data.notna().any():
                 available_cols.append(col)
-            else:
+            elif isinstance(col_data, pd.Series):
                 st.warning(f"Kolom {col} hanya berisi NaN.")
+            else:
+                st.warning(f"Kolom {col} bukan Series.")
         else:
             st.warning(f"Kolom {col} tidak ditemukan.")
 
