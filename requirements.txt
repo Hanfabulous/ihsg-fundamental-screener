@@ -3,7 +3,6 @@ yfinance
 pandas
 numpy
 tabulate
-streamlit-aggrid
 feedparser
 pytz
 plotly==5.21.0
