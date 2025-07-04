@@ -31,7 +31,7 @@ def get_news():
         "Yahoo Finance (via Top Stories)": "https://finance.yahoo.com/rss/topstories"
     }
 
-    filter_kata_kunci = ["saham", "market", "ihsg", "bursa", "emiten", "investor", "trading", "JKSE", "indonesia"]
+    filter_kata_kunci = ["saham", "market", "ihsg", "bursa", "emiten", "investor", "trading"]
 
     st.subheader("📰 Berita Pasar Saham Terkini")
 
@@ -43,12 +43,23 @@ def get_news():
             for entry in feed.entries[:15]:
                 judul = entry.title.lower()
                 if any(kata in judul for kata in filter_kata_kunci):
+                    # Ambil gambar jika ada
+                    img_url = None
+                    if "media_content" in entry and entry.media_content:
+                        img_url = entry.media_content[0].get("url")
+                    elif "enclosures" in entry and entry.enclosures:
+                        img_url = entry.enclosures[0].get("href")
+
+                    # Tampilkan berita
+                    if img_url:
+                        st.image(img_url, use_column_width="always")
                     st.markdown(f"🔹 [{entry.title}]({entry.link})")
+                    st.markdown("---")
                     hitung += 1
                 if hitung >= 5:
                     break
             if hitung == 0:
-                st.write("Tidak ada berita pasar terkini.")
+                st.info("Tidak ada berita pasar terkini.")
         except Exception as e:
             st.warning(f"Gagal memuat berita dari {sumber}: {e}")
 
