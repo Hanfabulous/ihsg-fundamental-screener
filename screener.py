@@ -87,26 +87,25 @@ def tampilkan_chart_ihsg():
     # Ambil data IHSG
     data = yf.download("^JKSE", period="1y", interval="1d")
 
-    # Validasi data
     if data.empty or "Close" not in data.columns:
         st.error("❌ Data IHSG kosong atau gagal diunduh.")
         return
 
-    # Hitung Moving Average
+    # Hitung Moving Average sebelum reset_index
     data["MA20"] = data["Close"].rolling(window=20).mean()
     data["MA50"] = data["Close"].rolling(window=50).mean()
 
-    # Reset index agar kolom Date bisa digunakan
-    data = data.reset_index()
-
-    # Hapus baris yang masih NaN
+    # Drop baris NaN (MA belum tersedia di awal)
     data = data.dropna(subset=["Close", "MA20", "MA50"])
 
-    # Tampilkan data akhir
+    # Reset index agar Date jadi kolom eksplisit
+    data = data.reset_index()
+
+    # Tampilkan data
     st.write("📋 Data IHSG Terakhir:")
     st.dataframe(data[["Date", "Close", "MA20", "MA50"]].tail())
 
-    # Plotly chart
+    # Plot grafik
     fig = go.Figure()
     fig.add_trace(go.Scatter(x=data["Date"], y=data["Close"], name="Close", line=dict(color="blue")))
     fig.add_trace(go.Scatter(x=data["Date"], y=data["MA20"], name="MA20", line=dict(color="orange")))
@@ -122,6 +121,7 @@ def tampilkan_chart_ihsg():
     )
 
     st.plotly_chart(fig, use_container_width=True)
+
 # ========================== #
 # 🚀 Fungsi Gainers & Losers
 # ========================== #
