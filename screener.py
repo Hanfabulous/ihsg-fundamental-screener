@@ -90,50 +90,54 @@ def tampilkan_chart_ihsg():
             st.error("❌ Data IHSG kosong atau gagal diunduh.")
             return
 
-        # Deteksi MultiIndex
+        # Bersihkan kolom MultiIndex jika ada
         if isinstance(data.columns, pd.MultiIndex):
             data.columns = [f"{col[0]}_{col[1]}" for col in data.columns]
 
-        # Bersihkan suffix seperti _^JKSE
         rename_map = {col: col.replace("_^JKSE", "") for col in data.columns if "_^JKSE" in col}
         data = data.rename(columns=rename_map)
 
-        # Validasi kolom OHLCV
         required_cols = ["Open", "High", "Low", "Close", "Volume"]
         if not all(col in data.columns for col in required_cols):
             st.error("❌ Data candlestick tidak lengkap.")
             st.write("Kolom yang tersedia:", data.columns.tolist())
             return
 
-        # Tambahkan MA20 dan MA50 untuk chart
+        # Tambahkan MA
         data["MA20"] = data["Close"].rolling(window=20).mean()
         data["MA50"] = data["Close"].rolling(window=50).mean()
-
-        # Reset index
+        data["VolumeAvg20"] = data["Volume"].rolling(window=20).mean()
         data = data.reset_index()
 
-        # Hitung Volume Rata-rata 1 bulan (20 hari)
-        data["VolumeAvg20"] = data["Volume"].rolling(window=20).mean()
-
-        # Drop NaN agar chart valid
+        # Siapkan data untuk chart (harus dropna MA)
         data_chart = data.dropna(subset=["MA20", "MA50"])
 
-        # ====== ✅ TABEL: Hanya 1 baris terakhir dengan volume avg & volume last
-        latest = data.iloc[-1]
-        tabel_data = pd.DataFrame([{
-            "Date": latest["Date"],
-            "Open": latest["Open"],
-            "High": latest["High"],
-            "Low": latest["Low"],
-            "Close": latest["Close"],
-            "Volume Avg (20 Hari)": latest["VolumeAvg20"],
-            "Volume Hari Ini": latest["Volume"]
-        }])
+        # ============================= #
+        # ✅ Data IHSG Hari Terakhir
+        # ============================= #
+        last_valid_row = data[data["Volume"].notna()].iloc[-1]
 
+        last_data = {
+            "Tanggal": last_valid_row["Date"].date(),
+            "Open": last_valid_row["Open"],
+            "High": last_valid_row["High"],
+            "Low": last_valid_row["Low"],
+            "Close": last_valid_row["Close"],
+            "Volume Hari Ini": last_valid_row["Volume"],
+            "Rata-Rata Volume (20 Hari)": last_valid_row["VolumeAvg20"]
+        }
         st.write("📋 Data IHSG Terakhir:")
-        st.dataframe(tabel_data)
+        st.dataframe(pd.DataFrame([last_data]))
 
-        # ====== 📈 GRAFIK: Tetap pakai candlestick + MA20 + MA50
+        # ============================= #
+        # ✅ 7 Hari Terakhir
+        # ============================= #
+        st.markdown("### 📆 Data IHSG 7 Hari Terakhir:")
+        st.dataframe(data[["Date", "Open", "High", "Low", "Close", "Volume"]].dropna().tail(7).reset_index(drop=True))
+
+        # ============================= #
+        # 📈 Plot Candlestick + MA
+        # ============================= #
         fig = go.Figure()
 
         fig.add_trace(go.Candlestick(
