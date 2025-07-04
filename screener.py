@@ -7,7 +7,7 @@ from datetime import datetime
 import pytz
 import yfinance as yf
 import feedparser
-import matplotlib.pyplot as plt
+import plotly.graph_objects as go
 
 # ========================== #
 # 🔧 Konfigurasi Awal
@@ -38,7 +38,7 @@ def get_news():
         "CNBC Indonesia": "https://www.cnbcindonesia.com/rss",
         "Yahoo Finance": "https://finance.yahoo.com/rss/topstories"
     }
-    filter_kata_kunci = ["saham", "market", "ihsg", "bursa", "emiten", "investor", "trading"]
+    filter_kata = ["saham", "market", "ihsg", "bursa", "emiten", "investor", "trading"]
 
     col1, col2 = st.columns(2)
     for (nama, url), kolom in zip(sumber_rss.items(), [col1, col2]):
@@ -49,12 +49,13 @@ def get_news():
                 hitung = 0
                 for entry in feed.entries[:10]:
                     judul = entry.title.lower()
-                    if any(kata in judul for kata in filter_kata_kunci):
+                    if any(k in judul for k in filter_kata):
                         img_url = None
-                        if "media_content" in entry and entry.media_content:
+                        if "media_content" in entry:
                             img_url = entry.media_content[0].get("url")
-                        elif "enclosures" in entry and entry.enclosures:
+                        elif "enclosures" in entry:
                             img_url = entry.enclosures[0].get("href")
+
                         if img_url:
                             kolom.image(img_url, width=200)
                         kolom.markdown(f"🔹 [{entry.title}]({entry.link})", unsafe_allow_html=True)
@@ -63,48 +64,38 @@ def get_news():
                     if hitung >= 5:
                         break
                 if hitung == 0:
-                    kolom.info("Tidak ada berita pasar terkini.")
+                    kolom.info("Tidak ada berita relevan.")
             except Exception as e:
-                kolom.warning(f"Gagal memuat berita dari {nama}: {e}")
+                kolom.warning(f"Gagal ambil berita dari {nama}: {e}")
 
 # ========================== #
-# 📈 Fungsi Tampilkan Grafik IHSG
+# 📈 Fungsi Grafik IHSG
 # ========================== #
 def tampilkan_chart_ihsg():
     st.subheader("📈 Grafik IHSG")
 
-    # Ambil data dari Yahoo Finance
     data = yf.download("^JKSE", period="1y", interval="1d")
 
     if data.empty:
         st.error("❌ Data IHSG kosong atau gagal diunduh.")
         return
 
-    # Tambahkan moving average
-    data["MA20"] = data["Close"].rolling(window=20).mean()
-    data["MA50"] = data["Close"].rolling(window=50).mean()
-
-    # Drop baris kosong (karena rolling)
+    data["MA20"] = data["Close"].rolling(20).mean()
+    data["MA50"] = data["Close"].rolling(50).mean()
     data = data.dropna()
 
-    # Debug: tampilkan tabel
-    st.write("📋 Data IHSG Terbaru:")
-    st.write(data[["Close", "MA20", "MA50"]].tail())
+    st.write("📋 Data IHSG Terakhir:")
+    st.dataframe(data[["Close", "MA20", "MA50"]].tail())
 
-    # Buat plot matplotlib
-    fig, ax = plt.subplots(figsize=(12, 6))
-    ax.plot(data.index, data["Close"], label="Close", color="blue")
-    ax.plot(data.index, data["MA20"], label="MA20", color="orange")
-    ax.plot(data.index, data["MA50"], label="MA50", color="green")
-    ax.set_title("IHSG (Jakarta Composite Index) + MA20 + MA50")
-    ax.set_xlabel("Tanggal")
-    ax.set_ylabel("Harga Penutupan")
-    ax.legend()
-    ax.grid(True)
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=data.index, y=data["Close"], name="Close", line=dict(color="blue")))
+    fig.add_trace(go.Scatter(x=data.index, y=data["MA20"], name="MA20", line=dict(color="orange")))
+    fig.add_trace(go.Scatter(x=data.index, y=data["MA50"], name="MA50", line=dict(color="green")))
+    fig.update_layout(title="📊 Grafik IHSG (Close, MA20, MA50)",
+                      xaxis_title="Tanggal", yaxis_title="Harga",
+                      template="plotly_dark", height=600)
+    st.plotly_chart(fig, use_container_width=True)
 
-    # Tampilkan plot di Streamlit
-    st.pyplot(fig)
-    
 # ========================== #
 # 🚀 Fungsi Gainers & Losers
 # ========================== #
@@ -125,13 +116,13 @@ def tampilkan_top_gainers_losers():
             for idx, val in returns.tail(10).items():
                 st.markdown(f"**{idx}**: {val*100:.2f}%")
     except:
-        st.warning("Gagal menghitung Top Gainer dan Loser.")
+        st.warning("Gagal mengambil data top gainer & loser.")
 
 # ========================== #
 # 🧭 Sidebar Navigasi
 # ========================== #
 with st.sidebar:
-    st.header("📁 Menu")
+    st.header("📁 Menu Navigasi")
     menu = st.radio("Pilih Halaman", ["Home", "Trading Page", "Teknikal", "Fundamental"])
 
 # ========================== #
@@ -144,15 +135,18 @@ if menu == "Home":
 
 elif menu == "Trading Page":
     st.header("📈 Trading Page")
-    st.info("Menampilkan Fear & Greed Index, Komoditas, Index Dunia, IHSG, EIDO, Signal Buy, Rekap Ticker Aktif/Tidak Aktif, dan cara menggunakan signal ini.")
-    st.markdown("_🔄 Konten halaman ini akan diisi di file Trading_Page.py_")
+    st.info("Konten ini menampilkan data indeks global, komoditas, sinyal beli, EIDO, dan strategi.")
+    st.markdown("_🛠️ Akan diisi dari file `Trading_Page.py`_")
 
 elif menu == "Teknikal":
     st.header("📉 Analisa Teknikal Saham")
-    st.info("Silakan masukkan kode saham (misalnya `BBRI.JK`) untuk melihat chart dan memilih indikator seperti RSI, MACD, Ichimoku, dll.")
-    st.markdown("_🔄 Konten halaman ini akan diisi di file Teknikal.py_")
+    st.info("Masukkan kode saham (contoh: `BBRI.JK`) untuk melihat chart dan indikator.")
+    st.markdown("_🛠️ Akan diisi dari file `Teknikal.py`_")
 
 elif menu == "Fundamental":
+    st.header("📊 Screener Fundamental Saham")
+    st.info("Filter berdasarkan PER, PBV, ROE, Dividend Yield, dan lainnya.")
+    st.markdown("_🛠️ Akan diisi dari file `Fundamental.py`_")
     st.header("📊 Screener Fundamental Saham")
     st.info("Menampilkan filter fundamental seperti PER, PBV, ROE, Dividend Yield, dll.")
     st.markdown("_🔄 Konten halaman ini akan diisi di file Fundamental.py_")
