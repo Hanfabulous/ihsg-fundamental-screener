@@ -6,3 +6,4 @@ numpy
 tabulate
 streamlit-aggrid
 feedparser
+pytz
