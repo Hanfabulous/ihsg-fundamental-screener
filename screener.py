@@ -92,23 +92,26 @@ def tampilkan_chart_ihsg():
         st.error("❌ Data IHSG kosong atau gagal diunduh.")
         return
 
-    # Hitung MA jika kolom Close tersedia
-    if "Close" in data.columns:
-        data["MA20"] = data["Close"].rolling(window=20).mean()
-        data["MA50"] = data["Close"].rolling(window=50).mean()
+    # Hitung MA hanya jika kolom Close ada
+    data["MA20"] = data["Close"].rolling(window=20).mean() if "Close" in data.columns else None
+    data["MA50"] = data["Close"].rolling(window=50).mean() if "Close" in data.columns else None
 
     # Reset index
     data = data.reset_index()
 
-    # Hanya pakai kolom yang ada
-    available_cols = [col for col in ["Close", "MA20", "MA50"] if col in data.columns]
+    # Buat daftar kolom yang memang tersedia DAN tidak semuanya NaN
+    available_cols = []
+    for col in ["Close", "MA20", "MA50"]:
+        if col in data.columns and not data[col].isna().all():
+            available_cols.append(col)
 
+    # Validasi lagi
     if not available_cols:
-        st.warning("Tidak ada kolom harga atau MA yang tersedia untuk ditampilkan.")
+        st.warning("Tidak ada kolom valid (Close, MA20, MA50) untuk ditampilkan.")
         st.dataframe(data.tail())
         return
 
-    # Hapus NaN hanya dari kolom yang tersedia
+    # Hapus baris NaN dari kolom yang tersedia
     data = data.dropna(subset=available_cols)
 
     # Tampilkan preview data
@@ -118,7 +121,6 @@ def tampilkan_chart_ihsg():
     # Plot grafik
     fig = go.Figure()
 
-    # Tambahkan grafik Close jika ada
     if "Close" in available_cols:
         fig.add_trace(go.Scatter(x=data["Date"], y=data["Close"], name="Close", line=dict(color="blue")))
 
@@ -138,6 +140,7 @@ def tampilkan_chart_ihsg():
     )
 
     st.plotly_chart(fig, use_container_width=True)
+
 # ========================== #
 # 🚀 Fungsi Gainers & Losers
 # ========================== #
