@@ -25,43 +25,43 @@ jakarta_tz = pytz.timezone("Asia/Jakarta")
 st.markdown(f"🕒 Waktu sekarang: {datetime.now(jakarta_tz).strftime('%H:%M:%S')} WIB")
 
 # ====== Fungsi Ambil Berita dari RSS ====== #
-def get_news():
+def tampilkan_berita_kolom():
     sumber_rss = {
         "CNBC Indonesia": "https://www.cnbcindonesia.com/rss",
-        "Yahoo Finance (via Top Stories)": "https://finance.yahoo.com/rss/topstories"
+        "Yahoo Finance": "https://finance.yahoo.com/rss/topstories"
     }
 
     filter_kata_kunci = ["saham", "market", "ihsg", "bursa", "emiten", "investor", "trading"]
 
-    st.subheader("📰 Berita Pasar Saham Terkini")
+    col1, col2 = st.columns(2)
+    for sumber, kolom in zip(sumber_rss.items(), [col1, col2]):
+        nama, url = sumber
+        with kolom:
+            kolom.markdown(f"### 🗞️ {nama}")
+            try:
+                feed = feedparser.parse(url)
+                hitung = 0
+                for entry in feed.entries[:15]:
+                    judul = entry.title.lower()
+                    if any(kata in judul for kata in filter_kata_kunci):
+                        # Ambil gambar jika ada
+                        img_url = None
+                        if "media_content" in entry and entry.media_content:
+                            img_url = entry.media_content[0].get("url")
+                        elif "enclosures" in entry and entry.enclosures:
+                            img_url = entry.enclosures[0].get("href")
 
-    for sumber, rss_url in sumber_rss.items():
-        st.markdown(f"### 🗞️ {sumber}")
-        try:
-            feed = feedparser.parse(rss_url)
-            hitung = 0
-            for entry in feed.entries[:15]:
-                judul = entry.title.lower()
-                if any(kata in judul for kata in filter_kata_kunci):
-                    # Ambil gambar jika ada
-                    img_url = None
-                    if "media_content" in entry and entry.media_content:
-                        img_url = entry.media_content[0].get("url")
-                    elif "enclosures" in entry and entry.enclosures:
-                        img_url = entry.enclosures[0].get("href")
-
-                    # Tampilkan berita dengan gambar kecil
-                    if img_url:
-                        st.image(img_url, width=150)
-                    st.markdown(f"🔹 [{entry.title}]({entry.link})")
-                    st.markdown("---")
-                    hitung += 1
-                if hitung >= 5:
-                    break
-            if hitung == 0:
-                st.info("Tidak ada berita pasar terkini.")
-        except Exception as e:
-            st.warning(f"Gagal memuat berita dari {sumber}: {e}")
+                        if img_url:
+                            kolom.image(img_url, width=100)
+                        kolom.markdown(f"🔹 [{entry.title}]({entry.link})", unsafe_allow_html=True)
+                        kolom.markdown("---")
+                        hitung += 1
+                    if hitung >= 5:
+                        break
+                if hitung == 0:
+                    kolom.info("Tidak ada berita pasar terkini.")
+            except Exception as e:
+                kolom.warning(f"Gagal memuat berita dari {nama}: {e}")
 
 # ====== Tampilkan Berita ====== #
 get_news()
