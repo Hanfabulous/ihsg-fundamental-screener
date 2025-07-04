@@ -72,6 +72,8 @@ def get_news():
 # ========================== #
 def tampilkan_chart_ihsg():
     st.subheader("📈 Grafik IHSG")
+    
+    # Ambil data IHSG
     data = yf.download("^JKSE", period="1y", interval="1d")
 
     if data.empty:
@@ -79,16 +81,23 @@ def tampilkan_chart_ihsg():
         return
 
     st.success("✅ Data IHSG berhasil diambil.")
-    st.dataframe(data.tail())  # Tampilkan data terbaru
+    st.dataframe(data.tail())
 
-    # 🔁 Buat kolom MA terlebih dahulu
-    data["MA20"] = data["Close"].rolling(window=20).mean()
-    data["MA50"] = data["Close"].rolling(window=50).mean()
+    # ⛏️ Buat kolom MA dulu SEBELUM dropna
+    ma20 = data["Close"].rolling(window=20).mean()
+    ma50 = data["Close"].rolling(window=50).mean()
 
-    # ⛑️ Bersihkan data NaN agar grafik bisa muncul
+    # Gabungkan ke DataFrame
+    data["MA20"] = ma20
+    data["MA50"] = ma50
+
+    # 💡 Sekarang baru bisa drop NaN
     data_filtered = data.dropna(subset=["MA20", "MA50"])
 
-    # 📊 Buat grafik
+    # Tampilkan 5 baris terakhir sebagai debug
+    st.write(data_filtered[["Close", "MA20", "MA50"]].tail())
+
+    # 🧾 Plot grafik
     fig = go.Figure()
     fig.add_trace(go.Scatter(x=data_filtered.index, y=data_filtered["Close"], mode='lines', name='Close', line=dict(color='blue')))
     fig.add_trace(go.Scatter(x=data_filtered.index, y=data_filtered["MA20"], mode='lines', name='MA20', line=dict(color='orange')))
@@ -100,7 +109,6 @@ def tampilkan_chart_ihsg():
         template="plotly_white",
         height=500
     )
-    st.write(data_filtered[["Close", "MA20", "MA50"]].tail(10))
     st.plotly_chart(fig, use_container_width=True)
 
 # ========================== #
