@@ -33,7 +33,7 @@ with col_kanan:
 # ========================== #
 # 🗞️ Fungsi Ambil Berita
 # ========================== #
-def get_news(kolom):
+def get_news(col_kanan):
     sumber_rss = {
         "CNBC Indonesia": "https://www.cnbcindonesia.com/rss",
         "Yahoo Finance": "https://finance.yahoo.com/rss/topstories"
