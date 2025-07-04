@@ -28,8 +28,6 @@ st.markdown(f"🕒 Waktu sekarang: {datetime.now(jakarta_tz).strftime('%H:%M:%S'
 def get_news():
     sumber_rss = {
         "CNBC Indonesia": "https://www.cnbcindonesia.com/rss",
-        "Bisnis.com": "https://www.bisnis.com/rss",
-        "Kontan.co.id": "https://www.kontan.co.id/rss",
         "Yahoo Finance (via Top Stories)": "https://finance.yahoo.com/rss/topstories"
     }
 
