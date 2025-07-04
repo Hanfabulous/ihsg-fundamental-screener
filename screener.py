@@ -84,32 +84,32 @@ def get_news():
 def tampilkan_chart_ihsg():
     st.subheader("📈 Grafik IHSG")
 
-    # Ambil data IHSG
+    # Ambil data
     data = yf.download("^JKSE", period="1y", interval="1d")
 
     if data.empty or "Close" not in data.columns:
         st.error("❌ Data IHSG kosong atau gagal diunduh.")
         return
 
-    # Hitung Moving Average sebelum reset_index
+    # ⛑️ Hitung MA sebelum reset_index
     data["MA20"] = data["Close"].rolling(window=20).mean()
     data["MA50"] = data["Close"].rolling(window=50).mean()
 
-    # Drop baris NaN (MA belum tersedia di awal)
-    data = data.dropna(subset=["Close", "MA20", "MA50"])
+    # 🔐 Drop baris NaN di sini (pastikan kolom MA sudah ada!)
+    data_clean = data.dropna(subset=["Close", "MA20", "MA50"])
 
-    # Reset index agar Date jadi kolom eksplisit
-    data = data.reset_index()
+    # 🔄 Reset index (buat Date jadi kolom eksplisit)
+    data_clean = data_clean.reset_index()
 
-    # Tampilkan data
+    # ✅ Debug tampilkan data
     st.write("📋 Data IHSG Terakhir:")
-    st.dataframe(data[["Date", "Close", "MA20", "MA50"]].tail())
+    st.dataframe(data_clean[["Date", "Close", "MA20", "MA50"]].tail())
 
-    # Plot grafik
+    # 📊 Plot
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=data["Date"], y=data["Close"], name="Close", line=dict(color="blue")))
-    fig.add_trace(go.Scatter(x=data["Date"], y=data["MA20"], name="MA20", line=dict(color="orange")))
-    fig.add_trace(go.Scatter(x=data["Date"], y=data["MA50"], name="MA50", line=dict(color="green")))
+    fig.add_trace(go.Scatter(x=data_clean["Date"], y=data_clean["Close"], name="Close", line=dict(color="blue")))
+    fig.add_trace(go.Scatter(x=data_clean["Date"], y=data_clean["MA20"], name="MA20", line=dict(color="orange")))
+    fig.add_trace(go.Scatter(x=data_clean["Date"], y=data_clean["MA50"], name="MA50", line=dict(color="green")))
 
     fig.update_layout(
         title="📊 Grafik IHSG (Close, MA20, MA50)",
@@ -121,7 +121,6 @@ def tampilkan_chart_ihsg():
     )
 
     st.plotly_chart(fig, use_container_width=True)
-
 # ========================== #
 # 🚀 Fungsi Gainers & Losers
 # ========================== #
