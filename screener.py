@@ -27,8 +27,8 @@ st.markdown(f"🕒 Waktu sekarang: {datetime.now(jakarta_tz).strftime('%H:%M:%S'
 # ====== Fungsi Ambil Berita dari RSS ====== #
 def get_news():
     sumber_rss = {
-        "https://www.cnbcindonesia.com/rss",
-        "https://finance.yahoo.com/rss/topstories"
+        "CNBC Indonesia": "https://www.cnbcindonesia.com/rss",
+        "Yahoo Finance": "https://finance.yahoo.com/rss/topstories"
     }
 
     filter_kata_kunci = ["saham", "market", "ihsg", "bursa", "emiten", "investor", "trading"]
