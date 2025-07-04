@@ -82,36 +82,51 @@ def get_news():
 def tampilkan_chart_ihsg():
     st.subheader("📈 Grafik IHSG")
 
+    # Ambil data
     data = yf.download("^JKSE", period="1y", interval="1d")
 
     if data.empty or "Close" not in data.columns:
         st.error("❌ Data IHSG kosong atau gagal diunduh.")
         return
 
-    data["MA20"] = data["Close"].rolling(window=20).mean()
-    data["MA50"] = data["Close"].rolling(window=50).mean()
-    data = data.reset_index()
+    # Hitung Moving Average
+    try:
+        data["MA20"] = data["Close"].rolling(window=20).mean()
+        data["MA50"] = data["Close"].rolling(window=50).mean()
+    except Exception as e:
+        st.warning(f"Gagal menghitung MA: {e}")
+        return
 
+    # Reset index (pastikan Date tetap ada)
+    if "Date" not in data.columns:
+        data = data.reset_index()
+
+    # Filter kolom yang valid dan tidak seluruhnya NaN
     available_cols = []
     for col in ["Close", "MA20", "MA50"]:
-        if col in data.columns and data[col].notna().sum() > 0:
-            available_cols.append(col)
+        if col in data.columns:
+            col_data = data[col]
+            if hasattr(col_data, 'notna') and col_data.notna().sum() > 0:
+                available_cols.append(col)
 
     if not available_cols:
         st.warning("Tidak ada kolom valid untuk ditampilkan.")
         st.dataframe(data.head())
         return
 
+    # Drop NaN secara aman
     try:
         data = data.dropna(subset=available_cols)
     except Exception as e:
-        st.warning(f"Gagal memproses data IHSG: {e}")
+        st.warning(f"Gagal membersihkan data NaN: {e}")
         st.dataframe(data.head())
         return
 
+    # Preview
     st.write("📋 Data IHSG Terakhir:")
     st.dataframe(data[["Date"] + available_cols].tail())
 
+    # Buat grafik
     fig = go.Figure()
     if "Close" in available_cols:
         fig.add_trace(go.Scatter(x=data["Date"], y=data["Close"], name="Close", line=dict(color="blue")))
