@@ -56,9 +56,19 @@ def get_news():
                         elif "enclosures" in entry:
                             img_url = entry.enclosures[0].get("href")
 
-                        if img_url:
-                            kolom.image(img_url, width=400)
-                        kolom.markdown(f"🔹 [{entry.title}]({entry.link})", unsafe_allow_html=True)
+                        # Ambil paragraf pertama (summary)
+                        isi = entry.get("summary", "")
+                        paragraf_pertama = isi.split("</p>")[0] if "</p>" in isi else isi.split(".")[0] + "."
+
+                        # Tampilkan berita
+                        with kolom.container():
+                            col_img, col_teks = kolom.columns([1, 2])
+                            if img_url:
+                                col_img.image(img_url, width=150)
+                            with col_teks:
+                                col_teks.markdown(f"🔹 **[{entry.title}]({entry.link})**", unsafe_allow_html=True)
+                                col_teks.markdown(f"<p style='font-size:14px'>{paragraf_pertama}</p>", unsafe_allow_html=True)
+
                         kolom.markdown("---")
                         hitung += 1
                     if hitung >= 5:
