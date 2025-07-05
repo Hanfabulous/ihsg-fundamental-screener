@@ -370,7 +370,7 @@ def tampilkan_fundamental():
         # Konfigurasi AgGrid
         gb = GridOptionsBuilder.from_dataframe(df_tampil)
         gb.configure_default_column(sortable=True, filter=True, resizable=True)
-        gb.configure_column("Ticker", header_name="Ticker", cellRenderer=JsCode('''function(params) {return params.value;}'''), autoHeight=True
+        gb.configure_column("Ticker", header_name="Ticker", cellRenderer=JsCode('''function(params) {return params.value;}'''), autoHeight=True)
         grid_options = gb.build()
 
         AgGrid(
