@@ -150,28 +150,35 @@ def tampilkan_chart_ihsg():
 # ========================== #
 # 📊 Fungsi: Data Sektoral IDX
 # ========================== #
-def tampilkan_sektoral_idx() :
+def tampilkan_sektoral_idx():
+    st.subheader("📊 Data Sektoral IDX (via Selenium)")
+
     try:
+        chrome_options = Options()
+        chrome_options.add_argument("--headless")
+        chrome_options.add_argument("--no-sandbox")
+        chrome_options.add_argument("--disable-dev-shm-usage")
+
+        driver = webdriver.Chrome(options=chrome_options)  # pastikan chromedriver ada di PATH
+
         url = "https://www.idx.co.id/id/market-data/sectoral-index/"
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.0.0 Safari/537.36"
-        }
+        driver.get(url)
+        time.sleep(5)  # tunggu JS load
 
-        response = requests.get(url, headers=headers)
-        response.raise_for_status()
+        soup = BeautifulSoup(driver.page_source, "html.parser")
+        driver.quit()
 
-        # Parse semua tabel dari halaman
-        tabels = pd.read_html(response.text)
+        table = soup.find("table")
+        if not table:
+            st.error("❌ Tabel sektoral tidak ditemukan.")
+            return
 
-        # Cek isi tabel
-        for i, t in enumerate(tabels):
-            print(f"Tabel {i}:\n", t.head(), "\n")
+        df = pd.read_html(str(table))[0]
+        df.columns = df.columns.str.strip()
+        st.dataframe(df)
 
-        return tabels[0]  # Kembalikan tabel pertama (jika itu tabel sektoral)
-    
     except Exception as e:
         st.error(f"❌ Gagal mengambil data sektoral IDX: {e}")
-        return pd.DataFrame()
         
 # ========================== #
 # 📁 Sidebar Navigasi
