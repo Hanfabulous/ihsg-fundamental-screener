@@ -359,6 +359,14 @@ def tampilkan_fundamental():
     # 📂 Hasil per Sektor (AgGrid)
     # ============================ #
     st.markdown("## 📂 Hasil per Sektor")
+
+    # Gunakan JS renderer untuk hyperlink
+    link_renderer = JsCode("""
+        function(params) {
+            return `<a href="/?tkr=${params.value}" target="_self" style="color:#40a9ff;text-decoration:none;">${params.value}</a>`;
+        }
+    """)
+    
     for sektor in sorted(hasil['Sektor'].unique()):
         st.markdown(f"### 🔸 {sektor}")
         df_sektor = hasil[hasil['Sektor'] == sektor].copy()
