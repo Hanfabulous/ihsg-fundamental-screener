@@ -354,15 +354,21 @@ def tampilkan_fundamental():
     if st.session_state.get("ticker_diklik"):
         tampilkan_detail_ticker(st.session_state["ticker_diklik"])
 
-    st.markdown("## 📂 Hasil per Sektor")
+        st.markdown("## 📂 Hasil per Sektor")
+
     for sektor in sorted(hasil['Sektor'].unique()):
         st.markdown(f"### 🔸 {sektor}")
         df_sektor = hasil[hasil['Sektor'] == sektor].copy()
-        st.dataframe(
-            df_sektor[['Ticker', 'Name', 'Price', 'PER', 'PBV', 'ROE', 'Div Yield', 'Expected PER']],
-            use_container_width=True,
-            height=300
-        )
+
+        for idx, row in df_sektor.iterrows():
+            ticker_link = f"[{row['Ticker']}](/?tkr={row['Ticker']})"
+            st.markdown(
+                f"""
+                🔗 {ticker_link} - **{row['Name']}**  
+                Harga: Rp{row['Price']:,} | PER: {row['PER']:.2f} | PBV: {row['PBV']:.2f} | ROE: {row['ROE']:.2f}% | Div Yield: {row['Div Yield']:.2f}% | Expected PER: {row['Expected PER']:.2f}
+                """,
+                unsafe_allow_html=True
+            )
         
 # ========================== #
 # 📁 Sidebar Navigasi
