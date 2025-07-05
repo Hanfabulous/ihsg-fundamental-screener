@@ -155,7 +155,7 @@ def tampilkan_chart_ihsg():
 # 📊 Fungsi: Data Sektoral IDX
 # ========================== #
 def tampilkan_sektoral_idx():
-   st.subheader("🏭 Data Sektoral IDX")
+    st.subheader("🏭 Data Sektoral IDX")
     url = "https://www.idx.co.id/id/market-data/sectoral-index/"
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
@@ -164,7 +164,6 @@ def tampilkan_sektoral_idx():
         resp = requests.get(url, headers=headers, timeout=10)
         resp.raise_for_status()
         soup = BeautifulSoup(resp.text, "lxml")
-        # sesuaikan selector berdasarkan strukturnya (cek via Inspect Element)
         tabel = soup.select_one("table.table")  
         df = pd.read_html(str(tabel))[0]
         st.dataframe(df)
