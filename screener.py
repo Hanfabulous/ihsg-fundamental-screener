@@ -181,7 +181,6 @@ with st.sidebar:
 if menu == "Home":
     get_news()
     tampilkan_chart_ihsg()
-    tampilkan_top_gainers_losers()
 
 elif menu == "Trading Page":
     st.header("📈 Trading Page")
