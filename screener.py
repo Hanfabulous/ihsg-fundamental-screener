@@ -275,6 +275,17 @@ def tampilkan_fundamental():
             tickers.append(ticker_jk)
             ticker_to_sector[ticker_jk] = sektor
 
+   import streamlit as st
+import pandas as pd
+import yfinance as yf
+from st_aggrid import AgGrid, GridOptionsBuilder, JsCode
+
+# ============================ #
+# 📌 Fungsi Utama Fundamental
+# ============================ #
+def tampilkan_fundamental():
+    st.subheader("📊 ZONA FUNDAMENTAL")
+
     # ============================ #
     # 📥 Ambil Data
     # ============================ #
@@ -342,13 +353,13 @@ def tampilkan_fundamental():
         try:
             info = yf.Ticker(ticker).info
             st.markdown(f"**Nama Saham:** {info.get('longName', '-')}")
-            st.markdown(f"**Harga Saat Ini:** {info.get('currentPrice', '-')}") 
-            st.markdown(f"**PER:** {info.get('trailingPE', '-')}") 
-            st.markdown(f"**PBV:** {info.get('priceToBook', '-')}") 
-            st.markdown(f"**ROE:** {round(info.get('returnOnEquity', 0)*100, 2) if info.get('returnOnEquity') else '-'} %") 
-            st.markdown(f"**Dividend Yield:** {round(info.get('dividendYield', 0)*100, 2) if info.get('dividendYield') else '-'} %") 
-            st.markdown(f"**Expected PER:** {info.get('forwardPE', '-')}") 
-            st.markdown(f"**Sektor:** {ticker_to_sector.get(ticker, '-')}") 
+            st.markdown(f"**Harga Saat Ini:** {info.get('currentPrice', '-')}")
+            st.markdown(f"**PER:** {info.get('trailingPE', '-')}")
+            st.markdown(f"**PBV:** {info.get('priceToBook', '-')}")
+            st.markdown(f"**ROE:** {round(info.get('returnOnEquity', 0)*100, 2) if info.get('returnOnEquity') else '-'} %")
+            st.markdown(f"**Dividend Yield:** {round(info.get('dividendYield', 0)*100, 2) if info.get('dividendYield') else '-'} %")
+            st.markdown(f"**Expected PER:** {info.get('forwardPE', '-')}")
+            st.markdown(f"**Sektor:** {ticker_to_sector.get(ticker, '-')}")
         except Exception as e:
             st.error(f"❌ Gagal mengambil data detail: {e}")
 
@@ -359,8 +370,6 @@ def tampilkan_fundamental():
     # 📂 Hasil per Sektor (AgGrid)
     # ============================ #
     st.markdown("## 📂 Hasil per Sektor")
-
-    from st_aggrid import AgGrid, GridOptionsBuilder, JsCode
 
     # JS renderer untuk hyperlink
     link_renderer = JsCode("""
@@ -373,7 +382,6 @@ def tampilkan_fundamental():
         st.markdown(f"### 🔸 {sektor}")
         df_sektor = hasil[hasil['Sektor'] == sektor].copy()
 
-        # Ambil kolom yang valid saja
         kolom_valid = [k for k in ['Ticker', 'Name', 'Price', 'PER', 'PBV', 'ROE', 'Div Yield', 'Expected PER'] if k in df_sektor.columns]
 
         if not kolom_valid:
@@ -386,7 +394,6 @@ def tampilkan_fundamental():
         gb = GridOptionsBuilder.from_dataframe(df_tampil)
         gb.configure_default_column(sortable=True, filter=True, resizable=True)
 
-        # Render kolom Ticker sebagai hyperlink
         if "Ticker" in df_tampil.columns:
             gb.configure_column("Ticker", cellRenderer=link_renderer)
 
@@ -400,7 +407,7 @@ def tampilkan_fundamental():
             fit_columns_on_grid_load=True,
             allow_unsafe_jscode=True
         )
-        
+
 # ========================== #
 # 📁 Sidebar Navigasi
 # ========================== #
