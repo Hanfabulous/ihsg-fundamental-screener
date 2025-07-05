@@ -275,11 +275,6 @@ def tampilkan_fundamental():
             tickers.append(ticker_jk)
             ticker_to_sector[ticker_jk] = sektor
 
-   import streamlit as st
-import pandas as pd
-import yfinance as yf
-from st_aggrid import AgGrid, GridOptionsBuilder, JsCode
-
 # ============================ #
 # 📌 Fungsi Utama Fundamental
 # ============================ #
