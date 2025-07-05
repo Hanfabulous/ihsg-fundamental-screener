@@ -11,7 +11,7 @@ import feedparser
 import plotly.graph_objects as go
 import requests
 import time
-from st_aggrid import AgGrid, GridOptionsBuilder
+from st_aggrid import AgGrid, GridOptionsBuilder, JsCode
 from st_aggrid.shared import JsCode
 from urllib.parse import urlparse, parse_qs
 try:
@@ -363,20 +363,19 @@ def tampilkan_fundamental():
         st.markdown(f"### 🔸 {sektor}")
         df_sektor = hasil[hasil['Sektor'] == sektor].copy()
 
-        # Buat kolom hyperlink sebagai teks mentah
-        df_sektor['TickerLink'] = df_sektor['Ticker'].apply(
+        # Buat kolom hyperlink HTML
+        df_sektor['Ticker'] = df_sektor['Ticker'].apply(
             lambda x: f'<a href="/?tkr={x}" target="_self" style="color:#40a9ff;text-decoration:none;">{x}</a>'
         )
 
-        # Susun dataframe yang akan ditampilkan
-        df_tampil = df_sektor[['TickerLink', 'Name', 'Price', 'PER', 'PBV', 'ROE', 'Div Yield', 'Expected PER']]
-        df_tampil = df_tampil.rename(columns={'TickerLink': 'Ticker'})  # ubah header jadi 'Ticker'
+        # Susun ulang dataframe
+        df_tampil = df_sektor[['Ticker', 'Name', 'Price', 'PER', 'PBV', 'ROE', 'Div Yield', 'Expected PER']]
 
-        # Siapkan konfigurasi AgGrid agar render HTML aktif
+        # Konfigurasi Grid agar bisa render HTML
         gb = GridOptionsBuilder.from_dataframe(df_tampil)
         gb.configure_default_column(sortable=True, filter=True, resizable=True)
 
-        # Konfigurasi agar HTML tag (link) dirender
+        # Penting: Aktifkan cellRenderer custom untuk kolom Ticker
         gb.configure_column("Ticker", cellRenderer=JsCode('''function(params) { return params.value; }'''))
 
         grid_options = gb.build()
@@ -385,10 +384,10 @@ def tampilkan_fundamental():
         AgGrid(
             df_tampil,
             gridOptions=grid_options,
-            theme='streamlit',  # sesuai tema gelap
+            theme='streamlit',  # Sesuai dark mode
             fit_columns_on_grid_load=True,
             height=300,
-            allow_unsafe_jscode=True  # WAJIB untuk bisa render <a>
+            allow_unsafe_jscode=True  # WAJIB untuk render HTML
         )
         
 # ========================== #
