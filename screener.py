@@ -170,12 +170,6 @@ def tampilkan_sektoral_idx():
         st.dataframe(df)
     except Exception as e:
         st.error(f"❌ Gagal mengambil data sektoral IDX: {e}")
-
-# Di bagian routing Home, urutkan seperti ini:
-if menu == "Home":
-    get_news()            # 1. Berita
-    tampilkan_chart_ihsg()  # 2. Grafik IHSG lengkap
-    get_sektoral_idx()    # 3. Data sektoral IDX
         
 # ========================== #
 # 📁 Sidebar Navigasi
