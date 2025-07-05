@@ -360,36 +360,36 @@ def tampilkan_fundamental():
     # ============================ #
     st.markdown("## 📂 Hasil per Sektor")
     for sektor in sorted(hasil['Sektor'].unique()):
-    st.markdown(f"### 🔸 {sektor}")
-    df_sektor = hasil[hasil['Sektor'] == sektor].copy()
+        st.markdown(f"### 🔸 {sektor}")
+        df_sektor = hasil[hasil['Sektor'] == sektor].copy()
 
-    # Buat kolom hyperlink sebagai teks mentah
-    df_sektor['TickerLink'] = df_sektor['Ticker'].apply(
-        lambda x: f'<a href="/?tkr={x}" target="_self" style="color:#40a9ff;text-decoration:none;">{x}</a>'
-    )
+        # Buat kolom hyperlink sebagai teks mentah
+        df_sektor['TickerLink'] = df_sektor['Ticker'].apply(
+            lambda x: f'<a href="/?tkr={x}" target="_self" style="color:#40a9ff;text-decoration:none;">{x}</a>'
+        )
 
-    # Susun dataframe yang akan ditampilkan
-    df_tampil = df_sektor[['TickerLink', 'Name', 'Price', 'PER', 'PBV', 'ROE', 'Div Yield', 'Expected PER']]
-    df_tampil = df_tampil.rename(columns={'TickerLink': 'Ticker'})  # ubah header jadi 'Ticker'
+        # Susun dataframe yang akan ditampilkan
+        df_tampil = df_sektor[['TickerLink', 'Name', 'Price', 'PER', 'PBV', 'ROE', 'Div Yield', 'Expected PER']]
+        df_tampil = df_tampil.rename(columns={'TickerLink': 'Ticker'})  # ubah header jadi 'Ticker'
 
-    # Siapkan konfigurasi AgGrid agar render HTML aktif
-    gb = GridOptionsBuilder.from_dataframe(df_tampil)
-    gb.configure_default_column(sortable=True, filter=True, resizable=True)
+        # Siapkan konfigurasi AgGrid agar render HTML aktif
+        gb = GridOptionsBuilder.from_dataframe(df_tampil)
+        gb.configure_default_column(sortable=True, filter=True, resizable=True)
 
-    # Konfigurasi agar HTML tag (link) dirender
-    gb.configure_column("Ticker", cellRenderer=JsCode('''function(params) { return params.value; }'''))
+        # Konfigurasi agar HTML tag (link) dirender
+        gb.configure_column("Ticker", cellRenderer=JsCode('''function(params) { return params.value; }'''))
 
-    grid_options = gb.build()
+        grid_options = gb.build()
 
-    # Tampilkan AgGrid
-    AgGrid(
-        df_tampil,
-        gridOptions=grid_options,
-        theme='streamlit',  # sesuai tema gelap
-        fit_columns_on_grid_load=True,
-        height=300,
-        allow_unsafe_jscode=True  # WAJIB untuk bisa render <a>
-    )
+        # Tampilkan AgGrid
+        AgGrid(
+            df_tampil,
+            gridOptions=grid_options,
+            theme='streamlit',  # sesuai tema gelap
+            fit_columns_on_grid_load=True,
+            height=300,
+            allow_unsafe_jscode=True  # WAJIB untuk bisa render <a>
+        )
         
 # ========================== #
 # 📁 Sidebar Navigasi
