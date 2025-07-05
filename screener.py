@@ -360,42 +360,45 @@ def tampilkan_fundamental():
     # ============================ #
     st.markdown("## 📂 Hasil per Sektor")
 
-    # Gunakan JS renderer untuk hyperlink
+    from st_aggrid import AgGrid, GridOptionsBuilder, JsCode
+
+    # JS renderer untuk hyperlink
     link_renderer = JsCode("""
         function(params) {
-            return `<a href="/?tkr=${params.value}" target="_self" style="color:#40a9ff;text-decoration:none;">${params.value}</a>`;
+            return `<a href='/?tkr=${params.value}' target='_self' style='color:#40a9ff;text-decoration:none;'>${params.value}</a>`;
         }
     """)
-    
+
     for sektor in sorted(hasil['Sektor'].unique()):
         st.markdown(f"### 🔸 {sektor}")
         df_sektor = hasil[hasil['Sektor'] == sektor].copy()
 
-        # Buat kolom hyperlink HTML
-        df_sektor['Ticker'] = df_sektor['Ticker'].apply(
-            lambda x: f'<a href="/?tkr={x}" target="_self" style="color:#40a9ff;text-decoration:none;">{x}</a>'
-        )
+        # Ambil kolom yang valid saja
+        kolom_valid = [k for k in ['Ticker', 'Name', 'Price', 'PER', 'PBV', 'ROE', 'Div Yield', 'Expected PER'] if k in df_sektor.columns]
 
-        # Susun ulang dataframe
-        df_tampil = df_sektor[['Ticker', 'Name', 'Price', 'PER', 'PBV', 'ROE', 'Div Yield', 'Expected PER']]
+        if not kolom_valid:
+            st.warning("⚠️ Tidak ada data yang tersedia untuk sektor ini.")
+            continue
 
-        # Konfigurasi Grid agar bisa render HTML
+        df_tampil = df_sektor[kolom_valid]
+
+        # Setup AgGrid
         gb = GridOptionsBuilder.from_dataframe(df_tampil)
         gb.configure_default_column(sortable=True, filter=True, resizable=True)
 
-        # Penting: Aktifkan cellRenderer custom untuk kolom Ticker
-        gb.configure_column("Ticker", cellRenderer=JsCode('''function(params) { return params.value; }'''))
+        # Render kolom Ticker sebagai hyperlink
+        if "Ticker" in df_tampil.columns:
+            gb.configure_column("Ticker", cellRenderer=link_renderer)
 
         grid_options = gb.build()
 
-        # Tampilkan AgGrid
         AgGrid(
             df_tampil,
             gridOptions=grid_options,
-            theme='streamlit',  # Sesuai dark mode
-            fit_columns_on_grid_load=True,
             height=300,
-            allow_unsafe_jscode=True  # WAJIB untuk render HTML
+            theme="streamlit",
+            fit_columns_on_grid_load=True,
+            allow_unsafe_jscode=True
         )
         
 # ========================== #
