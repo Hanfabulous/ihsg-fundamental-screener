@@ -147,7 +147,7 @@ def tampilkan_chart_ihsg():
 # ========================== #
 # 📊 Fungsi: Data Sektoral IDX
 # ========================== #
-def ambil_data_sektoral_idx():
+def tampilkan_sektoral_idx() :
     try:
         url = "https://www.idx.co.id/id/market-data/sectoral-index/"
         headers = {
