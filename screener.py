@@ -330,24 +330,6 @@ def tampilkan_fundamental():
         (df_clean['Expected PER'] <= max_forward_per)
     ]
 
-    st.subheader("📈 Hasil Screening")
-    st.markdown("Klik ticker untuk melihat detail 👇", unsafe_allow_html=True)
-
-    gb = GridOptionsBuilder.from_dataframe(
-        hasil[['Ticker', 'Name', 'Price', 'PER', 'PBV', 'ROE', 'Div Yield', 'Sektor', 'Expected PER']]
-    )
-    gb.configure_default_column(sortable=True, filter=True)
-    gb.configure_side_bar()
-
-    AgGrid(
-        hasil,
-        gridOptions=gb.build(),
-        theme='light',
-        enable_enterprise_modules=False,
-        fit_columns_on_grid_load=True,
-        height=350
-    )
-
     # Detail ticker
     query_params = st.query_params
     ticker_qs = query_params.get("tkr", None)
