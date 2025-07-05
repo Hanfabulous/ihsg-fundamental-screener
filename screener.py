@@ -22,6 +22,23 @@ except ImportError:
 # 🔧 Konfigurasi Awal
 # ========================== #
 st.set_page_config(page_title="Investrade Trading Tools", layout="wide")
+# ============================ #
+# 🎨 CSS untuk memperbesar font
+# ============================ #
+st.markdown("""
+    <style>
+        body, div, table, th, td, p, span, input, label {
+            font-size: 18px !important;  /* default: 12px; jadi 1.5x */
+        }
+        h1, h2, h3, h4 {
+            font-size: 1.5em !important;
+        }
+        .stDataFrame th, .stDataFrame td {
+            font-size: 16px !important;
+        }
+    </style>
+""", unsafe_allow_html=True)
+
 
 # ========================== #
 # 🏷️ Header & Waktu
