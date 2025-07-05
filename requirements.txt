@@ -6,6 +6,6 @@ tabulate
 feedparser
 pytz
 plotly
-lxml==4.9.3
+lxml
 beautifulsoup4
 requests
