@@ -375,7 +375,7 @@ def tampilkan_fundamental():
         gb.configure_column("Ticker", cellRenderer=JsCode('''function(params) {return params.value;}'''), autoHeight=True)
         grid_options = gb.build()
 
-       AgGrid(
+        AgGrid(
             df_tampil,
             gridOptions=grid_options,
             theme='streamlit',  # Tema gelap
