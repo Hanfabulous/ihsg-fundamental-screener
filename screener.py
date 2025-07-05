@@ -169,6 +169,130 @@ def tampilkan_sektoral_idx():
         st.dataframe(df)
     except Exception as e:
         st.error(f"❌ Gagal mengambil data sektoral IDX: {e}")
+
+def tampilkan_fundamental():
+    st.subheader("📊 ZONA FUNDAMENTAL")
+    import numpy as np
+    from urllib.parse import urlparse, parse_qs
+    from st_aggrid import AgGrid, GridOptionsBuilder
+
+    # === Daftar sektor dan ticker (.JK) ===
+    sektor_map = {...}  # <-- gunakan sektor_map besar dari skrip Anda
+
+    tickers = []
+    ticker_to_sector = {}
+    for sektor, daftar in sektor_map.items():
+        for t in daftar:
+            ticker_jk = t + ".JK"
+            tickers.append(ticker_jk)
+            ticker_to_sector[ticker_jk] = sektor
+
+    @st.cache_data(ttl=3600)
+    def ambil_data(tickers):
+        data = []
+        for t in tickers:
+            try:
+                info = yf.Ticker(t).info
+                data.append({
+                    'Ticker': t,
+                    'Name': info.get('longName', '-'),
+                    'Price': info.get('currentPrice'),
+                    'PER': info.get('trailingPE'),
+                    'PBV': info.get('priceToBook'),
+                    'ROE': info.get('returnOnEquity'),
+                    'Div Yield': info.get('dividendYield'),
+                    'Sektor': ticker_to_sector.get(t, '-'),
+                    'Expected PER': info.get('forwardPE'),
+                })
+            except:
+                continue
+        return pd.DataFrame(data)
+
+    with st.spinner("🔄 Mengambil data Yahoo Finance..."):
+        df = ambil_data(tickers)
+
+    kolom_numerik = ['PER', 'PBV', 'ROE', 'Div Yield', 'Expected PER']
+    for kol in kolom_numerik:
+        df[kol] = pd.to_numeric(df[kol], errors='coerce')
+
+    # Sidebar filter
+    st.sidebar.header("📌 Filter")
+    semua_sektor = sorted(df['Sektor'].dropna().unique())
+    sektor_pilihan = st.sidebar.multiselect("Pilih Sektor", semua_sektor, default=semua_sektor)
+    min_roe = st.sidebar.slider("Min ROE (%)", 0.0, 100.0, 10.0)
+    max_per = st.sidebar.slider("Max PER", 0.0, 100.0, 25.0)
+    max_pbv = st.sidebar.slider("Max PBV", 0.0, 10.0, 3.0)
+    max_forward_per = st.sidebar.slider("Max Expected PER", 0.0, 100.0, 25.0)
+
+    kolom_wajib = ['PER', 'PBV', 'ROE']
+    if not all(k in df.columns for k in kolom_wajib):
+        st.error("❌ Kolom PER, PBV, atau ROE tidak tersedia.")
+        st.dataframe(df)
+        return
+
+    df_clean = df.dropna(subset=['PER', 'PBV', 'ROE', 'Expected PER']).copy()
+    df_clean['ROE'] *= 100
+    df_clean['Div Yield'] *= 100
+
+    hasil = df_clean[
+        (df_clean['Sektor'].isin(sektor_pilihan)) &
+        (df_clean['ROE'] >= min_roe) &
+        (df_clean['PER'] <= max_per) &
+        (df_clean['PBV'] <= max_pbv) &
+        (df_clean['Expected PER'] <= max_forward_per)
+    ]
+
+    st.subheader("📈 Hasil Screening")
+    st.markdown("Klik ticker untuk melihat detail 👇", unsafe_allow_html=True)
+
+    gb = GridOptionsBuilder.from_dataframe(
+        hasil[['Ticker', 'Name', 'Price', 'PER', 'PBV', 'ROE', 'Div Yield', 'Sektor', 'Expected PER']]
+    )
+    gb.configure_default_column(sortable=True, filter=True)
+    gb.configure_side_bar()
+
+    AgGrid(
+        hasil,
+        gridOptions=gb.build(),
+        theme='light',
+        enable_enterprise_modules=False,
+        fit_columns_on_grid_load=True,
+        height=350
+    )
+
+    # Detail ticker
+    query_params = st.query_params
+    ticker_qs = query_params.get("tkr", None)
+    if ticker_qs:
+        st.session_state["ticker_diklik"] = ticker_qs
+
+    def tampilkan_detail_ticker(ticker):
+        st.markdown(f"---\n## 📌 Detail Ticker: `{ticker}`")
+        try:
+            info = yf.Ticker(ticker).info
+            st.markdown(f"**Nama Saham:** {info.get('longName', '-')}")
+            st.markdown(f"**Harga Saat Ini:** {info.get('currentPrice', '-')}") 
+            st.markdown(f"**PER:** {info.get('trailingPE', '-')}") 
+            st.markdown(f"**PBV:** {info.get('priceToBook', '-')}") 
+            st.markdown(f"**ROE:** {round(info.get('returnOnEquity', 0)*100, 2) if info.get('returnOnEquity') else '-'} %") 
+            st.markdown(f"**Dividend Yield:** {round(info.get('dividendYield', 0)*100, 2) if info.get('dividendYield') else '-'} %") 
+            st.markdown(f"**Expected PER:** {info.get('forwardPE', '-')}") 
+            st.markdown(f"**Sektor:** {ticker_to_sector.get(ticker, '-')}") 
+        except Exception as e:
+            st.error(f"❌ Gagal mengambil data detail: {e}")
+
+    if st.session_state.get("ticker_diklik"):
+        tampilkan_detail_ticker(st.session_state["ticker_diklik"])
+
+    st.markdown("## 📂 Hasil per Sektor")
+    for sektor in sorted(hasil['Sektor'].unique()):
+        st.markdown(f"### 🔸 {sektor}")
+        df_sektor = hasil[hasil['Sektor'] == sektor].copy()
+        st.dataframe(
+            df_sektor[['Ticker', 'Name', 'Price', 'PER', 'PBV', 'ROE', 'Div Yield', 'Expected PER']],
+            use_container_width=True,
+            height=300
+        )
         
 # ========================== #
 # 📁 Sidebar Navigasi
