@@ -11,8 +11,7 @@ import feedparser
 import plotly.graph_objects as go
 import requests
 import time
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
+from bs4 import BeautifulSoup
 
 # ========================== #
 # 🔧 Konfigurasi Awal
@@ -151,34 +150,27 @@ def tampilkan_chart_ihsg():
 # 📊 Fungsi: Data Sektoral IDX
 # ========================== #
 def tampilkan_sektoral_idx():
-    st.subheader("📊 Data Sektoral IDX (via Selenium)")
-
+   st.subheader("🏭 Data Sektoral IDX")
+    url = "https://www.idx.co.id/id/market-data/sectoral-index/"
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+    }
     try:
-        chrome_options = Options()
-        chrome_options.add_argument("--headless")
-        chrome_options.add_argument("--no-sandbox")
-        chrome_options.add_argument("--disable-dev-shm-usage")
-
-        driver = webdriver.Chrome(options=chrome_options)  # pastikan chromedriver ada di PATH
-
-        url = "https://www.idx.co.id/id/market-data/sectoral-index/"
-        driver.get(url)
-        time.sleep(5)  # tunggu JS load
-
-        soup = BeautifulSoup(driver.page_source, "html.parser")
-        driver.quit()
-
-        table = soup.find("table")
-        if not table:
-            st.error("❌ Tabel sektoral tidak ditemukan.")
-            return
-
-        df = pd.read_html(str(table))[0]
-        df.columns = df.columns.str.strip()
+        resp = requests.get(url, headers=headers, timeout=10)
+        resp.raise_for_status()
+        soup = BeautifulSoup(resp.text, "lxml")
+        # sesuaikan selector berdasarkan strukturnya (cek via Inspect Element)
+        tabel = soup.select_one("table.table")  
+        df = pd.read_html(str(tabel))[0]
         st.dataframe(df)
-
     except Exception as e:
         st.error(f"❌ Gagal mengambil data sektoral IDX: {e}")
+
+# Di bagian routing Home, urutkan seperti ini:
+if menu == "Home":
+    get_news()            # 1. Berita
+    tampilkan_chart_ihsg()  # 2. Grafik IHSG lengkap
+    get_sektoral_idx()    # 3. Data sektoral IDX
         
 # ========================== #
 # 📁 Sidebar Navigasi
