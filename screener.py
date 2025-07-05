@@ -9,6 +9,7 @@ import yfinance as yf
 import pandas as pd
 import feedparser
 import plotly.graph_objects as go
+import requests
 
 # ========================== #
 # 🔧 Konfigurasi Awal
@@ -146,16 +147,29 @@ def tampilkan_chart_ihsg():
 # ========================== #
 # 📊 Fungsi: Data Sektoral IDX
 # ========================== #
-def tampilkan_sektoral_idx():
-    st.subheader("📊 Data Indeks Sektoral (IDX)")
+def ambil_data_sektoral_idx():
     try:
         url = "https://www.idx.co.id/id/market-data/sectoral-index/"
-        df_list = pd.read_html(url)
-        df = df_list[0]  # Ambil tabel pertama
-        st.dataframe(df)
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.0.0 Safari/537.36"
+        }
+
+        response = requests.get(url, headers=headers)
+        response.raise_for_status()
+
+        # Parse semua tabel dari halaman
+        tabels = pd.read_html(response.text)
+
+        # Cek isi tabel
+        for i, t in enumerate(tabels):
+            print(f"Tabel {i}:\n", t.head(), "\n")
+
+        return tabels[0]  # Kembalikan tabel pertama (jika itu tabel sektoral)
+    
     except Exception as e:
         st.error(f"❌ Gagal mengambil data sektoral IDX: {e}")
-
+        return pd.DataFrame()
+        
 # ========================== #
 # 📁 Sidebar Navigasi
 # ========================== #
