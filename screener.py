@@ -11,7 +11,12 @@ import feedparser
 import plotly.graph_objects as go
 import requests
 import time
-from bs4 import BeautifulSoup
+try:
+    from bs4 import BeautifulSoup
+except ImportError:
+    st.error("❌ Modul `beautifulsoup4` belum terinstal. Tambahkan ke `requirements.txt` dan rerun.")
+    st.stop()
+
 
 # ========================== #
 # 🔧 Konfigurasi Awal
