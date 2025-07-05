@@ -32,7 +32,7 @@ with col_kanan:
     st.markdown(f"<p style='text-align:right; font-weight:bold; font-size:24px;'>🕒 Waktu sekarang: {jam_sekarang} WIB</p>", unsafe_allow_html=True)
 
 # ========================== #
-# 🗞️ Fungsi Ambil Berita
+# 🌟 Fungsi: Ambil Berita
 # ========================== #
 def get_news():
     sumber_rss = {
@@ -44,7 +44,7 @@ def get_news():
     col1, col2 = st.columns(2)
     for (nama, url), kolom in zip(sumber_rss.items(), [col1, col2]):
         with kolom:
-            kolom.markdown(f"### 🗞️ {nama}")
+            kolom.markdown(f"### 📵 {nama}")
             try:
                 feed = feedparser.parse(url)
                 hitung = 0
@@ -78,24 +78,19 @@ def get_news():
                 kolom.warning(f"Gagal ambil berita dari {nama}: {e}")
 
 # ========================== #
-# 📈 Fungsi Grafik IHSG
+# 📈 Fungsi: Grafik IHSG
 # ========================== #
 def tampilkan_chart_ihsg():
     st.subheader("📈 Grafik IHSG (Candlestick + MA20 + MA50)")
-
     try:
-        data = yf.download("^JKSE", period="2y", interval="1d")
+        data = yf.download(tickers="^JKSE", period="2y", interval="1d", group_by='ticker')
+
+        if isinstance(data.columns, pd.MultiIndex):
+            data = data['^JKSE']
 
         if data.empty:
             st.error("❌ Data IHSG kosong atau gagal diunduh.")
             return
-
-        # Bersihkan kolom MultiIndex jika ada
-        if isinstance(data.columns, pd.MultiIndex):
-            data.columns = [f"{col[0]}_{col[1]}" for col in data.columns]
-
-        rename_map = {col: col.replace("_^JKSE", "") for col in data.columns if "_^JKSE" in col}
-        data = data.rename(columns=rename_map)
 
         required_cols = ["Open", "High", "Low", "Close", "Volume"]
         if not all(col in data.columns for col in required_cols):
@@ -103,20 +98,13 @@ def tampilkan_chart_ihsg():
             st.write("Kolom yang tersedia:", data.columns.tolist())
             return
 
-        # Tambahkan MA
         data["MA20"] = data["Close"].rolling(window=20).mean()
         data["MA50"] = data["Close"].rolling(window=50).mean()
         data["VolumeAvg20"] = data["Volume"].rolling(window=20).mean()
         data = data.reset_index()
-
-        # Siapkan data untuk chart (harus dropna MA)
         data_chart = data.dropna(subset=["MA20", "MA50"])
 
-        # ============================= #
-        # ✅ Data IHSG Hari Terakhir
-        # ============================= #
         last_valid_row = data[data["Volume"].notna()].iloc[-1]
-
         last_data = {
             "Tanggal": last_valid_row["Date"].date(),
             "Open": last_valid_row["Open"],
@@ -129,17 +117,10 @@ def tampilkan_chart_ihsg():
         st.write("📋 Data IHSG Terakhir:")
         st.dataframe(pd.DataFrame([last_data]))
 
-        # ============================= #
-        # ✅ 7 Hari Terakhir
-        # ============================= #
         st.markdown("### 📆 Data IHSG 7 Hari Terakhir:")
         st.dataframe(data[["Date", "Open", "High", "Low", "Close", "Volume"]].dropna().tail(7).reset_index(drop=True))
 
-        # ============================= #
-        # 📈 Plot Candlestick + MA
-        # ============================= #
         fig = go.Figure()
-
         fig.add_trace(go.Candlestick(
             x=data_chart["Date"],
             open=data_chart["Open"],
@@ -150,7 +131,6 @@ def tampilkan_chart_ihsg():
             increasing_line_color="green",
             decreasing_line_color="red"
         ))
-
         fig.add_trace(go.Scatter(x=data_chart["Date"], y=data_chart["MA20"], name="MA20", line=dict(color='orange')))
         fig.add_trace(go.Scatter(x=data_chart["Date"], y=data_chart["MA50"], name="MA50", line=dict(color='blue')))
 
@@ -162,14 +142,13 @@ def tampilkan_chart_ihsg():
             height=600,
             xaxis_rangeslider_visible=False
         )
-
         st.plotly_chart(fig, use_container_width=True)
 
     except Exception as e:
         st.error(f"❌ Gagal menampilkan grafik IHSG: {e}")
 
 # ========================== #
-# 🧭 Sidebar Navigasi
+# 🌐 Sidebar Navigasi
 # ========================== #
 with st.sidebar:
     st.header("📁 Menu Navigasi")
@@ -181,18 +160,15 @@ with st.sidebar:
 if menu == "Home":
     get_news()
     tampilkan_chart_ihsg()
-
 elif menu == "Trading Page":
     st.header("📈 Trading Page")
     st.info("Konten ini menampilkan data indeks global, komoditas, sinyal beli, EIDO, dan strategi.")
-    st.markdown("_🛠️ Akan diisi dari file `Trading_Page.py`_")
-
+    st.markdown("_\ud83d\udee0\ufe0f Akan diisi dari file `Trading_Page.py`_")
 elif menu == "Teknikal":
     st.header("📉 Analisa Teknikal Saham")
     st.info("Masukkan kode saham (contoh: `BBRI.JK`) untuk melihat chart dan indikator.")
-    st.markdown("_🛠️ Akan diisi dari file `Teknikal.py`_")
-
+    st.markdown("_\ud83d\udee0\ufe0f Akan diisi dari file `Teknikal.py`_")
 elif menu == "Fundamental":
     st.header("📊 Screener Fundamental Saham")
     st.info("Filter berdasarkan PER, PBV, ROE, Dividend Yield, dan lainnya.")
-    st.markdown("_🛠️ Akan diisi dari file `Fundamental.py`_")
+    st.markdown("_\ud83d\udee0\ufe0f Akan diisi dari file `Fundamental.py`_")
