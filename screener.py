@@ -11,6 +11,7 @@ import feedparser
 import plotly.graph_objects as go
 import requests
 import time
+from urllib.parse import urlparse, parse_qs
 try:
     from bs4 import BeautifulSoup
 except ImportError:
@@ -189,9 +190,6 @@ def tampilkan_sektoral_idx():
 
 def tampilkan_fundamental():
     st.subheader("📊 ZONA FUNDAMENTAL")
-    import numpy as np
-    from urllib.parse import urlparse, parse_qs
-    from st_aggrid import AgGrid, GridOptionsBuilder
 
     # === Daftar sektor dan ticker (.JK) ===
     sektor_map = {
@@ -275,6 +273,9 @@ def tampilkan_fundamental():
             tickers.append(ticker_jk)
             ticker_to_sector[ticker_jk] = sektor
 
+    # ============================ #
+    # 📥 Ambil Data
+    # ============================ #
     @st.cache_data(ttl=3600)
     def ambil_data(tickers):
         data = []
@@ -289,8 +290,8 @@ def tampilkan_fundamental():
                     'PBV': info.get('priceToBook'),
                     'ROE': info.get('returnOnEquity'),
                     'Div Yield': info.get('dividendYield'),
-                    'Sektor': ticker_to_sector.get(t, '-'),
                     'Expected PER': info.get('forwardPE'),
+                    'Sektor': ticker_to_sector.get(t, '-')
                 })
             except:
                 continue
@@ -299,11 +300,13 @@ def tampilkan_fundamental():
     with st.spinner("🔄 Mengambil data Yahoo Finance..."):
         df = ambil_data(tickers)
 
+    # ============================ #
+    # 🎚️ Sidebar Filter
+    # ============================ #
     kolom_numerik = ['PER', 'PBV', 'ROE', 'Div Yield', 'Expected PER']
     for kol in kolom_numerik:
         df[kol] = pd.to_numeric(df[kol], errors='coerce')
 
-    # Sidebar filter
     st.sidebar.header("📌 Filter")
     semua_sektor = sorted(df['Sektor'].dropna().unique())
     sektor_pilihan = st.sidebar.multiselect("Pilih Sektor", semua_sektor, default=semua_sektor)
@@ -311,12 +314,6 @@ def tampilkan_fundamental():
     max_per = st.sidebar.slider("Max PER", 0.0, 100.0, 25.0)
     max_pbv = st.sidebar.slider("Max PBV", 0.0, 10.0, 3.0)
     max_forward_per = st.sidebar.slider("Max Expected PER", 0.0, 100.0, 25.0)
-
-    kolom_wajib = ['PER', 'PBV', 'ROE']
-    if not all(k in df.columns for k in kolom_wajib):
-        st.error("❌ Kolom PER, PBV, atau ROE tidak tersedia.")
-        st.dataframe(df)
-        return
 
     df_clean = df.dropna(subset=['PER', 'PBV', 'ROE', 'Expected PER']).copy()
     df_clean['ROE'] *= 100
@@ -330,7 +327,9 @@ def tampilkan_fundamental():
         (df_clean['Expected PER'] <= max_forward_per)
     ]
 
-    # Detail ticker
+    # ============================ #
+    # 🔍 Detail Ticker jika dipilih
+    # ============================ #
     query_params = st.query_params
     ticker_qs = query_params.get("tkr", None)
     if ticker_qs:
@@ -354,32 +353,32 @@ def tampilkan_fundamental():
     if st.session_state.get("ticker_diklik"):
         tampilkan_detail_ticker(st.session_state["ticker_diklik"])
 
-st.markdown("## 📂 Hasil per Sektor")
+    # ============================ #
+    # 📂 Hasil per Sektor (AgGrid)
+    # ============================ #
+    st.markdown("## 📂 Hasil per Sektor")
+    for sektor in sorted(hasil['Sektor'].unique()):
+        st.markdown(f"### 🔸 {sektor}")
+        df_sektor = hasil[hasil['Sektor'] == sektor].copy()
 
-for sektor in sorted(hasil['Sektor'].unique()):
-    st.markdown(f"### 🔸 {sektor}")
-    df_sektor = hasil[hasil['Sektor'] == sektor].copy()
+        # Link ke detail
+        df_sektor['Link'] = df_sektor['Ticker'].apply(lambda x: f"[{x}](/?tkr={x})")
+        df_tampil = df_sektor[['Link', 'Name', 'Price', 'PER', 'PBV', 'ROE', 'Div Yield', 'Expected PER']]
 
-    # Buat kolom hyperlink untuk ticker
-    df_sektor['Link'] = df_sektor['Ticker'].apply(lambda x: f"[{x}](/?tkr={x})")
+        # Konfigurasi AgGrid
+        gb = GridOptionsBuilder.from_dataframe(df_tampil)
+        gb.configure_default_column(sortable=True, filter=True, resizable=True)
+        gb.configure_column("Link", header_name="Ticker", cellRenderer='markdown', pinned="left")
+        grid_options = gb.build()
 
-    # Ubah urutan kolom: Link dulu, lalu yang lainnya
-    df_tampil = df_sektor[['Link', 'Name', 'Price', 'PER', 'PBV', 'ROE', 'Div Yield', 'Expected PER']]
-
-    # Konfigurasi AgGrid
-    gb = GridOptionsBuilder.from_dataframe(df_tampil)
-    gb.configure_default_column(sortable=True, filter=True, resizable=True)
-    gb.configure_column("Link", header_name="Ticker", cellRenderer='markdown', pinned="left")
-    grid_options = gb.build()
-
-    AgGrid(
-        df_tampil,
-        gridOptions=grid_options,
-        theme='alpine',  # atau 'streamlit' kalau mau gelap
-        fit_columns_on_grid_load=True,
-        height=300,
-        enable_enterprise_modules=False
-    )
+        AgGrid(
+            df_tampil,
+            gridOptions=grid_options,
+            theme='alpine',
+            fit_columns_on_grid_load=True,
+            height=300,
+            enable_enterprise_modules=False
+        )
         
 # ========================== #
 # 📁 Sidebar Navigasi
