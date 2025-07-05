@@ -10,6 +10,9 @@ import pandas as pd
 import feedparser
 import plotly.graph_objects as go
 import requests
+import time
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
 
 # ========================== #
 # 🔧 Konfigurasi Awal
