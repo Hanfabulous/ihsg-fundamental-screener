@@ -323,3 +323,4 @@ elif menu == "Fundamental":
     st.header("📊 Screener Fundamental Saham")
     st.info("Filter saham berdasarkan PER, PBV, ROE, dividen, dan lainnya.")
     st.markdown("_🛠️ Akan diisi dari file `Fundamental.py`_")
+    tampilkan_fundamental()
