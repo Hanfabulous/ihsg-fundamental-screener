@@ -7,3 +7,5 @@ feedparser
 pytz
 plotly==5.21.0
 lxml
+BeautifulSoup
+Selenium
