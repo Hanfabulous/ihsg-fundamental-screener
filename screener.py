@@ -354,9 +354,7 @@ def tampilkan_fundamental():
     if st.session_state.get("ticker_diklik"):
         tampilkan_detail_ticker(st.session_state["ticker_diklik"])
 
-        st.markdown("## 📂 Hasil per Sektor")
-
-   st.markdown("## 📂 Hasil per Sektor")
+st.markdown("## 📂 Hasil per Sektor")
 
 for sektor in sorted(hasil['Sektor'].unique()):
     st.markdown(f"### 🔸 {sektor}")
