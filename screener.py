@@ -362,20 +362,21 @@ def tampilkan_fundamental():
         st.markdown(f"### 🔸 {sektor}")
         df_sektor = hasil[hasil['Sektor'] == sektor].copy()
 
-        # Link ke detail
-        df_sektor['Link'] = df_sektor['Ticker'].apply(lambda x: f"[{x}](/?tkr={x})")
+        # Kolom link Ticker
+        df_sektor['TickerLink'] = df_sektor['Ticker'].apply(lambda x: f'<a href="/?tkr={x}" target="_self" style="color:#40a9ff;">{x}</a>')
         df_tampil = df_sektor[['Link', 'Name', 'Price', 'PER', 'PBV', 'ROE', 'Div Yield', 'Expected PER']]
+        df_tampil = df_tampil.rename(columns={'TickerLink': 'Ticker'})
 
         # Konfigurasi AgGrid
         gb = GridOptionsBuilder.from_dataframe(df_tampil)
         gb.configure_default_column(sortable=True, filter=True, resizable=True)
-        gb.configure_column("Link", header_name="Ticker", cellRenderer='markdown', pinned="left")
+        gb.configure_column("Ticker", header_name="Ticker", cellRenderer=JsCode('''function(params) {return params.value;}'''), autoHeight=True
         grid_options = gb.build()
 
         AgGrid(
             df_tampil,
             gridOptions=grid_options,
-            theme='alpine',
+            theme='streamlit',
             fit_columns_on_grid_load=True,
             height=300,
             enable_enterprise_modules=False
