@@ -356,19 +356,32 @@ def tampilkan_fundamental():
 
         st.markdown("## 📂 Hasil per Sektor")
 
-    for sektor in sorted(hasil['Sektor'].unique()):
-        st.markdown(f"### 🔸 {sektor}")
-        df_sektor = hasil[hasil['Sektor'] == sektor].copy()
+   st.markdown("## 📂 Hasil per Sektor")
 
-        for idx, row in df_sektor.iterrows():
-            ticker_link = f"[{row['Ticker']}](/?tkr={row['Ticker']})"
-            st.markdown(
-                f"""
-                🔗 {ticker_link} - **{row['Name']}**  
-                Harga: Rp{row['Price']:,} | PER: {row['PER']:.2f} | PBV: {row['PBV']:.2f} | ROE: {row['ROE']:.2f}% | Div Yield: {row['Div Yield']:.2f}% | Expected PER: {row['Expected PER']:.2f}
-                """,
-                unsafe_allow_html=True
-            )
+for sektor in sorted(hasil['Sektor'].unique()):
+    st.markdown(f"### 🔸 {sektor}")
+    df_sektor = hasil[hasil['Sektor'] == sektor].copy()
+
+    # Buat kolom hyperlink untuk ticker
+    df_sektor['Link'] = df_sektor['Ticker'].apply(lambda x: f"[{x}](/?tkr={x})")
+
+    # Ubah urutan kolom: Link dulu, lalu yang lainnya
+    df_tampil = df_sektor[['Link', 'Name', 'Price', 'PER', 'PBV', 'ROE', 'Div Yield', 'Expected PER']]
+
+    # Konfigurasi AgGrid
+    gb = GridOptionsBuilder.from_dataframe(df_tampil)
+    gb.configure_default_column(sortable=True, filter=True, resizable=True)
+    gb.configure_column("Link", header_name="Ticker", cellRenderer='markdown', pinned="left")
+    grid_options = gb.build()
+
+    AgGrid(
+        df_tampil,
+        gridOptions=grid_options,
+        theme='alpine',  # atau 'streamlit' kalau mau gelap
+        fit_columns_on_grid_load=True,
+        height=300,
+        enable_enterprise_modules=False
+    )
         
 # ========================== #
 # 📁 Sidebar Navigasi
