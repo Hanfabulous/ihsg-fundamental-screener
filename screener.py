@@ -12,6 +12,7 @@ import plotly.graph_objects as go
 import requests
 import time
 from st_aggrid import AgGrid, GridOptionsBuilder
+from st_aggrid.shared import JsCode
 from urllib.parse import urlparse, parse_qs
 try:
     from bs4 import BeautifulSoup
@@ -364,22 +365,23 @@ def tampilkan_fundamental():
 
         # Kolom link Ticker
         df_sektor['TickerLink'] = df_sektor['Ticker'].apply(lambda x: f'<a href="/?tkr={x}" target="_self" style="color:#40a9ff;">{x}</a>')
-        df_tampil = df_sektor[['Link', 'Name', 'Price', 'PER', 'PBV', 'ROE', 'Div Yield', 'Expected PER']]
+        df_tampil = df_sektor[['TickerLink', 'Name', 'Price', 'PER', 'PBV', 'ROE', 'Div Yield', 'Expected PER']]
         df_tampil = df_tampil.rename(columns={'TickerLink': 'Ticker'})
+
 
         # Konfigurasi AgGrid
         gb = GridOptionsBuilder.from_dataframe(df_tampil)
         gb.configure_default_column(sortable=True, filter=True, resizable=True)
-        gb.configure_column("Ticker", header_name="Ticker", cellRenderer=JsCode('''function(params) {return params.value;}'''), autoHeight=True)
+        gb.configure_column("Ticker", cellRenderer=JsCode('''function(params) {return params.value;}'''), autoHeight=True)
         grid_options = gb.build()
 
-        AgGrid(
+       AgGrid(
             df_tampil,
             gridOptions=grid_options,
-            theme='streamlit',
+            theme='streamlit',  # Tema gelap
             fit_columns_on_grid_load=True,
             height=300,
-            enable_enterprise_modules=False
+            allow_unsafe_jscode=True
         )
         
 # ========================== #
