@@ -263,16 +263,13 @@ def tampilkan_sektoral_idx():
                 "FISH", "SIPD", "WMPP", "CRAB", "TRGU", "AGAR", "DPUM", "FAPA", "CBUT", "BEER", "ALTO", "MAXI", "MAGP", "LAPD", "GOLL",
                 "WICO"]
 }
-# ============================ #
-# 📌 KONFIGURASI DAN PETA TICKER
-# ============================ #
-    tickers = []
-    ticker_to_sector = {}
-    for sektor, daftar in sektor_map.items():
-        for t in daftar:
-            ticker_jk = t + ".JK"
-            tickers.append(ticker_jk)
-            ticker_to_sector[ticker_jk] = sektor
+tickers = []
+ticker_to_sector = {}
+for sektor, daftar in sektor_map.items():
+    for t in daftar:
+        ticker_jk = t + ".JK"
+        tickers.append(ticker_jk)
+        ticker_to_sector[ticker_jk] = sektor
 
 # ============================ #
 # 📌 Fungsi Utama Fundamental
@@ -304,6 +301,9 @@ def tampilkan_fundamental():
     with st.spinner("🔄 Mengambil data Yahoo Finance..."):
         df = ambil_data(tickers)
 
+    # ============================ #
+    # 🎚️ Sidebar Filter
+    # ============================ #
     kolom_numerik = ['PER', 'PBV', 'ROE', 'Div Yield', 'Expected PER']
     for kol in kolom_numerik:
         df[kol] = pd.to_numeric(df[kol], errors='coerce')
@@ -328,6 +328,9 @@ def tampilkan_fundamental():
         (df_clean['Expected PER'] <= max_forward_per)
     ]
 
+    # ============================ #
+    # 🔍 Detail Ticker jika dipilih
+    # ============================ #
     query_params = st.query_params
     ticker_qs = query_params.get("tkr", None)
     if ticker_qs:
@@ -351,7 +354,11 @@ def tampilkan_fundamental():
     if st.session_state.get("ticker_diklik"):
         tampilkan_detail_ticker(st.session_state["ticker_diklik"])
 
+    # ============================ #
+    # 📂 Hasil per Sektor
+    # ============================ #
     st.markdown("## 📂 Hasil per Sektor")
+
     link_renderer = JsCode("""
         function(params) {
             return `<a href='/?tkr=${params.value}' target='_self' style='color:#40a9ff;text-decoration:none;'>${params.value}</a>`;
@@ -395,13 +402,16 @@ with st.sidebar:
 # ========================== #
 if menu == "Home":
     st.title("🏠 Halaman Utama")
-    # get_news() dan tampilkan_chart_ihsg() harus Anda definisikan jika ingin menampilkan
+    # get_news(), tampilkan_chart_ihsg() bisa ditambahkan di sini
+
 elif menu == "Trading Page":
     st.header("📈 Trading Page")
     st.info("Menampilkan indeks global, komoditas, sinyal beli, EIDO, strategi.")
+
 elif menu == "Teknikal":
     st.header("📉 Analisa Teknikal Saham")
     st.info("Masukkan kode saham (contoh: `BBRI.JK`) untuk melihat indikator.")
+
 elif menu == "Fundamental":
     st.header("📊 Screener Fundamental Saham")
     st.info("Filter saham berdasarkan PER, PBV, ROE, dividen, dan lainnya.")
