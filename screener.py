@@ -379,14 +379,13 @@ def tampilkan_fundamental():
         gb.configure_column("Ticker", type=["textColumn"], header_name="Ticker", cellRenderer="htmlRenderer")
 
         AgGrid(
-            df_tampil,
-            gridOptions=gb.build(),
+            hasil[['Ticker_Link', 'Name', 'Price', 'PER', 'PBV', 'ROE', 'Sektor']],
+            gridOptions=builder.build(),
             allow_unsafe_jscode=True,
+            update_mode=GridUpdateMode.NO_UPDATE,
             fit_columns_on_grid_load=True,
-            enable_enterprise_modules=False,
             height=300
         )
-
 
 # ========================== #
 # 📁 Sidebar Navigasi
