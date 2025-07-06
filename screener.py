@@ -290,8 +290,8 @@ def tampilkan_fundamental():
                     "PER": info.get("trailingPE"),
                     "PBV": info.get("priceToBook"),
                     "ROE": info.get("returnOnEquity"),
-                    "Div Yield": info.get("dividendYield"),
-                    "Expected PER": info.get("forwardPE"),
+                    "Div Yield": info.get("dividendYield", 0.0),
+                    "Expected PER": info.get("forwardPE", np.nan),
                     "Sektor": ticker_to_sector.get(t, "-")
                 })
             except:
