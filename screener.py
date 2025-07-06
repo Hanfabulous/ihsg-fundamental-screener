@@ -190,10 +190,9 @@ def tampilkan_sektoral_idx():
     except Exception as e:
         st.error(f"❌ Gagal mengambil data sektoral IDX: {e}")
 
-def tampilkan_fundamental():
-    st.subheader("📊 ZONA FUNDAMENTAL")
-
-    # === Daftar sektor dan ticker (.JK) ===
+# ============================ #
+# 📌 KONFIGURASI DAN PETA TICKER
+# ============================ #
     sektor_map = {
     "Teknologi": ["GOTO", "BUKA", "EMTK", "WIFI", "WIRG", "MTDL", "DMMX", "DCII", "MLPT", "ELIT", "PTSN", "EDGE", "JATI",
                   "LUCK", "KREN", "MCAS", "KIOS", "MSTI", "CYBR", "DIVA", "IOTF", "NFCX", "AWAN", "ZYRX", "TRON", "AXIO",
