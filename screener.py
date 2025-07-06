@@ -304,9 +304,10 @@ def tampilkan_fundamental():
 
     # === Pastikan semua kolom numerik tersedia ===
     kolom_numerik = ['PER', 'PBV', 'ROE', 'Div Yield', 'Expected PER']
-    for kol in kolom_numerik:
-        if kol not in df.columns:
-            df[kol] = np.nan
+    if df is not None and not df.empty:
+        for kol in kolom_numerik:
+            if kol not in df.columns:
+                df[kol] = np.nan
 
     # === Konversi dan normalisasi ===
     for kol in kolom_numerik:
