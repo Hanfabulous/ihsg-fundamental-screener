@@ -272,48 +272,120 @@ for sektor, daftar in sektor_map.items():
         ticker_to_sector[ticker_jk] = sektor
 
 # ============================ #
-# 🔍 Ambil Data
+# 📊 FUNGSIONALITAS FUNDAMENTAL
 # ============================ #
-@st.cache_data(ttl=3600)
-def ambil_data(ticker_list):
-    hasil = []
-    for t in ticker_list:
+def tampilkan_fundamental():
+    st.subheader("📊 ZONA FUNDAMENTAL")
+
+    # === Ambil data dari Yahoo Finance ===
+    @st.cache_data(ttl=3600)
+    def ambil_data(ticker_list):
+        hasil = []
+        for t in ticker_list:
+            try:
+                info = yf.Ticker(t).info
+                hasil.append({
+                    "Ticker": t,
+                    "Name": info.get("longName", "-"),
+                    "Price": info.get("currentPrice"),
+                    "PER": info.get("trailingPE"),
+                    "PBV": info.get("priceToBook"),
+                    "ROE": info.get("returnOnEquity"),
+                    "Div Yield": info.get("dividendYield"),
+                    "Expected PER": info.get("forwardPE"),
+                    "Sektor": ticker_to_sector.get(t, "-")
+                })
+            except:
+                continue
+        return pd.DataFrame(hasil)
+
+    with st.spinner("🔄 Mengambil data dari Yahoo Finance..."):
+        df = ambil_data(tickers)
+
+    # === Konversi kolom numerik ===
+    kolom_numerik = ['PER', 'PBV', 'ROE', 'Div Yield', 'Expected PER']
+    for kol in kolom_numerik:
+        df[kol] = pd.to_numeric(df[kol], errors='coerce')
+    df['ROE'] *= 100
+    df['Div Yield'] *= 100
+
+    # === Sidebar Filter ===
+    st.sidebar.header("📌 Filter Screener")
+    sektor_terpilih = st.sidebar.multiselect("Pilih Sektor", sorted(df['Sektor'].dropna().unique()), default=sorted(df['Sektor'].dropna().unique()))
+    min_roe = st.sidebar.slider("Min ROE (%)", 0.0, 100.0, 10.0)
+    max_per = st.sidebar.slider("Max PER", 0.0, 100.0, 25.0)
+    max_pbv = st.sidebar.slider("Max PBV", 0.0, 10.0, 3.0)
+    max_forward_per = st.sidebar.slider("Max Expected PER", 0.0, 100.0, 25.0)
+
+    df_filter = df.dropna(subset=['PER', 'PBV', 'ROE', 'Expected PER']).copy()
+    df_filter = df_filter[
+        (df_filter['Sektor'].isin(sektor_terpilih)) &
+        (df_filter['ROE'] >= min_roe) &
+        (df_filter['PER'] <= max_per) &
+        (df_filter['PBV'] <= max_pbv) &
+        (df_filter['Expected PER'] <= max_forward_per)
+    ]
+
+    # === Tambah kolom klikable untuk Ticker ===
+    df_filter["Ticker_Link"] = df_filter["Ticker"].apply(
+        lambda x: f"<a href='/?tkr={x}' target='_self' style='color:#40a9ff;text-decoration:none;'>{x}</a>"
+    )
+
+    # === Detail via URL Param ===
+    query_params = st.query_params
+    ticker_qs = query_params.get("tkr", None)
+    if ticker_qs:
+        st.session_state["ticker_diklik"] = ticker_qs
+
+    def tampilkan_detail(ticker):
+        st.markdown(f"---\n### 🔍 Detail Ticker: `{ticker}`")
         try:
-            info = yf.Ticker(t).info
-            hasil.append({
-                "Ticker": t,
-                "Name": info.get("longName", "-"),
-                "Price": info.get("currentPrice"),
-                "PER": info.get("trailingPE"),
-                "PBV": info.get("priceToBook"),
-                "ROE": info.get("returnOnEquity") * 100 if info.get("returnOnEquity") else None,
-                "Div Yield": info.get("dividendYield") * 100 if info.get("dividendYield") else None,
-                "Expected PER": info.get("forwardPE")
-            })
-        except:
+            info = yf.Ticker(ticker).info
+            st.markdown(f"**Nama:** {info.get('longName', '-')}")
+            st.markdown(f"**Harga:** {info.get('currentPrice', '-')}")
+            st.markdown(f"**PER:** {info.get('trailingPE', '-')}")
+            st.markdown(f"**PBV:** {info.get('priceToBook', '-')}")
+            st.markdown(f"**ROE:** {round(info.get('returnOnEquity', 0)*100, 2)} %")
+            st.markdown(f"**Dividend Yield:** {round(info.get('dividendYield', 0)*100, 2)} %")
+            st.markdown(f"**Expected PER:** {info.get('forwardPE', '-')}")
+            st.markdown(f"**Sektor:** {ticker_to_sector.get(ticker, '-')}")
+        except Exception as e:
+            st.error(f"Gagal memuat detail: {e}")
+
+    if st.session_state.get("ticker_diklik"):
+        tampilkan_detail(st.session_state["ticker_diklik"])
+
+    # === Tampilkan hasil screening ===
+    st.markdown("## 📂 Hasil Screening per Sektor")
+
+    from st_aggrid import AgGrid, GridOptionsBuilder, JsCode
+
+    for sektor in sorted(df_filter['Sektor'].unique()):
+        df_sektor = df_filter[df_filter['Sektor'] == sektor].copy()
+        if df_sektor.empty:
             continue
-    return pd.DataFrame(hasil)
 
-df = ambil_data(tickers)
+        st.markdown(f"### 🔸 {sektor}")
 
-if not df.empty:
-    df["Ticker_link"] = ...
-    df = df.rename(columns={"Ticker_link": "Ticker"})  # ❌ Ini sering sebabkan error
+        df_tampil = df_sektor[[
+            "Ticker_Link", "Name", "Price", "PER", "PBV", "ROE", "Div Yield", "Expected PER"
+        ]].copy()
+        df_tampil.columns = [
+            "Ticker", "Name", "Price", "PER", "PBV", "ROE", "Div Yield", "Expected PER"
+        ]  # rename untuk tampilan kolom
 
-    df_tampil = df[["Ticker", "Name", "Price", "PER", "PBV", "ROE", "Div Yield", "Expected PER"]]
+        gb = GridOptionsBuilder.from_dataframe(df_tampil)
+        gb.configure_default_column(sortable=True, filter=True, resizable=True)
+        gb.configure_column("Ticker", type=["textColumn"], header_name="Ticker", cellRenderer="htmlRenderer")
 
-    gb = GridOptionsBuilder.from_dataframe(df_tampil)
-    gb.configure_default_column(sortable=True, filter=True, resizable=True)
-    gb.configure_column("Ticker", header_name="Ticker")  # Tanpa renderer karena HTML sudah di dalamnya
-
-AgGrid(
-    df_tampil,
-    gridOptions=gb.build(),
-    height=300,
-    allow_unsafe_jscode=True,
-    fit_columns_on_grid_load=True,
-    enable_enterprise_modules=False
-)
+        AgGrid(
+            df_tampil,
+            gridOptions=gb.build(),
+            allow_unsafe_jscode=True,
+            fit_columns_on_grid_load=True,
+            enable_enterprise_modules=False,
+            height=300
+        )
 
 
 # ========================== #
