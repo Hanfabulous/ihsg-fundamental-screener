@@ -11,8 +11,7 @@ import feedparser
 import plotly.graph_objects as go
 import requests
 import time
-from st_aggrid import AgGrid, GridOptionsBuilder, JsCode
-from st_aggrid.shared import JsCode
+from st_aggrid import AgGrid, GridOptionsBuilder, JsCode, GridUpdateMode
 from urllib.parse import urlparse, parse_qs
 try:
     from bs4 import BeautifulSoup
