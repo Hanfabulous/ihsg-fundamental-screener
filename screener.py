@@ -288,48 +288,26 @@ def ambil_data(ticker_list):
                 "PBV": info.get("priceToBook"),
                 "ROE": info.get("returnOnEquity") * 100 if info.get("returnOnEquity") else None,
                 "Div Yield": info.get("dividendYield") * 100 if info.get("dividendYield") else None,
-                "Expected PER": info.get("forwardPE"),
-                "Sektor": ticker_to_sector.get(t, "-")
+                "Expected PER": info.get("forwardPE")
             })
         except:
             continue
     return pd.DataFrame(hasil)
 
-# ============================ #
-# 📊 Tampilan Utama
-# ============================ #
-st.title("📊 Screener Fundamental Saham")
 df = ambil_data(tickers)
 
-if df.empty:
-    st.warning("Data tidak tersedia.")
-else:
-    df = df.dropna(subset=["PER", "PBV", "ROE", "Expected PER"])
-
-   # Gantikan kolom Ticker langsung dengan HTML link-nya
+if not df.empty:
     df["Ticker"] = df["Ticker"].apply(lambda x: f"<a href='/?tkr={x}' target='_self' style='color:#40a9ff;text-decoration:none;'>{x}</a>")
     df_tampil = df[["Ticker", "Name", "Price", "PER", "PBV", "ROE", "Div Yield", "Expected PER"]]
 
-    kolom_tampil = ["Ticker", "Name", "Price", "PER", "PBV", "ROE", "Div Yield", "Expected PER"]
-    df_tampil = df_tampil[kolom_tampil]
-
-    # Konfigurasi AgGrid
     gb = GridOptionsBuilder.from_dataframe(df_tampil)
-    gb.configure_default_column(resizable=True, filter=True, sortable=True, wrapText=True)
-    gb.configure_column("Ticker", header_name="Ticker", cellRenderer=JsCode("""
-        function(params) {
-            return params.value;
-        }
-    """), enableRowGroup=True)
+    gb.configure_default_column(resizable=True, sortable=True, filter=True)
+    gb.configure_column("Ticker", header_name="Ticker", wrapText=True)
 
-    grid_options = gb.build()
-
-    # Tampilkan AgGrid
     AgGrid(
         df_tampil,
-        gridOptions=grid_options,
+        gridOptions=gb.build(),
         allow_unsafe_jscode=True,
-        enable_enterprise_modules=False,
         fit_columns_on_grid_load=True,
         height=300
     )
