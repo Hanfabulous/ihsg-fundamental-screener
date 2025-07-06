@@ -266,7 +266,7 @@ sektor_map = {
 
 tickers = []
 ticker_to_sector = {}
-for sektor, daftar in sektor_map.items():  # ⬅️ DI SINI harus sudah punya sektor_map
+for sektor, daftar in sektor_map.items():
     for t in daftar:
         ticker_jk = t + ".JK"
         tickers.append(ticker_jk)
