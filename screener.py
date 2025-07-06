@@ -286,23 +286,29 @@ def tampilkan_fundamental():
                 hasil.append({
                     "Ticker": t,
                     "Name": info.get("longName", "-"),
-                    "Price": info.get("currentPrice"),
-                    "PER": info.get("trailingPE"),
-                    "PBV": info.get("priceToBook"),
-                    "ROE": info.get("returnOnEquity"),
-                    "Div Yield": info.get("dividendYield", 0.0),
+                    "Price": info.get("currentPrice", np.nan),
+                    "PER": info.get("trailingPE", np.nan),
+                    "PBV": info.get("priceToBook", np.nan),
+                    "ROE": info.get("returnOnEquity", np.nan),
+                    "Div Yield": info.get("dividendYield", np.nan),
                     "Expected PER": info.get("forwardPE", np.nan),
                     "Sektor": ticker_to_sector.get(t, "-")
                 })
-            except:
+            except Exception as e:
+                print(f"[ERROR] Gagal ambil data untuk {t}: {e}")
                 continue
         return pd.DataFrame(hasil)
 
     with st.spinner("🔄 Mengambil data dari Yahoo Finance..."):
         df = ambil_data(tickers)
 
-    # === Konversi kolom numerik ===
+    # === Pastikan semua kolom numerik tersedia ===
     kolom_numerik = ['PER', 'PBV', 'ROE', 'Div Yield', 'Expected PER']
+    for kol in kolom_numerik:
+        if kol not in df.columns:
+            df[kol] = np.nan
+
+    # === Konversi dan normalisasi ===
     for kol in kolom_numerik:
         df[kol] = pd.to_numeric(df[kol], errors='coerce')
     df['ROE'] *= 100
@@ -316,6 +322,7 @@ def tampilkan_fundamental():
     max_pbv = st.sidebar.slider("Max PBV", 0.0, 10.0, 3.0)
     max_forward_per = st.sidebar.slider("Max Expected PER", 0.0, 100.0, 25.0)
 
+    # === Filter DataFrame ===
     df_filter = df.dropna(subset=['PER', 'PBV', 'ROE', 'Expected PER']).copy()
     df_filter = df_filter[
         (df_filter['Sektor'].isin(sektor_terpilih)) &
@@ -325,7 +332,7 @@ def tampilkan_fundamental():
         (df_filter['Expected PER'] <= max_forward_per)
     ]
 
-    # === Tambah kolom klikable untuk Ticker ===
+    # === Kolom clickable untuk Ticker ===
     df_filter["Ticker_Link"] = df_filter["Ticker"].apply(
         lambda x: f"<a href='/?tkr={x}' target='_self' style='color:#40a9ff;text-decoration:none;'>{x}</a>"
     )
@@ -344,8 +351,10 @@ def tampilkan_fundamental():
             st.markdown(f"**Harga:** {info.get('currentPrice', '-')}")
             st.markdown(f"**PER:** {info.get('trailingPE', '-')}")
             st.markdown(f"**PBV:** {info.get('priceToBook', '-')}")
-            st.markdown(f"**ROE:** {round(info.get('returnOnEquity', 0)*100, 2)} %")
-            st.markdown(f"**Dividend Yield:** {round(info.get('dividendYield', 0)*100, 2)} %")
+            roe = info.get('returnOnEquity')
+            st.markdown(f"**ROE:** {round(roe*100, 2)} %" if roe is not None else "ROE: -")
+            dy = info.get('dividendYield')
+            st.markdown(f"**Dividend Yield:** {round(dy*100, 2)} %" if dy is not None else "Dividend Yield: -")
             st.markdown(f"**Expected PER:** {info.get('forwardPE', '-')}")
             st.markdown(f"**Sektor:** {ticker_to_sector.get(ticker, '-')}")
         except Exception as e:
@@ -354,10 +363,9 @@ def tampilkan_fundamental():
     if st.session_state.get("ticker_diklik"):
         tampilkan_detail(st.session_state["ticker_diklik"])
 
-    # === Tampilkan hasil screening ===
+    # === Tampilkan hasil screening per sektor ===
     st.markdown("## 📂 Hasil Screening per Sektor")
-
-    from st_aggrid import AgGrid, GridOptionsBuilder, JsCode
+    from st_aggrid import AgGrid, GridOptionsBuilder, JsCode, GridUpdateMode
 
     for sektor in sorted(df_filter['Sektor'].unique()):
         df_sektor = df_filter[df_filter['Sektor'] == sektor].copy()
@@ -371,22 +379,20 @@ def tampilkan_fundamental():
         ]].copy()
         df_tampil.columns = [
             "Ticker", "Name", "Price", "PER", "PBV", "ROE", "Div Yield", "Expected PER"
-        ]  # rename untuk tampilan kolom
+        ]
 
         gb = GridOptionsBuilder.from_dataframe(df_tampil)
         gb.configure_default_column(sortable=True, filter=True, resizable=True)
         gb.configure_column("Ticker", type=["textColumn"], header_name="Ticker", cellRenderer="htmlRenderer")
 
         AgGrid(
-            df_sektor[['Ticker_Link', 'Name', 'Price', 'PER', 'PBV', 'ROE', 'Sektor']],
+            df_tampil,
             gridOptions=gb.build(),
             allow_unsafe_jscode=True,
             update_mode=GridUpdateMode.NO_UPDATE,
             fit_columns_on_grid_load=True,
             height=300
         )
-
-
 # ========================== #
 # 📁 Sidebar Navigasi
 # ========================== #
