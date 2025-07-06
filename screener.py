@@ -306,11 +306,10 @@ if df.empty:
 else:
     df = df.dropna(subset=["PER", "PBV", "ROE", "Expected PER"])
 
-    # Buat kolom baru: link HTML ticker
-    df["Ticker_link"] = df["Ticker"].apply(lambda x: f"<a href='/?tkr={x}' target='_self' style='color:#40a9ff;text-decoration:none;'>{x}</a>")
+   # Gantikan kolom Ticker langsung dengan HTML link-nya
+    df["Ticker"] = df["Ticker"].apply(lambda x: f"<a href='/?tkr={x}' target='_self' style='color:#40a9ff;text-decoration:none;'>{x}</a>")
+    df_tampil = df[["Ticker", "Name", "Price", "PER", "PBV", "ROE", "Div Yield", "Expected PER"]]
 
-    # Rename agar AgGrid menampilkan "Ticker"
-    df_tampil = df.rename(columns={"Ticker_link": "Ticker"})
     kolom_tampil = ["Ticker", "Name", "Price", "PER", "PBV", "ROE", "Div Yield", "Expected PER"]
     df_tampil = df_tampil[kolom_tampil]
 
