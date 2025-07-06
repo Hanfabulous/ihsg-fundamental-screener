@@ -280,20 +280,7 @@ def tampilkan_fundamental():
 # ============================ #
 def tampilkan_fundamental():
     st.subheader("📊 ZONA FUNDAMENTAL")
-    # ============================ #
-    # 🗂️ Daftar Ticker dan Sektor
-    # ============================ #
-    tickers = []
-    ticker_to_sector = {}
-    for sektor, daftar_ticker in sektor_map.items():
-        for t in daftar_ticker:
-            kode = t + ".JK"
-            tickers.append(kode)
-            ticker_to_sector[kode] = sektor
 
-    # ============================ #
-    # 📥 Ambil Data
-    # ============================ #
     @st.cache_data(ttl=3600)
     def ambil_data(tickers):
         data = []
@@ -318,9 +305,6 @@ def tampilkan_fundamental():
     with st.spinner("🔄 Mengambil data Yahoo Finance..."):
         df = ambil_data(tickers)
 
-    # ============================ #
-    # 🎚️ Sidebar Filter
-    # ============================ #
     kolom_numerik = ['PER', 'PBV', 'ROE', 'Div Yield', 'Expected PER']
     for kol in kolom_numerik:
         df[kol] = pd.to_numeric(df[kol], errors='coerce')
@@ -345,9 +329,6 @@ def tampilkan_fundamental():
         (df_clean['Expected PER'] <= max_forward_per)
     ]
 
-    # ============================ #
-    # 🔍 Detail Ticker jika dipilih
-    # ============================ #
     query_params = st.query_params
     ticker_qs = query_params.get("tkr", None)
     if ticker_qs:
@@ -361,8 +342,8 @@ def tampilkan_fundamental():
             st.markdown(f"**Harga Saat Ini:** {info.get('currentPrice', '-')}")
             st.markdown(f"**PER:** {info.get('trailingPE', '-')}")
             st.markdown(f"**PBV:** {info.get('priceToBook', '-')}")
-            st.markdown(f"**ROE:** {round(info.get('returnOnEquity', 0)*100, 2) if info.get('returnOnEquity') else '-'} %")
-            st.markdown(f"**Dividend Yield:** {round(info.get('dividendYield', 0)*100, 2) if info.get('dividendYield') else '-'} %")
+            st.markdown(f"**ROE:** {round(info.get('returnOnEquity', 0)*100, 2)} %")
+            st.markdown(f"**Dividend Yield:** {round(info.get('dividendYield', 0)*100, 2)} %")
             st.markdown(f"**Expected PER:** {info.get('forwardPE', '-')}")
             st.markdown(f"**Sektor:** {ticker_to_sector.get(ticker, '-')}")
         except Exception as e:
@@ -371,12 +352,7 @@ def tampilkan_fundamental():
     if st.session_state.get("ticker_diklik"):
         tampilkan_detail_ticker(st.session_state["ticker_diklik"])
 
-    # ============================ #
-    # 📂 Hasil per Sektor (AgGrid)
-    # ============================ #
     st.markdown("## 📂 Hasil per Sektor")
-
-    # JS renderer untuk hyperlink
     link_renderer = JsCode("""
         function(params) {
             return `<a href='/?tkr=${params.value}' target='_self' style='color:#40a9ff;text-decoration:none;'>${params.value}</a>`;
@@ -386,24 +362,19 @@ def tampilkan_fundamental():
     for sektor in sorted(hasil['Sektor'].unique()):
         st.markdown(f"### 🔸 {sektor}")
         df_sektor = hasil[hasil['Sektor'] == sektor].copy()
-
         kolom_valid = [k for k in ['Ticker', 'Name', 'Price', 'PER', 'PBV', 'ROE', 'Div Yield', 'Expected PER'] if k in df_sektor.columns]
 
-        if not kolom_valid:
-            st.warning("⚠️ Tidak ada data yang tersedia untuk sektor ini.")
+        if df_sektor.empty:
+            st.warning("⚠️ Tidak ada data untuk sektor ini.")
             continue
 
         df_tampil = df_sektor[kolom_valid]
-
-        # Setup AgGrid
         gb = GridOptionsBuilder.from_dataframe(df_tampil)
         gb.configure_default_column(sortable=True, filter=True, resizable=True)
-
         if "Ticker" in df_tampil.columns:
             gb.configure_column("Ticker", cellRenderer=link_renderer)
 
         grid_options = gb.build()
-
         AgGrid(
             df_tampil,
             gridOptions=grid_options,
@@ -424,22 +395,15 @@ with st.sidebar:
 # 🌐 Routing Halaman
 # ========================== #
 if menu == "Home":
-    get_news()
-    tampilkan_chart_ihsg()
-    tampilkan_sektoral_idx()
-
+    st.title("🏠 Halaman Utama")
+    # get_news() dan tampilkan_chart_ihsg() harus Anda definisikan jika ingin menampilkan
 elif menu == "Trading Page":
     st.header("📈 Trading Page")
     st.info("Menampilkan indeks global, komoditas, sinyal beli, EIDO, strategi.")
-    st.markdown("_🛠️ Akan diisi dari file `Trading_Page.py`_")
-
 elif menu == "Teknikal":
     st.header("📉 Analisa Teknikal Saham")
     st.info("Masukkan kode saham (contoh: `BBRI.JK`) untuk melihat indikator.")
-    st.markdown("_🛠️ Akan diisi dari file `Teknikal.py`_")
-
 elif menu == "Fundamental":
     st.header("📊 Screener Fundamental Saham")
     st.info("Filter saham berdasarkan PER, PBV, ROE, dividen, dan lainnya.")
-    st.markdown("_🛠️ Akan diisi dari file `Fundamental.py`_")
     tampilkan_fundamental()
