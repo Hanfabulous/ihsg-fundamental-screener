@@ -276,12 +276,11 @@ for sektor, daftar in sektor_map.items():
         ticker_to_sector[ticker_jk] = sektor
 
 # ============================ #
-# 📊 FUNGSIONALITAS FUNDAMENTAL
+# 📊 Fungsi Utama Fundamental
 # ============================ #
 def tampilkan_fundamental():
     st.subheader("📊 ZONA FUNDAMENTAL")
 
-    # ===== Ambil Data =====
     @st.cache_data(ttl=3600)
     def ambil_data(ticker_list):
         hasil = []
@@ -306,15 +305,14 @@ def tampilkan_fundamental():
     with st.spinner("🔄 Mengambil data dari Yahoo Finance..."):
         df = ambil_data(tickers)
 
-    # ===== Persiapan Data =====
+    # Bersihkan dan konversi numerik
     kolom_numerik = ['PER', 'PBV', 'ROE', 'Div Yield', 'Expected PER']
     for kol in kolom_numerik:
         df[kol] = pd.to_numeric(df[kol], errors='coerce')
+    df['ROE'] *= 100
+    df['Div Yield'] *= 100
 
-    df['ROE'] = df['ROE'] * 100
-    df['Div Yield'] = df['Div Yield'] * 100
-
-    # ===== Sidebar Filter =====
+    # ===== Filter Sidebar =====
     st.sidebar.header("📌 Filter Screener")
     sektor_terpilih = st.sidebar.multiselect("Pilih Sektor", sorted(df['Sektor'].dropna().unique()), default=sorted(df['Sektor'].dropna().unique()))
     min_roe = st.sidebar.slider("Min ROE (%)", 0.0, 100.0, 10.0)
@@ -331,12 +329,13 @@ def tampilkan_fundamental():
         (df_filter['Expected PER'] <= max_forward_per)
     ]
 
-    # ===== Detail via URL Param =====
+    # URL query param
     query_params = st.query_params
     ticker_qs = query_params.get("tkr", None)
     if ticker_qs:
         st.session_state["ticker_diklik"] = ticker_qs
 
+    # ===== Detail Ticker =====
     def tampilkan_detail(ticker):
         st.markdown(f"---\n### 🔍 Detail Ticker: `{ticker}`")
         try:
@@ -355,30 +354,31 @@ def tampilkan_fundamental():
     if st.session_state.get("ticker_diklik"):
         tampilkan_detail(st.session_state["ticker_diklik"])
 
-    # ===== Tampilan Tabel AgGrid =====
-    st.markdown("## 📂 Hasil Screening per Sektor")
-
+    # ===== Link Renderer JS =====
     link_renderer = JsCode("""
         function(params) {
             return `<a href='/?tkr=${params.value}' target='_self' style='color:#40a9ff;text-decoration:none;'>${params.value}</a>`;
         }
     """)
 
-
+    # ===== Tampilkan Hasil per Sektor =====
+    st.markdown("## 📂 Hasil Screening per Sektor")
     for sektor in sorted(df_filter['Sektor'].unique()):
-        df_sektor = df_filter[df_filter['Sektor'] == sektor]
+        st.markdown(f"### 🔸 {sektor}")
+        df_sektor = df_filter[df_filter['Sektor'] == sektor].copy()
         if df_sektor.empty:
             continue
 
-        st.markdown(f"### 🔸 {sektor}")
-        kolom_valid = ["Ticker", "Name", "Price", "PER", "PBV", "ROE", "Div Yield", "Expected PER"]
-        df_tampil = df_sektor[kolom_valid]
+        # Kolom tampil
+        df_sektor['Ticker_link'] = df_sektor['Ticker']
+        kolom_tampil = ['Ticker_link', 'Name', 'Price', 'PER', 'PBV', 'ROE', 'Div Yield', 'Expected PER']
+        df_tampil = df_sektor[kolom_tampil].rename(columns={"Ticker_link": "Ticker"})
 
+        # AgGrid
         gb = GridOptionsBuilder.from_dataframe(df_tampil)
         gb.configure_default_column(sortable=True, filter=True, resizable=True)
-        gb.configure_column("Ticker", cellRenderer=link_renderer)  # ← ini sudah benar
+        gb.configure_column("Ticker", cellRenderer=link_renderer)
         grid_options = gb.build()
-
 
         AgGrid(
             df_tampil,
@@ -386,14 +386,8 @@ def tampilkan_fundamental():
             height=300,
             theme="streamlit",
             allow_unsafe_jscode=True,
-            enable_enterprise_modules=False,
-            fit_columns_on_grid_load=True,
-            reload_data=False,
-            update_mode='NO_UPDATE',
-            editable=False,
-            html=True  # ⬅️ PENTING untuk render link HTML
+            fit_columns_on_grid_load=True
         )
-
 
 # ========================== #
 # 📁 Sidebar Navigasi
@@ -407,7 +401,6 @@ with st.sidebar:
 # ========================== #
 if menu == "Home":
     st.title("🏠 Halaman Utama")
-    # get_news(), tampilkan_chart_ihsg() bisa ditambahkan di sini
 
 elif menu == "Trading Page":
     st.header("📈 Trading Page")
