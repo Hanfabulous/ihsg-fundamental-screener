@@ -280,6 +280,16 @@ def tampilkan_fundamental():
 # ============================ #
 def tampilkan_fundamental():
     st.subheader("📊 ZONA FUNDAMENTAL")
+    # ============================ #
+    # 🗂️ Daftar Ticker dan Sektor
+    # ============================ #
+    tickers = []
+    ticker_to_sector = {}
+    for sektor, daftar_ticker in sektor_map.items():
+        for t in daftar_ticker:
+            kode = t + ".JK"
+            tickers.append(kode)
+            ticker_to_sector[kode] = sektor
 
     # ============================ #
     # 📥 Ambil Data
