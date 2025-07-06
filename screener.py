@@ -263,14 +263,14 @@ def tampilkan_sektoral_idx():
                 "FISH", "SIPD", "WMPP", "CRAB", "TRGU", "AGAR", "DPUM", "FAPA", "CBUT", "BEER", "ALTO", "MAXI", "MAGP", "LAPD", "GOLL",
                 "WICO"]
 }
+
 tickers = []
 ticker_to_sector = {}
-for sektor, daftar in sektor_map.items():
+for sektor, daftar in sektor_map.items():  # ⬅️ DI SINI harus sudah punya sektor_map
     for t in daftar:
         ticker_jk = t + ".JK"
         tickers.append(ticker_jk)
         ticker_to_sector[ticker_jk] = sektor
-
 # ============================ #
 # 📌 Fungsi Utama Fundamental
 # ============================ #
