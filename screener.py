@@ -379,8 +379,8 @@ def tampilkan_fundamental():
         gb.configure_column("Ticker", type=["textColumn"], header_name="Ticker", cellRenderer="htmlRenderer")
 
         AgGrid(
-            hasil[['Ticker_Link', 'Name', 'Price', 'PER', 'PBV', 'ROE', 'Sektor']],
-            gridOptions=builder.build(),
+            df_sektor[['Ticker_Link', 'Name', 'Price', 'PER', 'PBV', 'ROE', 'Sektor']],
+            gridOptions=gb.build(),
             allow_unsafe_jscode=True,
             update_mode=GridUpdateMode.NO_UPDATE,
             fit_columns_on_grid_load=True,
