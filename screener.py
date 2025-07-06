@@ -297,20 +297,24 @@ def ambil_data(ticker_list):
 df = ambil_data(tickers)
 
 if not df.empty:
-    df["Ticker"] = df["Ticker"].apply(lambda x: f"<a href='/?tkr={x}' target='_self' style='color:#40a9ff;text-decoration:none;'>{x}</a>")
+    df["Ticker_link"] = ...
+    df = df.rename(columns={"Ticker_link": "Ticker"})  # ❌ Ini sering sebabkan error
+
     df_tampil = df[["Ticker", "Name", "Price", "PER", "PBV", "ROE", "Div Yield", "Expected PER"]]
 
     gb = GridOptionsBuilder.from_dataframe(df_tampil)
-    gb.configure_default_column(resizable=True, sortable=True, filter=True)
-    gb.configure_column("Ticker", header_name="Ticker", wrapText=True)
+    gb.configure_default_column(sortable=True, filter=True, resizable=True)
+    gb.configure_column("Ticker", header_name="Ticker")  # Tanpa renderer karena HTML sudah di dalamnya
 
-    AgGrid(
-        df_tampil,
-        gridOptions=gb.build(),
-        allow_unsafe_jscode=True,
-        fit_columns_on_grid_load=True,
-        height=300
-    )
+AgGrid(
+    df_tampil,
+    gridOptions=gb.build(),
+    height=300,
+    allow_unsafe_jscode=True,
+    fit_columns_on_grid_load=True,
+    enable_enterprise_modules=False
+)
+
 
 # ========================== #
 # 📁 Sidebar Navigasi
