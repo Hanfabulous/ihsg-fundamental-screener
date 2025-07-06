@@ -364,6 +364,7 @@ def tampilkan_fundamental():
         }
     """)
 
+
     for sektor in sorted(df_filter['Sektor'].unique()):
         df_sektor = df_filter[df_filter['Sektor'] == sektor]
         if df_sektor.empty:
@@ -375,16 +376,24 @@ def tampilkan_fundamental():
 
         gb = GridOptionsBuilder.from_dataframe(df_tampil)
         gb.configure_default_column(sortable=True, filter=True, resizable=True)
-        gb.configure_column("Ticker", cellRenderer=link_renderer)
+        gb.configure_column("Ticker", cellRenderer=link_renderer)  # ← ini sudah benar
         grid_options = gb.build()
+
 
         AgGrid(
             df_tampil,
             gridOptions=grid_options,
             height=300,
             theme="streamlit",
-            allow_unsafe_jscode=True
+            allow_unsafe_jscode=True,
+            enable_enterprise_modules=False,
+            fit_columns_on_grid_load=True,
+            reload_data=False,
+            update_mode='NO_UPDATE',
+            editable=False,
+            html=True  # ⬅️ PENTING untuk render link HTML
         )
+
 
 # ========================== #
 # 📁 Sidebar Navigasi
