@@ -263,10 +263,6 @@ sektor_map = {
                 "FISH", "SIPD", "WMPP", "CRAB", "TRGU", "AGAR", "DPUM", "FAPA", "CBUT", "BEER", "ALTO", "MAXI", "MAGP", "LAPD", "GOLL",
                 "WICO"]
 }
-
-# ============================ #
-# 🔁 PETA TICKER
-# ============================ #
 tickers = []
 ticker_to_sector = {}
 for sektor, daftar in sektor_map.items():
@@ -276,118 +272,68 @@ for sektor, daftar in sektor_map.items():
         ticker_to_sector[ticker_jk] = sektor
 
 # ============================ #
-# 📊 Fungsi Utama Fundamental
+# 🔍 Ambil Data
 # ============================ #
-def tampilkan_fundamental():
-    st.subheader("📊 ZONA FUNDAMENTAL")
-
-    @st.cache_data(ttl=3600)
-    def ambil_data(ticker_list):
-        hasil = []
-        for t in ticker_list:
-            try:
-                info = yf.Ticker(t).info
-                hasil.append({
-                    "Ticker": t,
-                    "Name": info.get("longName", "-"),
-                    "Price": info.get("currentPrice"),
-                    "PER": info.get("trailingPE"),
-                    "PBV": info.get("priceToBook"),
-                    "ROE": info.get("returnOnEquity"),
-                    "Div Yield": info.get("dividendYield"),
-                    "Expected PER": info.get("forwardPE"),
-                    "Sektor": ticker_to_sector.get(t, "-")
-                })
-            except:
-                continue
-        return pd.DataFrame(hasil)
-
-    with st.spinner("🔄 Mengambil data dari Yahoo Finance..."):
-        df = ambil_data(tickers)
-
-    # Bersihkan dan konversi numerik
-    kolom_numerik = ['PER', 'PBV', 'ROE', 'Div Yield', 'Expected PER']
-    for kol in kolom_numerik:
-        df[kol] = pd.to_numeric(df[kol], errors='coerce')
-    df['ROE'] *= 100
-    df['Div Yield'] *= 100
-
-    # ===== Filter Sidebar =====
-    st.sidebar.header("📌 Filter Screener")
-    sektor_terpilih = st.sidebar.multiselect("Pilih Sektor", sorted(df['Sektor'].dropna().unique()), default=sorted(df['Sektor'].dropna().unique()))
-    min_roe = st.sidebar.slider("Min ROE (%)", 0.0, 100.0, 10.0)
-    max_per = st.sidebar.slider("Max PER", 0.0, 100.0, 25.0)
-    max_pbv = st.sidebar.slider("Max PBV", 0.0, 10.0, 3.0)
-    max_forward_per = st.sidebar.slider("Max Expected PER", 0.0, 100.0, 25.0)
-
-    df_filter = df.dropna(subset=['PER', 'PBV', 'ROE', 'Expected PER']).copy()
-    df_filter = df_filter[
-        (df_filter['Sektor'].isin(sektor_terpilih)) &
-        (df_filter['ROE'] >= min_roe) &
-        (df_filter['PER'] <= max_per) &
-        (df_filter['PBV'] <= max_pbv) &
-        (df_filter['Expected PER'] <= max_forward_per)
-    ]
-
-    # URL query param
-    query_params = st.query_params
-    ticker_qs = query_params.get("tkr", None)
-    if ticker_qs:
-        st.session_state["ticker_diklik"] = ticker_qs
-
-    # ===== Detail Ticker =====
-    def tampilkan_detail(ticker):
-        st.markdown(f"---\n### 🔍 Detail Ticker: `{ticker}`")
+@st.cache_data(ttl=3600)
+def ambil_data(ticker_list):
+    hasil = []
+    for t in ticker_list:
         try:
-            info = yf.Ticker(ticker).info
-            st.markdown(f"**Nama:** {info.get('longName', '-')}")
-            st.markdown(f"**Harga:** {info.get('currentPrice', '-')}")
-            st.markdown(f"**PER:** {info.get('trailingPE', '-')}")
-            st.markdown(f"**PBV:** {info.get('priceToBook', '-')}")
-            st.markdown(f"**ROE:** {round(info.get('returnOnEquity', 0)*100, 2)} %")
-            st.markdown(f"**Dividend Yield:** {round(info.get('dividendYield', 0)*100, 2)} %")
-            st.markdown(f"**Expected PER:** {info.get('forwardPE', '-')}")
-            st.markdown(f"**Sektor:** {ticker_to_sector.get(ticker, '-')}")
-        except Exception as e:
-            st.error(f"Gagal memuat detail: {e}")
-
-    if st.session_state.get("ticker_diklik"):
-        tampilkan_detail(st.session_state["ticker_diklik"])
-
-    # ===== Link Renderer JS =====
-    link_renderer = JsCode("""
-        function(params) {
-            return `<a href='/?tkr=${params.value}' target='_self' style='color:#40a9ff;text-decoration:none;'>${params.value}</a>`;
-        }
-    """)
-
-    # ===== Tampilkan Hasil per Sektor =====
-    st.markdown("## 📂 Hasil Screening per Sektor")
-    for sektor in sorted(df_filter['Sektor'].unique()):
-        st.markdown(f"### 🔸 {sektor}")
-        df_sektor = df_filter[df_filter['Sektor'] == sektor].copy()
-        if df_sektor.empty:
+            info = yf.Ticker(t).info
+            hasil.append({
+                "Ticker": t,
+                "Name": info.get("longName", "-"),
+                "Price": info.get("currentPrice"),
+                "PER": info.get("trailingPE"),
+                "PBV": info.get("priceToBook"),
+                "ROE": info.get("returnOnEquity") * 100 if info.get("returnOnEquity") else None,
+                "Div Yield": info.get("dividendYield") * 100 if info.get("dividendYield") else None,
+                "Expected PER": info.get("forwardPE"),
+                "Sektor": ticker_to_sector.get(t, "-")
+            })
+        except:
             continue
+    return pd.DataFrame(hasil)
 
-        # Kolom tampil
-        df_sektor['Ticker_link'] = df_sektor['Ticker']
-        kolom_tampil = ['Ticker_link', 'Name', 'Price', 'PER', 'PBV', 'ROE', 'Div Yield', 'Expected PER']
-        df_tampil = df_sektor[kolom_tampil].rename(columns={"Ticker_link": "Ticker"})
+# ============================ #
+# 📊 Tampilan Utama
+# ============================ #
+st.title("📊 Screener Fundamental Saham")
+df = ambil_data(tickers)
 
-        # AgGrid
-        gb = GridOptionsBuilder.from_dataframe(df_tampil)
-        gb.configure_default_column(sortable=True, filter=True, resizable=True)
-        gb.configure_column("Ticker", cellRenderer=link_renderer)
-        grid_options = gb.build()
+if df.empty:
+    st.warning("Data tidak tersedia.")
+else:
+    df = df.dropna(subset=["PER", "PBV", "ROE", "Expected PER"])
 
-        AgGrid(
-            df_tampil,
-            gridOptions=grid_options,
-            height=300,
-            theme="streamlit",
-            allow_unsafe_jscode=True,
-            fit_columns_on_grid_load=True
-        )
+    # Buat kolom baru: link HTML ticker
+    df["Ticker_link"] = df["Ticker"].apply(lambda x: f"<a href='/?tkr={x}' target='_self' style='color:#40a9ff;text-decoration:none;'>{x}</a>")
+
+    # Rename agar AgGrid menampilkan "Ticker"
+    df_tampil = df.rename(columns={"Ticker_link": "Ticker"})
+    kolom_tampil = ["Ticker", "Name", "Price", "PER", "PBV", "ROE", "Div Yield", "Expected PER"]
+    df_tampil = df_tampil[kolom_tampil]
+
+    # Konfigurasi AgGrid
+    gb = GridOptionsBuilder.from_dataframe(df_tampil)
+    gb.configure_default_column(resizable=True, filter=True, sortable=True, wrapText=True)
+    gb.configure_column("Ticker", header_name="Ticker", cellRenderer=JsCode("""
+        function(params) {
+            return params.value;
+        }
+    """), enableRowGroup=True)
+
+    grid_options = gb.build()
+
+    # Tampilkan AgGrid
+    AgGrid(
+        df_tampil,
+        gridOptions=grid_options,
+        allow_unsafe_jscode=True,
+        enable_enterprise_modules=False,
+        fit_columns_on_grid_load=True,
+        height=300
+    )
 
 # ========================== #
 # 📁 Sidebar Navigasi
