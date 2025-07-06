@@ -387,6 +387,7 @@ def tampilkan_fundamental():
             height=300
         )
 
+
 # ========================== #
 # 📁 Sidebar Navigasi
 # ========================== #
