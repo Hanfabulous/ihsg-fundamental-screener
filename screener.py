@@ -14,6 +14,8 @@ import requests
 import time
 from st_aggrid import AgGrid, GridOptionsBuilder, JsCode, GridUpdateMode
 from urllib.parse import urlparse, parse_qs
+import plotly.graph_objects as go
+
 try:
     from bs4 import BeautifulSoup
 except ImportError:
@@ -417,35 +419,66 @@ def tampilkan_fundamental():
         )
 
 def tampilkan_detail(ticker):
-    
-    query_params = st.query_params
-    if "tkr" in query_params:
-        st.session_state["menu"] = "Fundamental"
+    st.markdown(f"---\n### 🔍 Detail Ticker: `{ticker}`")
 
+    try:
+        tkr = yf.Ticker(ticker)
 
-    if ticker_qs:
-        st.markdown("---")
-        st.subheader(f"📌 Detail Ticker: `{ticker_qs}`")
+        # Info dasar
+        info = tkr.info
+        st.markdown(f"**Nama:** {info.get('longName', '-')}")        
+        st.markdown(f"**Harga:** {info.get('currentPrice', '-')}")        
+        st.markdown(f"**PER:** {info.get('trailingPE', '-')}")        
+        st.markdown(f"**PBV:** {info.get('priceToBook', '-')}")        
+        roe = info.get('returnOnEquity')
+        st.markdown(f"**ROE:** {round(roe*100, 2)} %" if roe is not None else "ROE: -")
+        dy = info.get('dividendYield')
+        st.markdown(f"**Dividend Yield:** {round(dy*100, 2)} %" if dy is not None else "Dividend Yield: -")
+        st.markdown(f"**Expected PER:** {info.get('forwardPE', '-')}")        
+        st.markdown(f"**Sektor:** {ticker_to_sector.get(ticker, '-')}")
 
-        try:
-            info = yf.Ticker(ticker_qs).info
-            st.markdown(f"**Nama:** {info.get('longName', '-')}")
-            st.markdown(f"**Harga:** {info.get('currentPrice', '-')}")
-            st.markdown(f"**PER:** {info.get('trailingPE', '-')}")
-            st.markdown(f"**PBV:** {info.get('priceToBook', '-')}")
-            roe = info.get("returnOnEquity")
-            st.markdown(f"**ROE:** {round(roe*100, 2)} %" if roe else "ROE: -")
-            dy = info.get("dividendYield")
-            st.markdown(f"**Dividend Yield:** {round(dy*100, 2)} %" if dy else "Dividend Yield: -")
-            st.markdown(f"**Expected PER:** {info.get('forwardPE', '-')}")
-            st.markdown(f"**Market Cap:** {info.get('marketCap', '-')}")
-            st.markdown(f"**Sector:** {info.get('sector', '-')}")
-            st.markdown(f"**Industry:** {info.get('industry', '-')}")
-            st.markdown(f"**Website:** {info.get('website', '-')}")
-            st.markdown(f"**Deskripsi:** {info.get('longBusinessSummary', '-')}")
+        # === Grafik PER dan PBV historis ===
+        st.markdown("### 📈 Historis PER dan PBV (8 Kuartal Terakhir)")
 
-        except Exception as e:
-            st.error(f"❌ Gagal menampilkan detail ticker: {e}")
+        # Ambil laporan keuangan
+        earnings = tkr.quarterly_earnings
+        balance = tkr.quarterly_balance_sheet
+        hist = tkr.history(period="2y", interval="3mo")  # data harga per kuartal
+
+        if earnings.empty or balance.empty or hist.empty:
+            st.warning("❌ Data kuartalan tidak lengkap untuk menghitung PER/PBV.")
+            return
+
+        # Susun data PER dan PBV
+        df_hist = pd.DataFrame()
+        df_hist["Price"] = hist["Close"]
+
+        # Sinkronisasi tanggal dengan earnings
+        eps = earnings["Earnings"].iloc[:8]
+        df_hist = df_hist.tail(8)
+        df_hist["EPS"] = eps.values
+        df_hist["PER"] = df_hist["Price"] / df_hist["EPS"]
+
+        # Ambil book value per share dari balance sheet (TotalEquity / SharesOutstanding)
+        equity = balance.loc["TotalStockholderEquity"].iloc[:8]
+        shares = info.get("sharesOutstanding", None)
+        if shares:
+            bvps = equity.values / shares
+            df_hist["PBV"] = df_hist["Price"].values / bvps
+        else:
+            df_hist["PBV"] = np.nan
+
+        df_hist.index = df_hist.index.strftime("%Y-Q%q")  # format periode
+
+        # Plot
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=df_hist.index, y=df_hist["PER"], name="PER", mode='lines+markers'))
+        fig.add_trace(go.Scatter(x=df_hist.index, y=df_hist["PBV"], name="PBV", mode='lines+markers'))
+        fig.update_layout(title="PER dan PBV Historis (8 Kuartal)", xaxis_title="Kuartal", yaxis_title="Rasio", height=400)
+        st.plotly_chart(fig, use_container_width=True)
+
+    except Exception as e:
+        st.error(f"Gagal memuat detail: {e}")
 
 # ========================== #
 # 📁 Sidebar Navigasi
