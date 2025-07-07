@@ -350,6 +350,12 @@ def tampilkan_fundamental():
     ticker_qs = query_params.get("tkr", None)
     if ticker_qs:
         st.session_state["ticker_diklik"] = ticker_qs
+        menu = "Fundamental"
+    else:
+        # Sidebar Navigasi
+        with st.sidebar:
+            st.header("📁 Menu Navigasi")
+            menu = st.radio("Pilih Halaman", ["Home", "Trading Page", "Teknikal", "Fundamental"])
 
     if st.session_state.get("ticker_diklik"):
         tampilkan_detail(st.session_state["ticker_diklik"])
