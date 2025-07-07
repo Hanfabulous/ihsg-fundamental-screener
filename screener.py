@@ -411,6 +411,12 @@ def tampilkan_detail(ticker):
         fig.update_layout(title="PER dan PBV Historis (8 Kuartal)", xaxis_title="Kuartal", yaxis_title="Rasio")
         st.plotly_chart(fig, use_container_width=True)
 
+        if st.button("🔙 Kembali ke Screener"):
+            st.session_state["menu"] = "Fundamental"
+            st.experimental_set_query_params()  # Hapus ?tkr dari URL
+            st.rerun()
+
+
     except Exception as e:
         st.error(f"Gagal memuat detail: {e}")
 
@@ -508,9 +514,28 @@ def tampilkan_fundamental():
             enable_enterprise_modules=False
         )
 
-# ============================ #
-# 🌐 Routing Halaman
-# ============================ #
+# ========================== #
+# 🌐 Routing Halaman Awal   #
+# ========================== #
+
+query_params = st.query_params
+ticker_qs = query_params.get("tkr", None)
+
+if ticker_qs:
+    st.session_state["menu"] = "Detail"
+    st.session_state["ticker_diklik"] = ticker_qs
+else:
+    if "menu" not in st.session_state:
+        st.session_state["menu"] = "Home"
+
+with st.sidebar:
+    st.header("📁 Menu Navigasi")
+    if st.session_state.get("menu") != "Detail":
+        st.session_state["menu"] = st.radio(
+            "Pilih Halaman", ["Home", "Trading Page", "Teknikal", "Fundamental"]
+        )
+
+
 if menu == "Home":
     st.title("🏠 Halaman Utama")
     tampilkan_chart_ihsg()
@@ -519,6 +544,7 @@ if menu == "Home":
 
 elif menu == "Trading Page":
     st.header("📈 Trading Page")
+    # dll...
 
 elif menu == "Teknikal":
     st.header("📉 Analisa Teknikal Saham")
@@ -526,5 +552,10 @@ elif menu == "Teknikal":
 elif menu == "Fundamental":
     st.header("📊 Screener Fundamental Saham")
     tampilkan_fundamental()
-    if st.session_state.get("ticker_diklik"):
-        tampilkan_detail(st.session_state["ticker_diklik"])
+
+elif menu == "Detail":
+    ticker = st.session_state.get("ticker_diklik", None)
+    if ticker:
+        tampilkan_detail(ticker)
+    else:
+        st.warning("Ticker tidak ditemukan.")
