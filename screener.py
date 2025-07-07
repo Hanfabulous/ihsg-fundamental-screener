@@ -346,63 +346,137 @@ def tampilkan_fundamental():
     )
 
     # Tangani ticker detail dari URL
-    query_params = st.query_params
-    ticker_qs = query_params.get("tkr", None)
+    # ============================ #
+# 📁 Sidebar Navigasi
+# ============================ #
+query_params = st.query_params
+ticker_qs = query_params.get("tkr", None)
 
-    if ticker_qs:
-        st.session_state["ticker_diklik"] = ticker_qs
-        menu = "Fundamental"
-    else:
-        with st.sidebar:
-            st.header("📁 Menu Navigasi")
-            menu = st.radio("Pilih Halaman", ["Home", "Trading Page", "Teknikal", "Fundamental"])
+if ticker_qs:
+    st.session_state["ticker_diklik"] = ticker_qs
+    menu = "Fundamental"
+else:
+    with st.sidebar:
+        st.header("📁 Menu Navigasi")
+        menu = st.radio("Pilih Halaman", ["Home", "Trading Page", "Teknikal", "Fundamental"])
 
-    # Routing halaman
-    if menu == "Home":
-        tampilkan_chart_ihsg()
-        get_news()
-        tampilkan_sektoral_idx()
-    elif menu == "Trading Page":
-        st.header("📈 Trading Page")
-    elif menu == "Teknikal":
-        st.header("📉 Analisa Teknikal Saham")
-    elif menu == "Fundamental":
-        tampilkan_fundamental()
+# ============================ #
+# 📊 Detail Ticker
+# ============================ #
+def tampilkan_detail(ticker):
+    st.markdown(f"---\n### 🔍 Detail Ticker: `{ticker}`")
 
+    try:
+        tkr = yf.Ticker(ticker)
+        info = tkr.info
 
-    if st.session_state.get("ticker_diklik"):
-        tampilkan_detail(st.session_state["ticker_diklik"])
+        st.markdown(f"**Nama:** {info.get('longName', '-')}\n")
+        st.markdown(f"**Harga:** {info.get('currentPrice', '-')}\n")
+        st.markdown(f"**PER:** {info.get('trailingPE', '-')}\n")
+        st.markdown(f"**PBV:** {info.get('priceToBook', '-')}\n")
+        roe = info.get('returnOnEquity')
+        st.markdown(f"**ROE:** {round(roe*100, 2)} %" if roe else "ROE: -")
+        dy = info.get('dividendYield')
+        st.markdown(f"**Dividend Yield:** {round(dy*100, 2)} %" if dy else "Dividend Yield: -")
+        st.markdown(f"**Expected PER:** {info.get('forwardPE', '-')}\n")
+        st.markdown(f"**Sektor:** {ticker_to_sector.get(ticker, '-')}\n")
 
-    # Tampilkan hasil screening
+        st.markdown("### 📈 Historis PER dan PBV (8 Kuartal Terakhir)")
+        earnings = tkr.quarterly_earnings
+        balance = tkr.quarterly_balance_sheet
+        hist = tkr.history(period="2y", interval="3mo")
+
+        if earnings.empty or balance.empty or hist.empty:
+            st.warning("❌ Data kuartalan tidak lengkap.")
+            return
+
+        df_hist = pd.DataFrame()
+        df_hist["Price"] = hist["Close"].tail(8)
+        df_hist["EPS"] = earnings["Earnings"].iloc[:8].values
+        df_hist["PER"] = df_hist["Price"] / df_hist["EPS"]
+
+        equity = balance.loc["TotalStockholderEquity"].iloc[:8]
+        shares = info.get("sharesOutstanding")
+        if shares:
+            bvps = equity.values / shares
+            df_hist["PBV"] = df_hist["Price"].values / bvps
+        else:
+            df_hist["PBV"] = np.nan
+
+        df_hist.index = df_hist.index.strftime("%Y-Q%q")
+
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=df_hist.index, y=df_hist["PER"], name="PER", mode='lines+markers'))
+        fig.add_trace(go.Scatter(x=df_hist.index, y=df_hist["PBV"], name="PBV", mode='lines+markers'))
+        fig.update_layout(title="PER dan PBV Historis (8 Kuartal)", xaxis_title="Kuartal", yaxis_title="Rasio")
+        st.plotly_chart(fig, use_container_width=True)
+
+    except Exception as e:
+        st.error(f"Gagal memuat detail: {e}")
+
+# ============================ #
+# 📊 Screener Fundamental
+# ============================ #
+def tampilkan_fundamental():
+    st.subheader("📊 ZONA FUNDAMENTAL")
+
+    @st.cache_data(ttl=3600)
+    def ambil_data(ticker_list):
+        hasil = []
+        for t in ticker_list:
+            try:
+                info = yf.Ticker(t).info
+                hasil.append({
+                    "Ticker": t,
+                    "Name": info.get("longName", "-"),
+                    "Price": info.get("currentPrice", np.nan),
+                    "PER": info.get("trailingPE", np.nan),
+                    "PBV": info.get("priceToBook", np.nan),
+                    "ROE": info.get("returnOnEquity", np.nan),
+                    "Div Yield": info.get("dividendYield", np.nan),
+                    "Expected PER": info.get("forwardPE", np.nan),
+                    "Sektor": ticker_to_sector.get(t, "-")
+                })
+            except:
+                continue
+        return pd.DataFrame(hasil)
+
+    df = ambil_data(tickers)
+    kolom_numerik = ['PER', 'PBV', 'ROE', 'Div Yield', 'Expected PER']
+    for kol in kolom_numerik:
+        df[kol] = pd.to_numeric(df[kol], errors='coerce')
+    df['ROE'] *= 100
+    df['Div Yield'] *= 100
+
+    st.sidebar.header("📌 Filter Screener")
+    sektor_terpilih = st.sidebar.multiselect("Pilih Sektor", sorted(sektor_map.keys()), default=sorted(sektor_map.keys()))
+    min_roe = st.sidebar.slider("Min ROE (%)", 0.0, 100.0, 10.0)
+    max_per = st.sidebar.slider("Max PER", 0.0, 100.0, 25.0)
+    max_pbv = st.sidebar.slider("Max PBV", 0.0, 10.0, 3.0)
+    max_forward_per = st.sidebar.slider("Max Expected PER", 0.0, 100.0, 25.0)
+
+    df_filter = df.dropna(subset=kolom_numerik)
+    df_filter = df_filter[
+        (df_filter['Sektor'].isin(sektor_terpilih)) &
+        (df_filter['ROE'] >= min_roe) &
+        (df_filter['PER'] <= max_per) &
+        (df_filter['PBV'] <= max_pbv) &
+        (df_filter['Expected PER'] <= max_forward_per)
+    ]
+
     st.markdown("## 📂 Hasil Screening per Sektor")
 
     if df_filter.empty:
         st.info("Tidak ada saham yang lolos filter.")
         return
 
-    html_renderer = JsCode('''
-        function(params) {
-            return params.value;
-        }
-    ''')
-
     for sektor in sorted(df_filter['Sektor'].unique()):
-        df_sektor = df_filter[df_filter['Sektor'] == sektor].copy()
-        if df_sektor.empty:
-            continue
-
+        df_sektor = df_filter[df_filter['Sektor'] == sektor]
         st.markdown(f"### 🔸 {sektor}")
 
-        # Gunakan kolom Ticker asli (bukan Ticker_Link), agar bisa dirender dengan JS clickable
-        df_tampil = df_sektor[[
-            "Ticker", "Name", "Price", "PER", "PBV", "ROE", "Div Yield", "Expected PER"
-        ]].copy()
-
-        # Grid Options
+        df_tampil = df_sektor[["Ticker", "Name", "Price", "PER", "PBV", "ROE", "Div Yield", "Expected PER"]].copy()
         gb = GridOptionsBuilder.from_dataframe(df_tampil)
         gb.configure_default_column(sortable=True, filter=True, resizable=True)
-
-        # JsCode agar kolom Ticker bisa diklik
         gb.configure_column(
             "Ticker",
             header_name="Ticker",
@@ -424,12 +498,9 @@ def tampilkan_fundamental():
             editable=False
         )
 
-
-        grid_options = gb.build()
-
         AgGrid(
             df_tampil,
-            gridOptions=grid_options,
+            gridOptions=gb.build(),
             allow_unsafe_jscode=True,
             update_mode=GridUpdateMode.NO_UPDATE,
             fit_columns_on_grid_load=True,
@@ -437,93 +508,23 @@ def tampilkan_fundamental():
             enable_enterprise_modules=False
         )
 
-def tampilkan_detail(ticker):
-    st.markdown(f"---\n### 🔍 Detail Ticker: `{ticker}`")
-
-    try:
-        tkr = yf.Ticker(ticker)
-
-        # Info dasar
-        info = tkr.info
-        st.markdown(f"**Nama:** {info.get('longName', '-')}")        
-        st.markdown(f"**Harga:** {info.get('currentPrice', '-')}")        
-        st.markdown(f"**PER:** {info.get('trailingPE', '-')}")        
-        st.markdown(f"**PBV:** {info.get('priceToBook', '-')}")        
-        roe = info.get('returnOnEquity')
-        st.markdown(f"**ROE:** {round(roe*100, 2)} %" if roe is not None else "ROE: -")
-        dy = info.get('dividendYield')
-        st.markdown(f"**Dividend Yield:** {round(dy*100, 2)} %" if dy is not None else "Dividend Yield: -")
-        st.markdown(f"**Expected PER:** {info.get('forwardPE', '-')}")        
-        st.markdown(f"**Sektor:** {ticker_to_sector.get(ticker, '-')}")
-
-        # === Grafik PER dan PBV historis ===
-        st.markdown("### 📈 Historis PER dan PBV (8 Kuartal Terakhir)")
-
-        # Ambil laporan keuangan
-        earnings = tkr.quarterly_earnings
-        balance = tkr.quarterly_balance_sheet
-        hist = tkr.history(period="2y", interval="3mo")  # data harga per kuartal
-
-        if earnings.empty or balance.empty or hist.empty:
-            st.warning("❌ Data kuartalan tidak lengkap untuk menghitung PER/PBV.")
-            return
-
-        # Susun data PER dan PBV
-        df_hist = pd.DataFrame()
-        df_hist["Price"] = hist["Close"]
-
-        # Sinkronisasi tanggal dengan earnings
-        eps = earnings["Earnings"].iloc[:8]
-        df_hist = df_hist.tail(8)
-        df_hist["EPS"] = eps.values
-        df_hist["PER"] = df_hist["Price"] / df_hist["EPS"]
-
-        # Ambil book value per share dari balance sheet (TotalEquity / SharesOutstanding)
-        equity = balance.loc["TotalStockholderEquity"].iloc[:8]
-        shares = info.get("sharesOutstanding", None)
-        if shares:
-            bvps = equity.values / shares
-            df_hist["PBV"] = df_hist["Price"].values / bvps
-        else:
-            df_hist["PBV"] = np.nan
-
-        df_hist.index = df_hist.index.strftime("%Y-Q%q")  # format periode
-
-        # Plot
-        fig = go.Figure()
-        fig.add_trace(go.Scatter(x=df_hist.index, y=df_hist["PER"], name="PER", mode='lines+markers'))
-        fig.add_trace(go.Scatter(x=df_hist.index, y=df_hist["PBV"], name="PBV", mode='lines+markers'))
-        fig.update_layout(title="PER dan PBV Historis (8 Kuartal)", xaxis_title="Kuartal", yaxis_title="Rasio", height=400)
-        st.plotly_chart(fig, use_container_width=True)
-
-    except Exception as e:
-        st.error(f"Gagal memuat detail: {e}")
-
-# ========================== #
-# 📁 Sidebar Navigasi
-# ========================== #
-with st.sidebar:
-    st.header("📁 Menu Navigasi")
-    menu = st.radio("Pilih Halaman", ["Home", "Trading Page", "Teknikal", "Fundamental"])
-
-# ========================== #
+# ============================ #
 # 🌐 Routing Halaman
-# ========================== #
+# ============================ #
 if menu == "Home":
     st.title("🏠 Halaman Utama")
-    tampilkan_chart_ihsg()  # tambahkan grafik IHSG
-    get_news()              # tampilkan berita
-    tampilkan_sektoral_idx()  # tampilkan sektoral
+    tampilkan_chart_ihsg()
+    get_news()
+    tampilkan_sektoral_idx()
 
 elif menu == "Trading Page":
     st.header("📈 Trading Page")
-    st.info("Menampilkan indeks global, komoditas, sinyal beli, EIDO, strategi.")
 
 elif menu == "Teknikal":
     st.header("📉 Analisa Teknikal Saham")
-    st.info("Masukkan kode saham (contoh: `BBRI.JK`) untuk melihat indikator.")
 
 elif menu == "Fundamental":
     st.header("📊 Screener Fundamental Saham")
-    st.info("Filter saham berdasarkan PER, PBV, ROE, dividen, dan lainnya.")
     tampilkan_fundamental()
+    if st.session_state.get("ticker_diklik"):
+        tampilkan_detail(st.session_state["ticker_diklik"])
