@@ -382,19 +382,33 @@ def tampilkan_fundamental():
             "Ticker",
             header_name="Ticker",
             cellRenderer=JsCode("""
-                function(params) {
-                    return `<a href='/?tkr=${params.value}' target='_self' style='color:#40a9ff;text-decoration:none;'>${params.value}</a>`;
+                class ClickableTicker {
+                    init(params) {
+                        this.eGui = document.createElement('a');
+                        this.eGui.href = '/?tkr=' + params.value;
+                        this.eGui.target = '_self';
+                        this.eGui.innerText = params.value;
+                        this.eGui.style.color = '#40a9ff';
+                        this.eGui.style.textDecoration = 'none';
+                    }
+                    getGui() {
+                        return this.eGui;
+                    }
                 }
-            """)
+            """),
+            editable=False
         )
+
+        grid_options = gb.build()
 
         AgGrid(
             df_tampil,
-            gridOptions=gb.build(),
+            gridOptions=grid_options,
             allow_unsafe_jscode=True,
             update_mode=GridUpdateMode.NO_UPDATE,
             fit_columns_on_grid_load=True,
-            height=300
+            height=300,
+            enable_enterprise_modules=False
         )
 
 def tampilkan_detail(ticker):
