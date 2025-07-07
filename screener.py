@@ -276,7 +276,6 @@ for sektor, daftar in sektor_map.items():
 def tampilkan_fundamental():
     st.subheader("📊 ZONA FUNDAMENTAL")
 
-    # === Ambil data dari Yahoo Finance ===
     @st.cache_data(ttl=3600)
     def ambil_data(ticker_list):
         hasil = []
@@ -302,22 +301,25 @@ def tampilkan_fundamental():
     with st.spinner("🔄 Mengambil data dari Yahoo Finance..."):
         df = ambil_data(tickers)
 
-    # === Pastikan semua kolom numerik tersedia ===
     kolom_numerik = ['PER', 'PBV', 'ROE', 'Div Yield', 'Expected PER']
-    if df is None or df.empty:
-        df = pd.DataFrame(columns=['Ticker', 'Name', 'Price'] + kolom_numerik + ['Sektor'])
+    semua_kolom = ['Ticker', 'Name', 'Price'] + kolom_numerik + ['Sektor']
 
-    for kol in kolom_numerik:
+    # Pastikan df tetap memiliki semua kolom
+    if df is None or df.empty:
+        st.warning("⚠️ Data fundamental kosong. Tidak ada data yang berhasil diambil dari Yahoo Finance.")
+        df = pd.DataFrame(columns=semua_kolom)
+
+    for kol in semua_kolom:
         if kol not in df.columns:
             df[kol] = np.nan
 
-    # === Konversi dan normalisasi ===
+    # Konversi kolom numerik ke angka dan normalisasi
     for kol in kolom_numerik:
         df[kol] = pd.to_numeric(df[kol], errors='coerce')
-    df['ROE'] *= 100
-    df['Div Yield'] *= 100
+    df['ROE'] = df['ROE'] * 100
+    df['Div Yield'] = df['Div Yield'] * 100
 
-    # === Sidebar Filter ===
+    # Sidebar filter
     st.sidebar.header("📌 Filter Screener")
     sektor_terpilih = st.sidebar.multiselect("Pilih Sektor", sorted(df['Sektor'].dropna().unique()), default=sorted(df['Sektor'].dropna().unique()))
     min_roe = st.sidebar.slider("Min ROE (%)", 0.0, 100.0, 10.0)
@@ -325,7 +327,7 @@ def tampilkan_fundamental():
     max_pbv = st.sidebar.slider("Max PBV", 0.0, 10.0, 3.0)
     max_forward_per = st.sidebar.slider("Max Expected PER", 0.0, 100.0, 25.0)
 
-    # === Filter DataFrame ===
+    # Filter data
     df_filter = df.dropna(subset=['PER', 'PBV', 'ROE', 'Expected PER']).copy()
     df_filter = df_filter[
         (df_filter['Sektor'].isin(sektor_terpilih)) &
@@ -335,12 +337,12 @@ def tampilkan_fundamental():
         (df_filter['Expected PER'] <= max_forward_per)
     ]
 
-    # === Kolom clickable untuk Ticker ===
+    # Ticker clickable
     df_filter["Ticker_Link"] = df_filter["Ticker"].apply(
         lambda x: f"<a href='/?tkr={x}' target='_self' style='color:#40a9ff;text-decoration:none;'>{x}</a>"
     )
 
-    # === Detail via URL Param ===
+    # Tangani detail ticker dari URL
     query_params = st.query_params
     ticker_qs = query_params.get("tkr", None)
     if ticker_qs:
@@ -350,15 +352,15 @@ def tampilkan_fundamental():
         st.markdown(f"---\n### 🔍 Detail Ticker: `{ticker}`")
         try:
             info = yf.Ticker(ticker).info
-            st.markdown(f"**Nama:** {info.get('longName', '-')}")
-            st.markdown(f"**Harga:** {info.get('currentPrice', '-')}")
-            st.markdown(f"**PER:** {info.get('trailingPE', '-')}")
-            st.markdown(f"**PBV:** {info.get('priceToBook', '-')}")
+            st.markdown(f"**Nama:** {info.get('longName', '-')}")        
+            st.markdown(f"**Harga:** {info.get('currentPrice', '-')}")        
+            st.markdown(f"**PER:** {info.get('trailingPE', '-')}")        
+            st.markdown(f"**PBV:** {info.get('priceToBook', '-')}")        
             roe = info.get('returnOnEquity')
             st.markdown(f"**ROE:** {round(roe*100, 2)} %" if roe is not None else "ROE: -")
             dy = info.get('dividendYield')
             st.markdown(f"**Dividend Yield:** {round(dy*100, 2)} %" if dy is not None else "Dividend Yield: -")
-            st.markdown(f"**Expected PER:** {info.get('forwardPE', '-')}")
+            st.markdown(f"**Expected PER:** {info.get('forwardPE', '-')}")        
             st.markdown(f"**Sektor:** {ticker_to_sector.get(ticker, '-')}")
         except Exception as e:
             st.error(f"Gagal memuat detail: {e}")
@@ -366,9 +368,13 @@ def tampilkan_fundamental():
     if st.session_state.get("ticker_diklik"):
         tampilkan_detail(st.session_state["ticker_diklik"])
 
-    # === Tampilkan hasil screening per sektor ===
+    # Tampilkan hasil screening
     st.markdown("## 📂 Hasil Screening per Sektor")
     from st_aggrid import AgGrid, GridOptionsBuilder, JsCode, GridUpdateMode
+
+    if df_filter.empty:
+        st.info("Tidak ada saham yang lolos filter.")
+        return
 
     for sektor in sorted(df_filter['Sektor'].unique()):
         df_sektor = df_filter[df_filter['Sektor'] == sektor].copy()
@@ -376,7 +382,6 @@ def tampilkan_fundamental():
             continue
 
         st.markdown(f"### 🔸 {sektor}")
-
         df_tampil = df_sektor[[
             "Ticker_Link", "Name", "Price", "PER", "PBV", "ROE", "Div Yield", "Expected PER"
         ]].copy()
@@ -396,6 +401,7 @@ def tampilkan_fundamental():
             fit_columns_on_grid_load=True,
             height=300
         )
+
 # ========================== #
 # 📁 Sidebar Navigasi
 # ========================== #
