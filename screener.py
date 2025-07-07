@@ -366,36 +366,54 @@ def tampilkan_fundamental():
     ''')
 
     for sektor in sorted(df_filter['Sektor'].unique()):
-        df_sektor = df_filter[df_filter['Sektor'] == sektor].copy()
-        if df_sektor.empty:
-            continue
+    df_sektor = df_filter[df_filter['Sektor'] == sektor].copy()
+    if df_sektor.empty:
+        continue
 
-        st.markdown(f"### 🔸 {sektor}")
+    st.markdown(f"### 🔸 {sektor}")
 
-        df_tampil = df_sektor[[
-            "Ticker_Link", "Name", "Price", "PER", "PBV", "ROE", "Div Yield", "Expected PER"
-        ]].copy()
+    # Gunakan kolom Ticker asli (bukan Ticker_Link), agar bisa dirender dengan JS clickable
+    df_tampil = df_sektor[[
+        "Ticker", "Name", "Price", "PER", "PBV", "ROE", "Div Yield", "Expected PER"
+    ]].copy()
 
-        gb = GridOptionsBuilder.from_dataframe(df_tampil)
-        gb.configure_default_column(sortable=True, filter=True, resizable=True)
-        gb.configure_column(
-            "Ticker",
-            header_name="Ticker",
-            cellRenderer=JsCode("""
-                function(params) {
-                    return `<a href='/?tkr=${params.value}' target='_self' style='color:#40a9ff;text-decoration:none;'>${params.value}</a>`;
+    # Grid Options
+    gb = GridOptionsBuilder.from_dataframe(df_tampil)
+    gb.configure_default_column(sortable=True, filter=True, resizable=True)
+
+    # JsCode agar kolom Ticker bisa diklik
+    gb.configure_column(
+        "Ticker",
+        header_name="Ticker",
+        cellRenderer=JsCode("""
+            class ClickableTicker {
+                init(params) {
+                    this.eGui = document.createElement('a');
+                    this.eGui.href = '/?tkr=' + params.value;
+                    this.eGui.target = '_self';
+                    this.eGui.innerText = params.value;
+                    this.eGui.style.color = '#40a9ff';
+                    this.eGui.style.textDecoration = 'none';
                 }
-            """)
-        )
+                getGui() {
+                    return this.eGui;
+                }
+            }
+        """),
+        editable=False
+    )
 
-        AgGrid(
-            df_tampil,
-            gridOptions=gb.build(),
-            allow_unsafe_jscode=True,
-            update_mode=GridUpdateMode.NO_UPDATE,
-            fit_columns_on_grid_load=True,
-            height=300
-        )
+    grid_options = gb.build()
+
+    AgGrid(
+        df_tampil,
+        gridOptions=grid_options,
+        allow_unsafe_jscode=True,
+        update_mode=GridUpdateMode.NO_UPDATE,
+        fit_columns_on_grid_load=True,
+        height=300,
+        enable_enterprise_modules=False
+    )
 
 def tampilkan_detail(ticker):
     st.markdown(f"---\n### 🔍 Detail Ticker: `{ticker}`")
