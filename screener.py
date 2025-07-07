@@ -392,28 +392,28 @@ def tampilkan_fundamental():
             "Ticker", "Name", "Price", "PER", "PBV", "ROE", "Div Yield", "Expected PER"
         ]
 
-       from st_aggrid import AgGrid, GridOptionsBuilder, JsCode, GridUpdateMode
+    from st_aggrid import AgGrid, GridOptionsBuilder, JsCode, GridUpdateMode
 
-        gb = GridOptionsBuilder.from_dataframe(df_tampil)
-        gb.configure_default_column(sortable=True, filter=True, resizable=True)
+    gb = GridOptionsBuilder.from_dataframe(df_tampil)
+    gb.configure_default_column(sortable=True, filter=True, resizable=True)
 
-        # Konfigurasi render kolom Ticker agar HTML bisa diklik
-        gb.configure_column(
-            "Ticker", 
-            header_name="Ticker", 
-            cellRenderer=JsCode('''function(params) {return params.value;}'''),
-            type=["textColumn"]
-        )
+    # Konfigurasi render kolom Ticker agar HTML bisa diklik
+    gb.configure_column(
+        "Ticker", 
+        header_name="Ticker", 
+        cellRenderer=JsCode('''function(params) {return params.value;}'''),
+        type=["textColumn"]
+    )
 
-        grid_options = gb.build()
-        AgGrid(
-            df_tampil,
-            gridOptions=grid_options,
-            allow_unsafe_jscode=True,
-            update_mode=GridUpdateMode.NO_UPDATE,
-            fit_columns_on_grid_load=True,
-            height=300,
-        )
+    grid_options = gb.build()
+    AgGrid(
+        df_tampil,
+        gridOptions=grid_options,
+        allow_unsafe_jscode=True,
+        update_mode=GridUpdateMode.NO_UPDATE,
+        fit_columns_on_grid_load=True,
+        height=300,
+    )
 
 # ========================== #
 # 📁 Sidebar Navigasi
