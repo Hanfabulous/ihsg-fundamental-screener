@@ -383,7 +383,16 @@ def tampilkan_fundamental():
 
         gb = GridOptionsBuilder.from_dataframe(df_tampil)
         gb.configure_default_column(sortable=True, filter=True, resizable=True)
-        gb.configure_column("Ticker", cellRenderer=html_renderer)
+        gb.configure_column(
+            "Ticker",
+            header_name="Ticker",
+            cellRenderer=JsCode("""
+                function(params) {
+                    return `<a href='/?tkr=${params.value}' target='_self' style='color:#40a9ff;text-decoration:none;'>${params.value}</a>`;
+                }
+            """)
+        )
+
 
         AgGrid(
             df_tampil,
