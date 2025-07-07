@@ -305,22 +305,20 @@ def tampilkan_fundamental():
     kolom_numerik = ['PER', 'PBV', 'ROE', 'Div Yield', 'Expected PER']
     semua_kolom = ['Ticker', 'Name', 'Price'] + kolom_numerik + ['Sektor']
 
-    # Pastikan df tetap memiliki semua kolom
     if df is None or df.empty:
-        st.warning("⚠️ Data fundamental kosong. Tidak ada data yang berhasil diambil dari Yahoo Finance.")
+        st.warning("⚠️ Data fundamental kosong.")
         df = pd.DataFrame(columns=semua_kolom)
 
     for kol in semua_kolom:
         if kol not in df.columns:
             df[kol] = np.nan
 
-    # Konversi kolom numerik ke angka dan normalisasi
     for kol in kolom_numerik:
         df[kol] = pd.to_numeric(df[kol], errors='coerce')
     df['ROE'] = df['ROE'] * 100
     df['Div Yield'] = df['Div Yield'] * 100
 
-    # Sidebar filter
+    # Sidebar Filter
     st.sidebar.header("📌 Filter Screener")
     semua_sektor = sorted(sektor_map.keys())
     sektor_terpilih = st.sidebar.multiselect("Pilih Sektor", semua_sektor, default=semua_sektor)
@@ -340,44 +338,32 @@ def tampilkan_fundamental():
         (df_filter['Expected PER'] <= max_forward_per)
     ]
 
-    # Ticker clickable
+    # Buat kolom HTML Ticker clickable
     df_filter["Ticker_Link"] = df_filter["Ticker"].apply(
         lambda x: f"<a href='/?tkr={x}' target='_self' style='color:#40a9ff;text-decoration:none;'>{x}</a>"
     )
 
-    # Tangani detail ticker dari URL
+    # Tangani ticker detail dari URL
     query_params = st.query_params
     ticker_qs = query_params.get("tkr", None)
     if ticker_qs:
         st.session_state["ticker_diklik"] = ticker_qs
-
-    def tampilkan_detail(ticker):
-        st.markdown(f"---\n### 🔍 Detail Ticker: `{ticker}`")
-        try:
-            info = yf.Ticker(ticker).info
-            st.markdown(f"**Nama:** {info.get('longName', '-')}")        
-            st.markdown(f"**Harga:** {info.get('currentPrice', '-')}")        
-            st.markdown(f"**PER:** {info.get('trailingPE', '-')}")        
-            st.markdown(f"**PBV:** {info.get('priceToBook', '-')}")        
-            roe = info.get('returnOnEquity')
-            st.markdown(f"**ROE:** {round(roe*100, 2)} %" if roe is not None else "ROE: -")
-            dy = info.get('dividendYield')
-            st.markdown(f"**Dividend Yield:** {round(dy*100, 2)} %" if dy is not None else "Dividend Yield: -")
-            st.markdown(f"**Expected PER:** {info.get('forwardPE', '-')}")        
-            st.markdown(f"**Sektor:** {ticker_to_sector.get(ticker, '-')}")
-        except Exception as e:
-            st.error(f"Gagal memuat detail: {e}")
 
     if st.session_state.get("ticker_diklik"):
         tampilkan_detail(st.session_state["ticker_diklik"])
 
     # Tampilkan hasil screening
     st.markdown("## 📂 Hasil Screening per Sektor")
-    from st_aggrid import AgGrid, GridOptionsBuilder, JsCode, GridUpdateMode
 
     if df_filter.empty:
         st.info("Tidak ada saham yang lolos filter.")
         return
+
+    html_renderer = JsCode('''
+        function(params) {
+            return params.value;
+        }
+    ''')
 
     for sektor in sorted(df_filter['Sektor'].unique()):
         df_sektor = df_filter[df_filter['Sektor'] == sektor].copy()
@@ -385,39 +371,45 @@ def tampilkan_fundamental():
             continue
 
         st.markdown(f"### 🔸 {sektor}")
+
         df_tampil = df_sektor[[
             "Ticker_Link", "Name", "Price", "PER", "PBV", "ROE", "Div Yield", "Expected PER"
         ]].copy()
+
+        # Rename agar Ticker_Link jadi Ticker (untuk AgGrid)
         df_tampil.columns = [
             "Ticker", "Name", "Price", "PER", "PBV", "ROE", "Div Yield", "Expected PER"
         ]
 
-    from st_aggrid import JsCode
+        gb = GridOptionsBuilder.from_dataframe(df_tampil)
+        gb.configure_default_column(sortable=True, filter=True, resizable=True)
+        gb.configure_column("Ticker", cellRenderer=html_renderer)
 
-    # === Renderer HTML agar link aktif ===
-    html_renderer = JsCode('''
-        function(params) {
-            return params.value;
-        }
-    ''')
+        AgGrid(
+            df_tampil,
+            gridOptions=gb.build(),
+            allow_unsafe_jscode=True,
+            update_mode=GridUpdateMode.NO_UPDATE,
+            fit_columns_on_grid_load=True,
+            height=300
+        )
 
-    # === Build Grid Option ===
-    gb = GridOptionsBuilder.from_dataframe(df_tampil)
-    gb.configure_default_column(sortable=True, filter=True, resizable=True)
-
-    # === Render kolom Ticker agar bisa clickable ===
-    gb.configure_column("Ticker", cellRenderer=html_renderer)
-
-    grid_options = gb.build()
-
-    AgGrid(
-        df_tampil,
-        gridOptions=grid_options,
-        allow_unsafe_jscode=True,
-        update_mode=GridUpdateMode.NO_UPDATE,
-        fit_columns_on_grid_load=True,
-        height=300
-    )
+def tampilkan_detail(ticker):
+    st.markdown(f"---\n### 🔍 Detail Ticker: `{ticker}`")
+    try:
+        info = yf.Ticker(ticker).info
+        st.markdown(f"**Nama:** {info.get('longName', '-')}")        
+        st.markdown(f"**Harga:** {info.get('currentPrice', '-')}")        
+        st.markdown(f"**PER:** {info.get('trailingPE', '-')}")        
+        st.markdown(f"**PBV:** {info.get('priceToBook', '-')}")        
+        roe = info.get('returnOnEquity')
+        st.markdown(f"**ROE:** {round(roe*100, 2)} %" if roe is not None else "ROE: -")
+        dy = info.get('dividendYield')
+        st.markdown(f"**Dividend Yield:** {round(dy*100, 2)} %" if dy is not None else "Dividend Yield: -")
+        st.markdown(f"**Expected PER:** {info.get('forwardPE', '-')}")        
+        st.markdown(f"**Sektor:** {ticker_to_sector.get(ticker, '-')}")
+    except Exception as e:
+        st.error(f"Gagal memuat detail: {e}")
 
 # ========================== #
 # 📁 Sidebar Navigasi
