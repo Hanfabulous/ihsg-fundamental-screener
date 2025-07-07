@@ -304,10 +304,12 @@ def tampilkan_fundamental():
 
     # === Pastikan semua kolom numerik tersedia ===
     kolom_numerik = ['PER', 'PBV', 'ROE', 'Div Yield', 'Expected PER']
-    if df is not None and not df.empty:
-        for kol in kolom_numerik:
-            if kol not in df.columns:
-                df[kol] = np.nan
+    if df is None or df.empty:
+        df = pd.DataFrame(columns=['Ticker', 'Name', 'Price'] + kolom_numerik + ['Sektor'])
+
+    for kol in kolom_numerik:
+        if kol not in df.columns:
+            df[kol] = np.nan
 
     # === Konversi dan normalisasi ===
     for kol in kolom_numerik:
