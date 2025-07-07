@@ -348,14 +348,27 @@ def tampilkan_fundamental():
     # Tangani ticker detail dari URL
     query_params = st.query_params
     ticker_qs = query_params.get("tkr", None)
+
     if ticker_qs:
         st.session_state["ticker_diklik"] = ticker_qs
         menu = "Fundamental"
     else:
-        # Sidebar Navigasi
         with st.sidebar:
             st.header("📁 Menu Navigasi")
             menu = st.radio("Pilih Halaman", ["Home", "Trading Page", "Teknikal", "Fundamental"])
+
+    # Routing halaman
+    if menu == "Home":
+        tampilkan_chart_ihsg()
+        get_news()
+        tampilkan_sektoral_idx()
+    elif menu == "Trading Page":
+        st.header("📈 Trading Page")
+    elif menu == "Teknikal":
+        st.header("📉 Analisa Teknikal Saham")
+    elif menu == "Fundamental":
+        tampilkan_fundamental()
+
 
     if st.session_state.get("ticker_diklik"):
         tampilkan_detail(st.session_state["ticker_diklik"])
