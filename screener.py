@@ -403,6 +403,7 @@ def tampilkan_fundamental():
             editable=False
         )
 
+
         grid_options = gb.build()
 
         AgGrid(
@@ -416,21 +417,33 @@ def tampilkan_fundamental():
         )
 
 def tampilkan_detail(ticker):
-    st.markdown(f"---\n### 🔍 Detail Ticker: `{ticker}`")
+# Tangani ticker yang diklik dari URL
+query_params = st.query_params
+ticker_qs = query_params.get("tkr")
+
+if ticker_qs:
+    st.markdown("---")
+    st.subheader(f"📌 Detail Ticker: `{ticker_qs}`")
+
     try:
-        info = yf.Ticker(ticker).info
-        st.markdown(f"**Nama:** {info.get('longName', '-')}")        
-        st.markdown(f"**Harga:** {info.get('currentPrice', '-')}")        
-        st.markdown(f"**PER:** {info.get('trailingPE', '-')}")        
-        st.markdown(f"**PBV:** {info.get('priceToBook', '-')}")        
-        roe = info.get('returnOnEquity')
-        st.markdown(f"**ROE:** {round(roe*100, 2)} %" if roe is not None else "ROE: -")
-        dy = info.get('dividendYield')
-        st.markdown(f"**Dividend Yield:** {round(dy*100, 2)} %" if dy is not None else "Dividend Yield: -")
-        st.markdown(f"**Expected PER:** {info.get('forwardPE', '-')}")        
-        st.markdown(f"**Sektor:** {ticker_to_sector.get(ticker, '-')}")
+        info = yf.Ticker(ticker_qs).info
+        st.markdown(f"**Nama:** {info.get('longName', '-')}")
+        st.markdown(f"**Harga:** {info.get('currentPrice', '-')}")
+        st.markdown(f"**PER:** {info.get('trailingPE', '-')}")
+        st.markdown(f"**PBV:** {info.get('priceToBook', '-')}")
+        roe = info.get("returnOnEquity")
+        st.markdown(f"**ROE:** {round(roe*100, 2)} %" if roe else "ROE: -")
+        dy = info.get("dividendYield")
+        st.markdown(f"**Dividend Yield:** {round(dy*100, 2)} %" if dy else "Dividend Yield: -")
+        st.markdown(f"**Expected PER:** {info.get('forwardPE', '-')}")
+        st.markdown(f"**Market Cap:** {info.get('marketCap', '-')}")
+        st.markdown(f"**Sector:** {info.get('sector', '-')}")
+        st.markdown(f"**Industry:** {info.get('industry', '-')}")
+        st.markdown(f"**Website:** {info.get('website', '-')}")
+        st.markdown(f"**Deskripsi:** {info.get('longBusinessSummary', '-')}")
+
     except Exception as e:
-        st.error(f"Gagal memuat detail: {e}")
+        st.error(f"❌ Gagal menampilkan detail ticker: {e}")
 
 # ========================== #
 # 📁 Sidebar Navigasi
