@@ -417,9 +417,11 @@ def tampilkan_fundamental():
         )
 
 def tampilkan_detail(ticker):
-    # Tangani ticker yang diklik dari URL
+    
     query_params = st.query_params
-    ticker_qs = query_params.get("tkr")
+    if "tkr" in query_params:
+        st.session_state["menu"] = "Fundamental"
+
 
     if ticker_qs:
         st.markdown("---")
