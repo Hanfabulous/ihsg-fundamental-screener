@@ -321,7 +321,9 @@ def tampilkan_fundamental():
 
     # Sidebar filter
     st.sidebar.header("📌 Filter Screener")
-    sektor_terpilih = st.sidebar.multiselect("Pilih Sektor", sorted(df['Sektor'].dropna().unique()), default=sorted(df['Sektor'].dropna().unique()))
+    semua_sektor = sorted(sektor_map.keys())
+    sektor_terpilih = st.sidebar.multiselect("Pilih Sektor", semua_sektor, default=semua_sektor)
+
     min_roe = st.sidebar.slider("Min ROE (%)", 0.0, 100.0, 10.0)
     max_per = st.sidebar.slider("Max PER", 0.0, 100.0, 25.0)
     max_pbv = st.sidebar.slider("Max PBV", 0.0, 10.0, 3.0)
