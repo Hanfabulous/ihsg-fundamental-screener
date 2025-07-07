@@ -406,6 +406,9 @@ with st.sidebar:
 # ========================== #
 if menu == "Home":
     st.title("🏠 Halaman Utama")
+    tampilkan_chart_ihsg()  # tambahkan grafik IHSG
+    get_news()              # tampilkan berita
+    tampilkan_sektoral_idx()  # tampilkan sektoral
 
 elif menu == "Trading Page":
     st.header("📈 Trading Page")
