@@ -376,11 +376,6 @@ def tampilkan_fundamental():
             "Ticker_Link", "Name", "Price", "PER", "PBV", "ROE", "Div Yield", "Expected PER"
         ]].copy()
 
-        # Rename agar Ticker_Link jadi Ticker (untuk AgGrid)
-        df_tampil.columns = [
-            "Ticker", "Name", "Price", "PER", "PBV", "ROE", "Div Yield", "Expected PER"
-        ]
-
         gb = GridOptionsBuilder.from_dataframe(df_tampil)
         gb.configure_default_column(sortable=True, filter=True, resizable=True)
         gb.configure_column(
@@ -392,7 +387,6 @@ def tampilkan_fundamental():
                 }
             """)
         )
-
 
         AgGrid(
             df_tampil,
