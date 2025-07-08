@@ -478,7 +478,7 @@ else:
     with st.sidebar:
         st.header("📁 Menu Navigasi")
         st.session_state["menu"] = st.radio(
-            "Pilih Halaman", ["Home", "Trading Page", "Teknikal", "Fundamental"],
+            "Pilih Halaman", ["Home", "Trading Page", "Teknikal", "Fundamental", "Bandarmology", "Insight", "News"],
             key="sidebar_menu"
         )
 # ============================ #
