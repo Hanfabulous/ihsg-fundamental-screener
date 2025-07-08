@@ -197,95 +197,68 @@ def tampilkan_sektoral_idx():
         st.error(f"❌ Gagal mengambil data sektoral IDX: {e}")
 
 def trading_page():
-    st.subheader("📊 Trading Page: Global Market Insight")
+    st.subheader("📈 Global Market & Komoditas (Yahoo Finance)")
 
-    end_date = datetime.today()
-    start_date = end_date - timedelta(days=30)
+    # Fungsi bantu grafik
+    def tampilkan_chart_yf(ticker, label, warna="skyblue"):
+        data = yf.download(ticker, period="20d", interval="1d", progress=False)
+        if data.empty:
+            st.warning(f"❌ Data {label} tidak tersedia.")
+            return
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=data.index, y=data["Close"], mode="lines+markers", name=label, line=dict(color=warna)))
+        fig.update_layout(title=f"{label} (20 Hari Terakhir)", xaxis_title="Tanggal", yaxis_title="Harga")
+        st.plotly_chart(fig, use_container_width=True)
 
-    # ===================== #
-    # 1. Index DXY (Dollar)
-    # ===================== #
-    st.markdown("### 💵 Index DXY (US Dollar)")
-    dxy = yf.download("DX-Y.NYB", start=start_date, end=end_date)
-    fig_dxy = go.Figure()
-    fig_dxy.add_trace(go.Scatter(x=dxy.index, y=dxy["Close"], mode="lines", name="DXY"))
-    fig_dxy.update_layout(title="DXY - US Dollar Index", xaxis_title="Tanggal", yaxis_title="Nilai")
-    st.plotly_chart(fig_dxy, use_container_width=True)
+    # 1. Index DXY
+    tampilkan_chart_yf("DX-Y.NYB", "Index DXY", "orange")
 
-    # ===================== #
     # 2. Index VIX
-    # ===================== #
-    st.markdown("### 😱 Index VIX (Volatility)")
-    vix = yf.download("^VIX", start=start_date, end=end_date)
-    fig_vix = go.Figure()
-    fig_vix.add_trace(go.Scatter(x=vix.index, y=vix["Close"], mode="lines", name="VIX"))
-    fig_vix.update_layout(title="VIX - Volatility Index", xaxis_title="Tanggal", yaxis_title="Nilai")
-    st.plotly_chart(fig_vix, use_container_width=True)
+    tampilkan_chart_yf("^VIX", "Index VIX", "red")
 
-    # ===================== #
-    # 3. Harga Komoditas Dunia
-    # ===================== #
-    st.markdown("### 🛢️ Harga Komoditas Dunia")
-    komoditas = {
-        "Gold": "GC=F",
-        "Crude Oil WTI": "CL=F",
-        "Brent Oil": "BZ=F",
-        "Natural Gas": "NG=F",
-        "Copper": "HG=F"
-    }
-    for nama, ticker in komoditas.items():
-        data = yf.download(ticker, start=start_date, end=end_date)
-        if not data.empty:
-            fig = go.Figure()
-            fig.add_trace(go.Scatter(x=data.index, y=data["Close"], name=nama))
-            fig.update_layout(title=nama, xaxis_title="Tanggal", yaxis_title="Harga")
-            st.plotly_chart(fig, use_container_width=True)
+    # 3. Komoditas Dunia
+    st.markdown("### 🛢️ Komoditas Dunia")
+    tampilkan_chart_yf("CL=F", "WTI Crude Oil", "green")
+    tampilkan_chart_yf("BZ=F", "Brent Crude Oil", "darkgreen")
+    tampilkan_chart_yf("GC=F", "Emas (Gold)", "gold")
+    tampilkan_chart_yf("NG=F", "Gas Alam", "lightblue")
+    tampilkan_chart_yf("HG=F", "Tembaga", "brown")
 
-    # ===================== #
-    # 4. Index Dunia
-    # ===================== #
-    st.markdown("### 🌍 Indeks Dunia")
-    indeks_dunia = {
-        "S&P 500": "^GSPC",
-        "Nasdaq": "^IXIC",
-        "Dow Jones": "^DJI",
-        "Nikkei 225": "^N225",
-        "Hang Seng": "^HSI",
-        "FTSE 100": "^FTSE"
-    }
-    for nama, ticker in indeks_dunia.items():
-        data = yf.download(ticker, start=start_date, end=end_date)
-        if not data.empty:
-            fig = go.Figure()
-            fig.add_trace(go.Scatter(x=data.index, y=data["Close"], name=nama))
-            fig.update_layout(title=nama, xaxis_title="Tanggal", yaxis_title="Harga")
-            st.plotly_chart(fig, use_container_width=True)
+    # 4. Indeks Dunia
+    st.markdown("### 🌎 Indeks Dunia")
+    tampilkan_chart_yf("^GSPC", "S&P 500", "cyan")
+    tampilkan_chart_yf("^IXIC", "Nasdaq", "purple")
+    tampilkan_chart_yf("^DJI", "Dow Jones", "gray")
+    tampilkan_chart_yf("^N225", "Nikkei", "pink")
+    tampilkan_chart_yf("^HSI", "Hang Seng", "teal")
 
-    # ===================== #
-    # 5. Performa IHSG + Prediksi LSTM
-    # ===================== #
-    st.markdown("### 🇮🇩 IHSG & Prediksi LSTM")
-    ihsg = yf.download("^JKSE", start=start_date, end=end_date)
-    fig_ihsg = go.Figure()
-    fig_ihsg.add_trace(go.Scatter(x=ihsg.index, y=ihsg["Close"], name="IHSG"))
+    # 5. Performa IHSG dan Prediksi JKSE dengan DXY
+    st.markdown("### 🇮🇩 IHSG & Prediksi dengan DXY (LSTM Dummy)")
 
-    # Dummy Prediksi LSTM (berbasis trend 3 hari lalu, bisa diganti model asli)
-    ihsg["LSTM_Predict"] = ihsg["Close"].shift(-1)
-    fig_ihsg.add_trace(go.Scatter(x=ihsg.index, y=ihsg["LSTM_Predict"], name="Prediksi (Dummy)", line=dict(dash="dot", color="orange")))
+    dxy = yf.download("DX-Y.NYB", period="3mo", interval="1d", progress=False)
+    jkse = yf.download("^JKSE", period="3mo", interval="1d", progress=False)
 
-    fig_ihsg.update_layout(title="IHSG dan Prediksi LSTM (Dummy)", xaxis_title="Tanggal", yaxis_title="Harga")
-    st.plotly_chart(fig_ihsg, use_container_width=True)
+    if not dxy.empty and not jkse.empty:
+        df = pd.DataFrame({
+            "JKSE": jkse["Close"].values,
+            "DXY": dxy["Close"].values
+        }, index=jkse.index)
 
-    # ===================== #
-    # 6. EIDO (ETF Indonesia)
-    # ===================== #
-    st.markdown("### 🇮🇩 EIDO - ETF Indonesia")
-    eido = yf.download("EIDO", start=start_date, end=end_date)
-    fig_eido = go.Figure()
-    fig_eido.add_trace(go.Scatter(x=eido.index, y=eido["Close"], name="EIDO"))
-    fig_eido.update_layout(title="Harga ETF Indonesia (EIDO)", xaxis_title="Tanggal", yaxis_title="Harga")
-    st.plotly_chart(fig_eido, use_container_width=True)
+        # Dummy Prediksi: kombinasi rata-rata rolling JKSE + pengaruh DXY sederhana
+        df["Prediksi"] = df["JKSE"].rolling(5).mean().shift(-2) - 0.5 * df["DXY"].pct_change().shift(1).fillna(0) * df["JKSE"]
 
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=df.index, y=df["JKSE"], name="IHSG", line=dict(color="blue")))
+        fig.add_trace(go.Scatter(x=df.index, y=df["Prediksi"], name="Prediksi (Dummy)", line=dict(color="red", dash="dot")))
+
+        fig.update_layout(title="IHSG & Prediksi LSTM Dummy (dengan DXY)", xaxis_title="Tanggal", yaxis_title="Index")
+        st.plotly_chart(fig, use_container_width=True)
+    else:
+        st.warning("❌ Gagal mengambil data DXY atau IHSG.")
+
+    # 6. EIDO ETF
+    st.markdown("### 🇮🇩 EIDO - Indonesia ETF")
+    tampilkan_chart_yf("EIDO", "EIDO (Indonesia ETF)", "darkblue")
 
 def tampilkan_teknikal():
     st.header("📉 Analisa Teknikal Saham")
