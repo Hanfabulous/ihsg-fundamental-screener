@@ -239,7 +239,7 @@ def tampilkan_teknikal():
     st.write(f"📊 Menampilkan analisa teknikal untuk `{ticker_full}` dengan timeframe `{tf}`")
 
     try:
-        df = yf.download(ticker_full, period="6mo", interval=tf)
+        df = yf.download(ticker_full, period="3y", interval=tf)
         if df.empty:
             st.warning("❌ Data tidak ditemukan.")
             return
