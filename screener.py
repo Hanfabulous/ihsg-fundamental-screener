@@ -354,12 +354,14 @@ ticker_qs = query_params.get("tkr", None)
 
 if ticker_qs:
     st.session_state["ticker_diklik"] = ticker_qs
-    menu = "Fundamental"
+    st.session_state["menu"] = "Detail"
 else:
     with st.sidebar:
         st.header("📁 Menu Navigasi")
-        menu = st.radio("Pilih Halaman", ["Home", "Trading Page", "Teknikal", "Fundamental"])
-
+        st.session_state["menu"] = st.radio(
+            "Pilih Halaman", ["Home", "Trading Page", "Teknikal", "Fundamental"],
+            key="sidebar_menu"
+        )
 # ============================ #
 # 📊 Detail Ticker
 # ============================ #
@@ -532,9 +534,9 @@ with st.sidebar:
     st.header("📁 Menu Navigasi")
     if st.session_state.get("menu") != "Detail":
         st.session_state["menu"] = st.radio(
-            "Pilih Halaman", ["Home", "Trading Page", "Teknikal", "Fundamental"]
+            "Pilih Halaman", ["Home", "Trading Page", "Teknikal", "Fundamental"],
+            key="main_menu"  # Key harus berbeda dari yang di atas
         )
-
 
 if menu == "Home":
     st.title("🏠 Halaman Utama")
