@@ -196,6 +196,97 @@ def tampilkan_sektoral_idx():
     except Exception as e:
         st.error(f"❌ Gagal mengambil data sektoral IDX: {e}")
 
+def tampilkan_trading():
+    st.subheader("📊 Trading Page: Global Market Insight")
+
+    end_date = datetime.today()
+    start_date = end_date - timedelta(days=30)
+
+    # ===================== #
+    # 1. Index DXY (Dollar)
+    # ===================== #
+    st.markdown("### 💵 Index DXY (US Dollar)")
+    dxy = yf.download("DX-Y.NYB", start=start_date, end=end_date)
+    fig_dxy = go.Figure()
+    fig_dxy.add_trace(go.Scatter(x=dxy.index, y=dxy["Close"], mode="lines", name="DXY"))
+    fig_dxy.update_layout(title="DXY - US Dollar Index", xaxis_title="Tanggal", yaxis_title="Nilai")
+    st.plotly_chart(fig_dxy, use_container_width=True)
+
+    # ===================== #
+    # 2. Index VIX
+    # ===================== #
+    st.markdown("### 😱 Index VIX (Volatility)")
+    vix = yf.download("^VIX", start=start_date, end=end_date)
+    fig_vix = go.Figure()
+    fig_vix.add_trace(go.Scatter(x=vix.index, y=vix["Close"], mode="lines", name="VIX"))
+    fig_vix.update_layout(title="VIX - Volatility Index", xaxis_title="Tanggal", yaxis_title="Nilai")
+    st.plotly_chart(fig_vix, use_container_width=True)
+
+    # ===================== #
+    # 3. Harga Komoditas Dunia
+    # ===================== #
+    st.markdown("### 🛢️ Harga Komoditas Dunia")
+    komoditas = {
+        "Gold": "GC=F",
+        "Crude Oil WTI": "CL=F",
+        "Brent Oil": "BZ=F",
+        "Natural Gas": "NG=F",
+        "Copper": "HG=F"
+    }
+    for nama, ticker in komoditas.items():
+        data = yf.download(ticker, start=start_date, end=end_date)
+        if not data.empty:
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(x=data.index, y=data["Close"], name=nama))
+            fig.update_layout(title=nama, xaxis_title="Tanggal", yaxis_title="Harga")
+            st.plotly_chart(fig, use_container_width=True)
+
+    # ===================== #
+    # 4. Index Dunia
+    # ===================== #
+    st.markdown("### 🌍 Indeks Dunia")
+    indeks_dunia = {
+        "S&P 500": "^GSPC",
+        "Nasdaq": "^IXIC",
+        "Dow Jones": "^DJI",
+        "Nikkei 225": "^N225",
+        "Hang Seng": "^HSI",
+        "FTSE 100": "^FTSE"
+    }
+    for nama, ticker in indeks_dunia.items():
+        data = yf.download(ticker, start=start_date, end=end_date)
+        if not data.empty:
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(x=data.index, y=data["Close"], name=nama))
+            fig.update_layout(title=nama, xaxis_title="Tanggal", yaxis_title="Harga")
+            st.plotly_chart(fig, use_container_width=True)
+
+    # ===================== #
+    # 5. Performa IHSG + Prediksi LSTM
+    # ===================== #
+    st.markdown("### 🇮🇩 IHSG & Prediksi LSTM")
+    ihsg = yf.download("^JKSE", start=start_date, end=end_date)
+    fig_ihsg = go.Figure()
+    fig_ihsg.add_trace(go.Scatter(x=ihsg.index, y=ihsg["Close"], name="IHSG"))
+
+    # Dummy Prediksi LSTM (berbasis trend 3 hari lalu, bisa diganti model asli)
+    ihsg["LSTM_Predict"] = ihsg["Close"].shift(-1)
+    fig_ihsg.add_trace(go.Scatter(x=ihsg.index, y=ihsg["LSTM_Predict"], name="Prediksi (Dummy)", line=dict(dash="dot", color="orange")))
+
+    fig_ihsg.update_layout(title="IHSG dan Prediksi LSTM (Dummy)", xaxis_title="Tanggal", yaxis_title="Harga")
+    st.plotly_chart(fig_ihsg, use_container_width=True)
+
+    # ===================== #
+    # 6. EIDO (ETF Indonesia)
+    # ===================== #
+    st.markdown("### 🇮🇩 EIDO - ETF Indonesia")
+    eido = yf.download("EIDO", start=start_date, end=end_date)
+    fig_eido = go.Figure()
+    fig_eido.add_trace(go.Scatter(x=eido.index, y=eido["Close"], name="EIDO"))
+    fig_eido.update_layout(title="Harga ETF Indonesia (EIDO)", xaxis_title="Tanggal", yaxis_title="Harga")
+    st.plotly_chart(fig_eido, use_container_width=True)
+
+
 def tampilkan_teknikal():
     st.header("📉 Analisa Teknikal Saham")
 
@@ -658,9 +749,8 @@ if menu == "Home":
     get_news()
     tampilkan_sektoral_idx()
 
-elif menu == "Trading Page":
-    st.header("📈 Trading Page")
-    # dll...
+elif st.session_state.menu == "Trading Page":
+    trading_page()
 
 elif st.session_state.menu == "Teknikal":
     tampilkan_teknikal()
