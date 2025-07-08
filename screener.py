@@ -196,7 +196,7 @@ def tampilkan_sektoral_idx():
     except Exception as e:
         st.error(f"❌ Gagal mengambil data sektoral IDX: {e}")
 
-def tampilkan_trading():
+def trading_page():
     st.subheader("📊 Trading Page: Global Market Insight")
 
     end_date = datetime.today()
