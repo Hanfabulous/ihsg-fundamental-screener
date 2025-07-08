@@ -213,7 +213,7 @@ def tampilkan_teknikal():
         "1mo": "5y"
     }
 
-    periode = timeframe_period_map.get(tf, "6mo")  # default 6mo
+    periode = timeframe_period_map.get(tf, "3y")  # default 6mo
 
     try:
         df = yf.download(ticker_full, period=periode, interval=tf, progress=False)
