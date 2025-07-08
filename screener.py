@@ -197,6 +197,7 @@ def tampilkan_sektoral_idx():
         st.error(f"❌ Gagal mengambil data sektoral IDX: {e}")
 
 def tampilkan_teknikal():
+    def tampilkan_teknikal():
     st.header("📉 Analisa Teknikal Saham")
 
     # Input ticker
@@ -226,27 +227,7 @@ def tampilkan_teknikal():
     except Exception as e:
         st.error(f"Gagal ambil data: {e}")
         return
-     fig = go.Figure()
-        fig.add_trace(go.Candlestick(
-            x=data_chart["Date"],
-            open=data_chart["Open"],
-            high=data_chart["High"],
-            low=data_chart["Low"],
-            close=data_chart["Close"],
-            name="Candlestick",
-            increasing_line_color="green",
-            decreasing_line_color="red"
-        ))
-       
-        fig.update_layout(
-            title="📊 Grafik Emiten ",
-            xaxis_title="Tanggal",
-            yaxis_title="Harga",
-            template="plotly_dark",
-            height=600,
-            xaxis_rangeslider_visible=False
-        )
-        st.plotly_chart(fig, use_container_width=True)
+    
     # Pilih indikator
     indikator = st.multiselect("Pilih Indikator", [
         "MACD", "RSI", "Alligator", "MA", "Bollinger Bands", "Ichimoku Cloud",
