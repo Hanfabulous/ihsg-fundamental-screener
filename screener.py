@@ -203,7 +203,7 @@ def tampilkan_teknikal():
     from ta.volume import OnBalanceVolumeIndicator
     from ta.volatility import BollingerBands
 
-     st.header("📉 Analisa Teknikal Saham")
+    st.header("📉 Analisa Teknikal Saham")
 
     # Input ticker
     ticker_input = st.text_input("Masukkan Ticker (contoh: BBRI)")
