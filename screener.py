@@ -197,7 +197,6 @@ def tampilkan_sektoral_idx():
         st.error(f"❌ Gagal mengambil data sektoral IDX: {e}")
 
 def tampilkan_teknikal():
-    def tampilkan_teknikal():
     st.header("📉 Analisa Teknikal Saham")
 
     # Input ticker
