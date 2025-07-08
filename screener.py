@@ -464,23 +464,27 @@ def tampilkan_fundamental():
         lambda x: f"<a href='/?tkr={x}' target='_self' style='color:#40a9ff;text-decoration:none;'>{x}</a>"
     )
 
-    # Tangani ticker detail dari URL
-    # ============================ #
-# 📁 Sidebar Navigasi
+# ============================ #
+# 📁 Sidebar Navigasi + URL Handler
 # ============================ #
 query_params = st.query_params
 ticker_qs = query_params.get("tkr", None)
 
 if ticker_qs:
+    # Jika ada parameter 'tkr' di URL, alihkan ke halaman Detail
     st.session_state["ticker_diklik"] = ticker_qs
     st.session_state["menu"] = "Detail"
 else:
     with st.sidebar:
         st.header("📁 Menu Navigasi")
-        st.session_state["menu"] = st.radio(
-            "Pilih Halaman", ["Home", "Trading Page", "Teknikal", "Fundamental", "Bandarmology", "Insight", "News"],
-            key="sidebar_menu"
-        )
+
+        # Cegah penimpaan menu saat sudah ada di session_state
+        if "menu" not in st.session_state or st.session_state["menu"] == "Detail":
+            st.session_state["menu"] = st.radio(
+                "Pilih Halaman",
+                ["Home", "Trading Page", "Teknikal", "Fundamental", "Bandarmology", "Insight", "News"],
+                key="sidebar_menu"
+            )
 # ============================ #
 # 📊 Detail Ticker
 # ============================ #
