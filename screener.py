@@ -675,3 +675,16 @@ elif menu == "Detail":
         tampilkan_detail(ticker)
     else:
         st.warning("Ticker tidak ditemukan.")
+
+elif st.session_state.menu == "Bandarmology":
+    st.header("💼 Bandarmology")
+    st.info("📊 Fitur Bandarmology sedang dalam pengembangan.")
+
+elif st.session_state.menu == "Insight":
+    st.header("📘 Insight Saham")
+    st.info("💡 Akan menampilkan insight dan ringkasan saham pilihan.")
+
+elif st.session_state.menu == "News":
+    st.header("📰 Berita Terkini")
+    st.info("🔍 Berita pasar dan saham akan ditampilkan di sini.")
+
