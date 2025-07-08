@@ -241,15 +241,6 @@ def tampilkan_teknikal():
 
     st.write(f"📊 Menampilkan analisa teknikal untuk `{ticker_full}` dengan timeframe `{tf}`")
 
-    try:
-        df = yf.download(ticker_full, period="3y", interval=tf)
-        if df.empty:
-            st.warning("❌ Data tidak ditemukan.")
-            return
-    except Exception as e:
-        st.error(f"Gagal ambil data: {e}")
-        return
-
     # Bersihkan data
     df = df[["Open", "High", "Low", "Close", "Volume"]].astype(float)
     df.replace([np.inf, -np.inf], np.nan, inplace=True)
