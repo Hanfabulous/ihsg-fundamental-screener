@@ -207,7 +207,22 @@ def tampilkan_teknikal():
     ticker_full = ticker_input.strip().upper() + ".JK"
 
     # Pilih timeframe
-    tf = st.selectbox("Pilih Timeframe", ["15m", "30m", "1h", "4h", "1d", "1wk", "1mo"], index=4)
+    timeframe_period_map = {
+        "1d": "6mo",
+        "1wk": "1y",
+        "1mo": "2y"
+    }
+
+    periode = timeframe_period_map.get(tf, "6mo")  # default 6mo
+
+    try:
+        df = yf.download(ticker_full, period=periode, interval=tf, progress=False)
+        if df.empty or df[["Open", "High", "Low", "Close"]].dropna().empty:
+            st.warning("❌ Data tidak ditemukan atau tidak cukup data untuk candlestick.")
+            return
+    except Exception as e:
+        st.error(f"Gagal ambil data: {e}")
+        return
 
     # Pilih indikator
     indikator = st.multiselect("Pilih Indikator", [
@@ -270,12 +285,21 @@ def tampilkan_teknikal():
                                np.where(df["Close"].pct_change().shift(-1) < -0.01, "Turun", "Sideways"))
 
     # Plot grafik
+   # === Plot Candlestick + Overlay indikator ===
     fig = go.Figure()
-    fig.add_trace(go.Candlestick(
-        x=df.index,
-        open=df["Open"], high=df["High"], low=df["Low"], close=df["Close"],
-        name="Candlestick"
-    ))
+
+    # Tambahkan candlestick jika data valid
+    if not df[["Open", "High", "Low", "Close"]].dropna().empty:
+        fig.add_trace(go.Candlestick(
+            x=df.index,
+            open=df["Open"],
+            high=df["High"],
+            low=df["Low"],
+            close=df["Close"],
+            name="Candlestick"
+        ))
+    else:
+        st.warning("Tidak cukup data OHLC untuk menampilkan candlestick.")
 
     if "MA" in indikator:
         fig.add_trace(go.Scatter(x=df.index, y=df["MA"], name=f"MA {ma_length}", line=dict(color="orange")))
