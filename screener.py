@@ -207,7 +207,7 @@ def tampilkan_teknikal():
     ticker_full = ticker_input.strip().upper() + ".JK"
 
     # Pilih timeframe
-    tf = st.selectbox("Pilih Timeframe", ["15m", "30m", "1h", "4h", "1d", "1wk", "1mo"], index=4)
+    tf = st.selectbox("Pilih Timeframe", ["1d", "1wk", "1mo"], index=4)
 
     # Pilih indikator
     indikator = st.multiselect("Pilih Indikator", [
