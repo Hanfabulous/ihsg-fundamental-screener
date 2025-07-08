@@ -197,21 +197,47 @@ def tampilkan_sektoral_idx():
         st.error(f"❌ Gagal mengambil data sektoral IDX: {e}")
 
 def trading_page():
-    st.subheader("📈 Global Market & Komoditas (Yahoo Finance)")
+    st.subheader("📈 Global Market - Index DXY")
 
-    # Fungsi bantu grafik
-    def tampilkan_chart_yf(ticker, label, warna="skyblue"):
-        data = yf.download(ticker, period="20d", interval="1d", progress=False)
-        if data.empty:
-            st.warning(f"❌ Data {label} tidak tersedia.")
-            return
+    # Ambil data DXY dari Yahoo Finance (30 hari terakhir)
+    dxy_data = yf.download("DX-Y.NYB", period="30d", interval="1d", progress=False)
+    if dxy_data.empty:
+        st.warning("❌ Data DXY tidak tersedia.")
+        return
+
+    dxy_data = dxy_data[["Close"]].rename(columns={"Close": "Index DXY"})
+    dxy_data.index = dxy_data.index.date  # Ubah datetime ke tanggal
+
+    # Pisah menjadi dua kolom
+    col1, col2 = st.columns([1, 2])
+
+    # Kolom kiri: Tabel 5 hari terakhir
+    with col1:
+        st.markdown("### 📅 Tabel Index DXY (5 Hari Terakhir)")
+        st.dataframe(
+            dxy_data.tail(5).sort_index(ascending=False),
+            use_container_width=True,
+            hide_index=False
+        )
+
+    # Kolom kanan: Grafik 30 hari terakhir
+    with col2:
+        st.markdown("### 📈 Grafik Index DXY (30 Hari Terakhir)")
         fig = go.Figure()
-        fig.add_trace(go.Scatter(x=data.index, y=data["Close"], mode="lines+markers", name=label, line=dict(color=warna)))
-        fig.update_layout(title=f"{label} (20 Hari Terakhir)", xaxis_title="Tanggal", yaxis_title="Harga")
+        fig.add_trace(go.Scatter(
+            x=dxy_data.index, y=dxy_data["Index DXY"],
+            mode="lines+markers",
+            line=dict(color="orange"),
+            name="DXY"
+        ))
+        fig.update_layout(
+            height=250,
+            margin=dict(t=20, b=20, l=20, r=20),
+            xaxis_title="Tanggal",
+            yaxis_title="Index",
+            showlegend=False
+        )
         st.plotly_chart(fig, use_container_width=True)
-
-    # 1. Index DXY
-    tampilkan_chart_yf("DX-Y.NYB", "Index DXY", "orange")
 
     # 2. Index VIX
     tampilkan_chart_yf("^VIX", "Index VIX", "red")
