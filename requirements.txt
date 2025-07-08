@@ -10,3 +10,4 @@ lxml
 beautifulsoup4
 requests
 streamlit-aggrid
+ta
