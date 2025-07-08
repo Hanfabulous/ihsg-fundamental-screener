@@ -6,7 +6,10 @@ import streamlit as st
 from datetime import datetime
 import pytz
 import yfinance as yf
-import ta
+from ta.trend import MACD, SMAIndicator
+from ta.momentum import RSIIndicator, StochasticOscillator
+from ta.volume import OnBalanceVolumeIndicator
+from ta.volatility import BollingerBands
 import pandas as pd
 import numpy as np
 import feedparser
@@ -194,97 +197,104 @@ def tampilkan_sektoral_idx():
         st.error(f"❌ Gagal mengambil data sektoral IDX: {e}")
 
 def tampilkan_teknikal():
-    import ta  # Pastikan ta (technical analysis) sudah diinstal: pip install ta
+    import ta
+    from ta.trend import MACD, SMAIndicator
+    from ta.momentum import RSIIndicator, StochasticOscillator
+    from ta.volume import OnBalanceVolumeIndicator
+    from ta.volatility import BollingerBands
 
-    st.subheader("📉 Analisa Teknikal Saham")
-    st.markdown("Tools ini menampilkan indikator teknikal dan prediksi harga menggunakan LSTM.")
+    st.header("📉 Analisa Teknikal Saham")
 
-    # === Input ===
-    ticker_input = st.text_input("Masukkan Ticker (contoh: BBRI)", value="BBRI").upper()
-    ticker = ticker_input + ".JK"
-
-    timeframe = st.selectbox("Pilih Timeframe", ["15m", "30m", "1h", "4h", "1d", "1wk", "1mo"], index=4)
-
-    indikator_dipilih = st.multiselect(
-        "Pilih Indikator",
-        ["Volume", "MACD", "RSI", "Alligator", "MA", "Bollinger Bands", "Ichimoku Cloud", "OBV", "Stochastic", "LSTM Predict"],
-        default=["Volume", "MA"]
-    )
-
-    ma_period = st.number_input("Panjang Moving Average", min_value=1, value=20)
-
-    st.success(f"Menampilkan analisa teknikal untuk {ticker} dengan timeframe {timeframe}")
-
-    # === Unduh Data ===
-    interval_map = {
-        "15m": "15m", "30m": "30m", "1h": "60m", "4h": "240m",
-        "1d": "1d", "1wk": "1wk", "1mo": "1mo"
-    }
-
-    period_map = {
-        "15m": "7d", "30m": "7d", "1h": "30d", "4h": "60d",
-        "1d": "6mo", "1wk": "2y", "1mo": "5y"
-    }
-
-    data = yf.download(ticker, period=period_map[timeframe], interval=interval_map[timeframe])
-    if data.empty:
-        st.error("❌ Gagal mengambil data harga.")
+    # Input ticker
+    ticker_input = st.text_input("Masukkan Ticker (contoh: BBRI)")
+    if not ticker_input:
         return
 
-    # === Hitung Indikator ===
-    df = data.copy()
+    ticker_full = ticker_input.strip().upper() + ".JK"
+
+    # Pilih timeframe
+    tf = st.selectbox("Pilih Timeframe", ["15m", "30m", "1h", "4h", "1d", "1wk", "1mo"], index=4)
+
+    # Pilih indikator
+    indikator = st.multiselect("Pilih Indikator", [
+        "MACD", "RSI", "Alligator", "MA", "Bollinger Bands", "Ichimoku Cloud",
+        "Volume", "OBV", "Stochastic", "LSTM Predict"
+    ])
+
+    # Input panjang MA jika dipilih
+    if "MA" in indikator:
+        ma_length = st.number_input("Panjang Moving Average:", min_value=1, value=20)
+    else:
+        ma_length = 20
+
+    st.write(f"📊 Menampilkan analisa teknikal untuk `{ticker_full}` dengan timeframe `{tf}`")
+
+    try:
+        df = yf.download(ticker_full, period="6mo", interval=tf)
+        if df.empty:
+            st.warning("❌ Data tidak ditemukan.")
+            return
+    except Exception as e:
+        st.error(f"Gagal ambil data: {e}")
+        return
+
     df.dropna(inplace=True)
 
+    # === Hitung indikator ===
+    if "MACD" in indikator:
+        macd = MACD(close=df["Close"])
+        df["MACD"] = macd.macd()
+        df["MACD_signal"] = macd.macd_signal()
+
+    if "RSI" in indikator:
+        rsi = RSIIndicator(close=df["Close"])
+        df["RSI"] = rsi.rsi()
+
+    if "MA" in indikator:
+        ma = SMAIndicator(close=df["Close"], window=ma_length)
+        df["MA"] = ma.sma_indicator()
+
+    if "OBV" in indikator:
+        obv = OnBalanceVolumeIndicator(close=df["Close"], volume=df["Volume"])
+        df["OBV"] = obv.on_balance_volume()
+
+    if "Bollinger Bands" in indikator:
+        bb = BollingerBands(close=df["Close"])
+        df["bb_upper"] = bb.bollinger_hband()
+        df["bb_lower"] = bb.bollinger_lband()
+
+    if "Stochastic" in indikator:
+        stoch = StochasticOscillator(high=df["High"], low=df["Low"], close=df["Close"])
+        df["Stoch_K"] = stoch.stoch()
+        df["Stoch_D"] = stoch.stoch_signal()
+
+    # Placeholder LSTM prediksi arah
+    if "LSTM Predict" in indikator:
+        df["LSTM_Predict"] = np.where(df["Close"].pct_change().shift(-1) > 0.01, "Naik",
+                               np.where(df["Close"].pct_change().shift(-1) < -0.01, "Turun", "Sideways"))
+
+    # === Plot Candlestick + Overlay indikator ===
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=df.index, y=df['Close'], name='Close Price', line=dict(color='white')))
+    fig.add_trace(go.Candlestick(
+        x=df.index,
+        open=df["Open"], high=df["High"], low=df["Low"], close=df["Close"],
+        name="Candlestick"
+    ))
 
-    if "Volume" in indikator_dipilih:
-        fig.add_trace(go.Bar(x=df.index, y=df['Volume'], name='Volume', yaxis='y2'))
+    if "MA" in indikator:
+        fig.add_trace(go.Scatter(x=df.index, y=df["MA"], name=f"MA {ma_length}", line=dict(color="orange")))
 
-    if "MA" in indikator_dipilih:
-        df['MA'] = df['Close'].rolling(ma_period).mean()
-        fig.add_trace(go.Scatter(x=df.index, y=df['MA'], name=f"MA {ma_period}", line=dict(dash='dot')))
-
-    if "RSI" in indikator_dipilih:
-        rsi = ta.momentum.RSIIndicator(df['Close']).rsi()
-        fig.add_trace(go.Scatter(x=df.index, y=rsi, name="RSI", yaxis='y3'))
-
-    if "MACD" in indikator_dipilih:
-        macd = ta.trend.MACD(df['Close'])
-        fig.add_trace(go.Scatter(x=df.index, y=macd.macd(), name='MACD', yaxis='y3'))
-
-    if "Bollinger Bands" in indikator_dipilih:
-        bb = ta.volatility.BollingerBands(df['Close'])
-        fig.add_trace(go.Scatter(x=df.index, y=bb.bollinger_hband(), name='Upper BB', line=dict(color='lightblue')))
-        fig.add_trace(go.Scatter(x=df.index, y=bb.bollinger_lband(), name='Lower BB', line=dict(color='lightblue')))
-
-    if "OBV" in indikator_dipilih:
-        obv = ta.volume.OnBalanceVolumeIndicator(df['Close'], df['Volume']).on_balance_volume()
-        fig.add_trace(go.Scatter(x=df.index, y=obv, name="OBV", yaxis='y4'))
-
-    if "Stochastic" in indikator_dipilih:
-        sto = ta.momentum.StochasticOscillator(df['High'], df['Low'], df['Close'])
-        fig.add_trace(go.Scatter(x=df.index, y=sto.stoch(), name='Stochastic %K', yaxis='y3'))
-
-    # === Tambahkan Prediksi ML Dummy ===
-    if "LSTM Predict" in indikator_dipilih:
-        import random
-        last_date = df.index[-1]
-        pred_dir = random.choice(["Naik 🚀", "Sideways 😐", "Turun 📉"])
-        st.info(f"📈 Prediksi LSTM (next trend): **{pred_dir}** per {last_date.date()} (dummy)")
-
-    # === Layout Plot ===
-    fig.update_layout(
-        title=f"Grafik {ticker} dengan indikator terpilih",
-        xaxis=dict(domain=[0, 1]),
-        yaxis=dict(title="Harga", side='left'),
-        yaxis2=dict(title="Volume", overlaying='y', side='right', showgrid=False),
-        height=600,
-        template='plotly_dark'
-    )
+    if "Bollinger Bands" in indikator:
+        fig.add_trace(go.Scatter(x=df.index, y=df["bb_upper"], name="BB Upper", line=dict(color="lightblue")))
+        fig.add_trace(go.Scatter(x=df.index, y=df["bb_lower"], name="BB Lower", line=dict(color="lightblue")))
 
     st.plotly_chart(fig, use_container_width=True)
 
+    # === Tampilkan hasil prediksi arah (LSTM dummy) ===
+    if "LSTM Predict" in indikator:
+        pred_counts = df["LSTM_Predict"].value_counts()
+        st.markdown("### 🔮 Prediksi Arah (LSTM Dummy)")
+        st.dataframe(pred_counts.rename_axis("Prediksi").reset_index(name="Jumlah"))
 
 # ============================ #
 # 📌 KONFIGURASI DAN PETA TICKER
@@ -645,24 +655,8 @@ elif menu == "Trading Page":
     # dll...
 
 elif st.session_state.menu == "Teknikal":
-    st.header("📉 Analisa Teknikal Saham")
-    ticker_input = st.text_input("Masukkan Ticker (contoh: BBRI)")
-    if ticker_input:
-        ticker_full = ticker_input.strip().upper() + ".JK"
+    tampilkan_teknikal()
 
-        tf = st.selectbox("Pilih Timeframe", ["15m", "30m", "1h", "4h", "1d", "1wk", "1mo"], index=4)
-
-        indikator = st.multiselect("Pilih Indikator", [
-            "MACD", "RSI", "Alligator", "MA", "Bollinger Bands", "Ichimoku Cloud",
-            "Volume", "OBV", "Stochastic", "LSTM Predict"
-        ])
-
-        if "MA" in indikator:
-            ma_length = st.number_input("Panjang Moving Average:", min_value=1, value=20)
-
-        st.write(f"📊 Menampilkan analisa teknikal untuk {ticker_full} dengan timeframe {tf}")
-        # Analisa teknikal placeholder
-        st.info("📈 Grafik teknikal dan sinyal akan muncul di sini.")
 elif menu == "Fundamental":
     st.header("📊 Screener Fundamental Saham")
     tampilkan_fundamental()
