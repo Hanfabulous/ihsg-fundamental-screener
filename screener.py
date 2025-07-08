@@ -6,6 +6,7 @@ import streamlit as st
 from datetime import datetime
 import pytz
 import yfinance as yf
+import ta
 import pandas as pd
 import numpy as np
 import feedparser
