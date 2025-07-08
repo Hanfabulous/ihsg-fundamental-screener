@@ -208,9 +208,9 @@ def tampilkan_teknikal():
 
     # Pilih timeframe
     timeframe_period_map = {
-        "1d": "6mo",
-        "1wk": "1y",
-        "1mo": "2y"
+        "1d": "1y",
+        "1wk": "2y",
+        "1mo": "5y"
     }
 
     periode = timeframe_period_map.get(tf, "6mo")  # default 6mo
