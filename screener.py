@@ -477,14 +477,10 @@ if ticker_qs:
 else:
     with st.sidebar:
         st.header("📁 Menu Navigasi")
-
-        # Cegah penimpaan menu saat sudah ada di session_state
-        if "menu" not in st.session_state or st.session_state["menu"] == "Detail":
-            st.session_state["menu"] = st.radio(
-                "Pilih Halaman",
-                ["Home", "Trading Page", "Teknikal", "Fundamental", "Bandarmology", "Insight", "News"],
-                key="sidebar_menu"
-            )
+        st.session_state["menu"] = st.radio(
+            "Pilih Halaman", ["Home", "Trading Page", "Teknikal", "Fundamental", "Bandarmology", "Insight", "News"],
+            key="sidebar_menu"
+        )
 # ============================ #
 # 📊 Detail Ticker
 # ============================ #
