@@ -231,7 +231,12 @@ def tampilkan_teknikal():
         if df.empty:
             st.warning("❌ Data tidak ditemukan.")
             return
+        # Pastikan semua kolom penting bersih
+        df = df[["Open", "High", "Low", "Close", "Volume"]].dropna()
+        df = df.astype(float)
+        df.replace([np.inf, -np.inf], np.nan, inplace=True)
         df.dropna(inplace=True)
+        
     except Exception as e:
         st.error(f"Gagal ambil data: {e}")
         return
