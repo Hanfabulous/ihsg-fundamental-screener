@@ -206,10 +206,10 @@ def tampilkan_teknikal():
 
     ticker_full = ticker_input.strip().upper() + ".JK"
 
-    # Pilih timeframe (diletakkan sebelum mapping period)
+    # Pilih timeframe dulu
     tf = st.selectbox("Pilih Timeframe", ["1d", "1wk", "1mo"], index=0)
 
-    # Mapping timeframe ke periode
+    # Lalu baru mapping periodenya
     timeframe_period_map = {
         "1d": "1y",
         "1wk": "2y",
