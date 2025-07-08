@@ -206,14 +206,17 @@ def tampilkan_teknikal():
 
     ticker_full = ticker_input.strip().upper() + ".JK"
 
-    # Pilih timeframe
+    # Pilih timeframe (diletakkan sebelum mapping period)
+    tf = st.selectbox("Pilih Timeframe", ["1d", "1wk", "1mo"], index=0)
+
+    # Mapping timeframe ke periode
     timeframe_period_map = {
         "1d": "1y",
         "1wk": "2y",
         "1mo": "5y"
     }
 
-    periode = timeframe_period_map.get(tf, "3y")  # default 6mo
+    periode = timeframe_period_map.get(tf, "3y")  # Sekarang tf sudah tersedia
 
     try:
         df = yf.download(ticker_full, period=periode, interval=tf, progress=False)
