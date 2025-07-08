@@ -529,6 +529,8 @@ if ticker_qs:
 else:
     if "menu" not in st.session_state:
         st.session_state["menu"] = "Home"
+    query_params = st.query_params
+    ticker_qs = query_params.get("tkr", None)
 
 with st.sidebar:
     st.header("📁 Menu Navigasi")
@@ -537,7 +539,7 @@ with st.sidebar:
             "Pilih Halaman", ["Home", "Trading Page", "Teknikal", "Fundamental"],
             key="main_menu"  # Key harus berbeda dari yang di atas
         )
-
+menu = st.session_state["menu"]
 if menu == "Home":
     st.title("🏠 Halaman Utama")
     tampilkan_chart_ihsg()
