@@ -192,6 +192,99 @@ def tampilkan_sektoral_idx():
     except Exception as e:
         st.error(f"❌ Gagal mengambil data sektoral IDX: {e}")
 
+def tampilkan_teknikal():
+    import ta  # Pastikan ta (technical analysis) sudah diinstal: pip install ta
+
+    st.subheader("📉 Analisa Teknikal Saham")
+    st.markdown("Tools ini menampilkan indikator teknikal dan prediksi harga menggunakan LSTM.")
+
+    # === Input ===
+    ticker_input = st.text_input("Masukkan Ticker (contoh: BBRI)", value="BBRI").upper()
+    ticker = ticker_input + ".JK"
+
+    timeframe = st.selectbox("Pilih Timeframe", ["15m", "30m", "1h", "4h", "1d", "1wk", "1mo"], index=4)
+
+    indikator_dipilih = st.multiselect(
+        "Pilih Indikator",
+        ["Volume", "MACD", "RSI", "Alligator", "MA", "Bollinger Bands", "Ichimoku Cloud", "OBV", "Stochastic", "LSTM Predict"],
+        default=["Volume", "MA"]
+    )
+
+    ma_period = st.number_input("Panjang Moving Average", min_value=1, value=20)
+
+    st.success(f"Menampilkan analisa teknikal untuk {ticker} dengan timeframe {timeframe}")
+
+    # === Unduh Data ===
+    interval_map = {
+        "15m": "15m", "30m": "30m", "1h": "60m", "4h": "240m",
+        "1d": "1d", "1wk": "1wk", "1mo": "1mo"
+    }
+
+    period_map = {
+        "15m": "7d", "30m": "7d", "1h": "30d", "4h": "60d",
+        "1d": "6mo", "1wk": "2y", "1mo": "5y"
+    }
+
+    data = yf.download(ticker, period=period_map[timeframe], interval=interval_map[timeframe])
+    if data.empty:
+        st.error("❌ Gagal mengambil data harga.")
+        return
+
+    # === Hitung Indikator ===
+    df = data.copy()
+    df.dropna(inplace=True)
+
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=df.index, y=df['Close'], name='Close Price', line=dict(color='white')))
+
+    if "Volume" in indikator_dipilih:
+        fig.add_trace(go.Bar(x=df.index, y=df['Volume'], name='Volume', yaxis='y2'))
+
+    if "MA" in indikator_dipilih:
+        df['MA'] = df['Close'].rolling(ma_period).mean()
+        fig.add_trace(go.Scatter(x=df.index, y=df['MA'], name=f"MA {ma_period}", line=dict(dash='dot')))
+
+    if "RSI" in indikator_dipilih:
+        rsi = ta.momentum.RSIIndicator(df['Close']).rsi()
+        fig.add_trace(go.Scatter(x=df.index, y=rsi, name="RSI", yaxis='y3'))
+
+    if "MACD" in indikator_dipilih:
+        macd = ta.trend.MACD(df['Close'])
+        fig.add_trace(go.Scatter(x=df.index, y=macd.macd(), name='MACD', yaxis='y3'))
+
+    if "Bollinger Bands" in indikator_dipilih:
+        bb = ta.volatility.BollingerBands(df['Close'])
+        fig.add_trace(go.Scatter(x=df.index, y=bb.bollinger_hband(), name='Upper BB', line=dict(color='lightblue')))
+        fig.add_trace(go.Scatter(x=df.index, y=bb.bollinger_lband(), name='Lower BB', line=dict(color='lightblue')))
+
+    if "OBV" in indikator_dipilih:
+        obv = ta.volume.OnBalanceVolumeIndicator(df['Close'], df['Volume']).on_balance_volume()
+        fig.add_trace(go.Scatter(x=df.index, y=obv, name="OBV", yaxis='y4'))
+
+    if "Stochastic" in indikator_dipilih:
+        sto = ta.momentum.StochasticOscillator(df['High'], df['Low'], df['Close'])
+        fig.add_trace(go.Scatter(x=df.index, y=sto.stoch(), name='Stochastic %K', yaxis='y3'))
+
+    # === Tambahkan Prediksi ML Dummy ===
+    if "LSTM Predict" in indikator_dipilih:
+        import random
+        last_date = df.index[-1]
+        pred_dir = random.choice(["Naik 🚀", "Sideways 😐", "Turun 📉"])
+        st.info(f"📈 Prediksi LSTM (next trend): **{pred_dir}** per {last_date.date()} (dummy)")
+
+    # === Layout Plot ===
+    fig.update_layout(
+        title=f"Grafik {ticker} dengan indikator terpilih",
+        xaxis=dict(domain=[0, 1]),
+        yaxis=dict(title="Harga", side='left'),
+        yaxis2=dict(title="Volume", overlaying='y', side='right', showgrid=False),
+        height=600,
+        template='plotly_dark'
+    )
+
+    st.plotly_chart(fig, use_container_width=True)
+
+
 # ============================ #
 # 📌 KONFIGURASI DAN PETA TICKER
 # ============================ #
