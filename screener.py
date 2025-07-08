@@ -546,9 +546,25 @@ elif menu == "Trading Page":
     st.header("📈 Trading Page")
     # dll...
 
-elif menu == "Teknikal":
+elif st.session_state.menu == "Teknikal":
     st.header("📉 Analisa Teknikal Saham")
+    ticker_input = st.text_input("Masukkan Ticker (contoh: BBRI)")
+    if ticker_input:
+        ticker_full = ticker_input.strip().upper() + ".JK"
 
+        tf = st.selectbox("Pilih Timeframe", ["15m", "30m", "1h", "4h", "1d", "1wk", "1mo"], index=4)
+
+        indikator = st.multiselect("Pilih Indikator", [
+            "MACD", "RSI", "Alligator", "MA", "Bollinger Bands", "Ichimoku Cloud",
+            "Volume", "OBV", "Stochastic", "LSTM Predict"
+        ])
+
+        if "MA" in indikator:
+            ma_length = st.number_input("Panjang Moving Average:", min_value=1, value=20)
+
+        st.write(f"📊 Menampilkan analisa teknikal untuk {ticker_full} dengan timeframe {tf}")
+        # Analisa teknikal placeholder
+        st.info("📈 Grafik teknikal dan sinyal akan muncul di sini.")
 elif menu == "Fundamental":
     st.header("📊 Screener Fundamental Saham")
     tampilkan_fundamental()
