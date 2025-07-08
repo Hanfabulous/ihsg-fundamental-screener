@@ -203,7 +203,7 @@ def tampilkan_teknikal():
     from ta.volume import OnBalanceVolumeIndicator
     from ta.volatility import BollingerBands
 
-    st.header("📉 Analisa Teknikal Saham")
+     st.header("📉 Analisa Teknikal Saham")
 
     # Input ticker
     ticker_input = st.text_input("Masukkan Ticker (contoh: BBRI)")
@@ -212,8 +212,8 @@ def tampilkan_teknikal():
 
     ticker_full = ticker_input.strip().upper() + ".JK"
 
-    # Pilih timeframe
-    tf = st.selectbox("Pilih Timeframe", ["15m", "30m", "1h", "4h", "1d", "1wk", "1mo"], index=4)
+    # Timeframe hanya yang support di Yahoo Finance .JK
+    tf = st.selectbox("Pilih Timeframe", ["1d", "1wk", "1mo"], index=0)
 
     # Pilih indikator
     indikator = st.multiselect("Pilih Indikator", [
@@ -222,10 +222,7 @@ def tampilkan_teknikal():
     ])
 
     # Input panjang MA jika dipilih
-    if "MA" in indikator:
-        ma_length = st.number_input("Panjang Moving Average:", min_value=1, value=20)
-    else:
-        ma_length = 20
+    ma_length = st.number_input("Panjang Moving Average:", min_value=1, value=20) if "MA" in indikator else None
 
     st.write(f"📊 Menampilkan analisa teknikal untuk `{ticker_full}` dengan timeframe `{tf}`")
 
@@ -234,11 +231,10 @@ def tampilkan_teknikal():
         if df.empty:
             st.warning("❌ Data tidak ditemukan.")
             return
+        df.dropna(inplace=True)
     except Exception as e:
         st.error(f"Gagal ambil data: {e}")
         return
-
-    df.dropna(inplace=True)
 
     # === Hitung indikator ===
     if "MACD" in indikator:
@@ -250,7 +246,7 @@ def tampilkan_teknikal():
         rsi = RSIIndicator(close=df["Close"])
         df["RSI"] = rsi.rsi()
 
-    if "MA" in indikator:
+    if "MA" in indikator and ma_length:
         ma = SMAIndicator(close=df["Close"], window=ma_length)
         df["MA"] = ma.sma_indicator()
 
@@ -268,16 +264,19 @@ def tampilkan_teknikal():
         df["Stoch_K"] = stoch.stoch()
         df["Stoch_D"] = stoch.stoch_signal()
 
-    # Placeholder LSTM prediksi arah
+    # Placeholder prediksi LSTM arah naik/sideways/turun
     if "LSTM Predict" in indikator:
-        df["LSTM_Predict"] = np.where(df["Close"].pct_change().shift(-1) > 0.01, "Naik",
-                               np.where(df["Close"].pct_change().shift(-1) < -0.01, "Turun", "Sideways"))
+        df["LSTM_Predict"] = np.where(
+            df["Close"].pct_change().shift(-1) > 0.01, "Naik",
+            np.where(df["Close"].pct_change().shift(-1) < -0.01, "Turun", "Sideways")
+        )
 
-    # === Plot Candlestick + Overlay indikator ===
+    # === Chart Candlestick + indikator ===
     fig = go.Figure()
     fig.add_trace(go.Candlestick(
         x=df.index,
-        open=df["Open"], high=df["High"], low=df["Low"], close=df["Close"],
+        open=df["Open"], high=df["High"],
+        low=df["Low"], close=df["Close"],
         name="Candlestick"
     ))
 
@@ -288,12 +287,13 @@ def tampilkan_teknikal():
         fig.add_trace(go.Scatter(x=df.index, y=df["bb_upper"], name="BB Upper", line=dict(color="lightblue")))
         fig.add_trace(go.Scatter(x=df.index, y=df["bb_lower"], name="BB Lower", line=dict(color="lightblue")))
 
+    fig.update_layout(title=f"Grafik {ticker_full}", height=500, xaxis_rangeslider_visible=False)
     st.plotly_chart(fig, use_container_width=True)
 
-    # === Tampilkan hasil prediksi arah (LSTM dummy) ===
+    # === Tampilkan hasil LSTM dummy prediksi arah ===
     if "LSTM Predict" in indikator:
-        pred_counts = df["LSTM_Predict"].value_counts()
         st.markdown("### 🔮 Prediksi Arah (LSTM Dummy)")
+        pred_counts = df["LSTM_Predict"].value_counts()
         st.dataframe(pred_counts.rename_axis("Prediksi").reset_index(name="Jumlah"))
 
 # ============================ #
