@@ -208,9 +208,9 @@ def trading_page():
     st.markdown("### 🌐 Global Market - DXY, VIX, dan EIDO")
 
     # === Ambil data dari Yahoo Finance ===
-    dxy = yf.download("DX-Y.NYB", period="30d", interval="1d", progress=False)[["Close"]].rename(columns={"Close": "Index DXY"})
-    vix = yf.download("^VIX", period="30d", interval="1d", progress=False)[["Close"]].rename(columns={"Close": "Index VIX"})
-    eido = yf.download("EIDO", period="30d", interval="1d", progress=False)[["Close"]].rename(columns={"Close": "Index EIDO"})
+    dxy = yf.download("DX-Y.NYB", period="100d", interval="1d", progress=False)[["Close"]].rename(columns={"Close": "Index DXY"})
+    vix = yf.download("^VIX", period="100d", interval="1d", progress=False)[["Close"]].rename(columns={"Close": "Index VIX"})
+    eido = yf.download("EIDO", period="100d", interval="1d", progress=False)[["Close"]].rename(columns={"Close": "Index EIDO"})
 
     # Validasi data tidak kosong
     if dxy.empty or vix.empty or eido.empty:
