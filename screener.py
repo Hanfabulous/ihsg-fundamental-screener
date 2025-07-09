@@ -204,9 +204,9 @@ def trading_page():
     st.markdown("### 🌐 Global Market - DXY, VIX, dan EIDO")
 
     # Ambil data dari Yahoo Finance
-    dxy_data = yf.download("DX-Y.NYB", period="30d", interval="1d", progress=False)[["Close"]].rename(columns={"Close": "Index DXY"})
-    vix_data = yf.download("^VIX", period="30d", interval="1d", progress=False)[["Close"]].rename(columns={"Close": "Index VIX"})
-    eido_data = yf.download("EIDO", period="30d", interval="1d", progress=False)[["Close"]].rename(columns={"Close": "Index EIDO"})
+    dxy_data = yf.download("DX-Y.NYB", period="60d", interval="1d", progress=False)[["Close"]].rename(columns={"Close": "Index DXY"})
+    vix_data = yf.download("^VIX", period="60d", interval="1d", progress=False)[["Close"]].rename(columns={"Close": "Index VIX"})
+    eido_data = yf.download("EIDO", period="60d", interval="1d", progress=False)[["Close"]].rename(columns={"Close": "Index EIDO"})
 
     # Bersihkan index menjadi tanggal
     for df in [dxy_data, vix_data, eido_data]:
