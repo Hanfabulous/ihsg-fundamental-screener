@@ -203,31 +203,25 @@ import plotly.graph_objects as go
 def trading_page():
     st.markdown("### 🌐 Global Market - DXY, VIX, dan EIDO")
 
-    # === Ambil data dari Yahoo Finance ===
+    # Ambil data dari Yahoo Finance
     dxy_data = yf.download("DX-Y.NYB", period="30d", interval="1d", progress=False)[["Close"]].rename(columns={"Close": "Index DXY"})
     vix_data = yf.download("^VIX", period="30d", interval="1d", progress=False)[["Close"]].rename(columns={"Close": "Index VIX"})
     eido_data = yf.download("EIDO", period="30d", interval="1d", progress=False)[["Close"]].rename(columns={"Close": "Index EIDO"})
 
-    # Bersihkan index menjadi tanggal biasa
+    # Bersihkan index
     for df in [dxy_data, vix_data, eido_data]:
         df.index = df.index.date
 
-    # Validasi data tidak kosong
+    # Validasi tidak kosong
     if dxy_data.empty or vix_data.empty or eido_data.empty:
-        st.warning("❌ Data DXY, VIX, atau EIDO tidak tersedia.")
+        st.warning("❌ Data tidak tersedia.")
         return
 
-    # Drop data kosong (NaN)
-    dxy_data = dxy_data.dropna()
-    vix_data = vix_data.dropna()
-    eido_data = eido_data.dropna()
-
-    # === Layout: 3 Tabel + 3 Grafik dalam 1 baris ===
     col1, col2, col3, col4, col5, col6 = st.columns([1, 1.5, 1, 1.5, 1, 1.5])
 
-    # ================= DXY ================= #
+    # ===== TABEL & GRAFIK DXY =====
     with col1:
-        st.markdown("#### 📅 DXY (5 Hari Terakhir)")
+        st.markdown("#### 📅 DXY (5 Hari)")
         st.dataframe(dxy_data.tail(5).sort_index(ascending=False), use_container_width=True)
 
     with col2:
@@ -236,16 +230,19 @@ def trading_page():
         fig_dxy.add_trace(go.Scatter(
             x=dxy_data.index, y=dxy_data["Index DXY"],
             mode="lines+markers",
-            line=dict(color="orange"),
-            marker=dict(size=4)
+            line=dict(color="orange", width=2),
+            marker=dict(color="yellow", size=6)
         ))
-        fig_dxy.update_traces(connectgaps=True)
-        fig_dxy.update_layout(height=250, margin=dict(t=20, b=40, l=30, r=30), xaxis_title="Tanggal", yaxis_title="Index", showlegend=False)
+        fig_dxy.update_layout(
+            height=250, xaxis_title="Tanggal", yaxis_title="Index",
+            margin=dict(t=20, b=40, l=30, r=20), showlegend=False
+        )
+        fig_dxy.update_yaxes(rangemode="tozero")
         st.plotly_chart(fig_dxy, use_container_width=True)
 
-    # ================= VIX ================= #
+    # ===== TABEL & GRAFIK VIX =====
     with col3:
-        st.markdown("#### 📅 VIX (5 Hari Terakhir)")
+        st.markdown("#### 📅 VIX (5 Hari)")
         st.dataframe(vix_data.tail(5).sort_index(ascending=False), use_container_width=True)
 
     with col4:
@@ -254,16 +251,19 @@ def trading_page():
         fig_vix.add_trace(go.Scatter(
             x=vix_data.index, y=vix_data["Index VIX"],
             mode="lines+markers",
-            line=dict(color="red"),
-            marker=dict(size=4)
+            line=dict(color="red", width=2),
+            marker=dict(color="cyan", size=6)
         ))
-        fig_vix.update_traces(connectgaps=True)
-        fig_vix.update_layout(height=250, margin=dict(t=20, b=40, l=30, r=30), xaxis_title="Tanggal", yaxis_title="Index", showlegend=False)
+        fig_vix.update_layout(
+            height=250, xaxis_title="Tanggal", yaxis_title="Index",
+            margin=dict(t=20, b=40, l=30, r=20), showlegend=False
+        )
+        fig_vix.update_yaxes(rangemode="tozero")
         st.plotly_chart(fig_vix, use_container_width=True)
 
-    # ================= EIDO ================= #
+    # ===== TABEL & GRAFIK EIDO =====
     with col5:
-        st.markdown("#### 📅 EIDO (5 Hari Terakhir)")
+        st.markdown("#### 📅 EIDO (5 Hari)")
         st.dataframe(eido_data.tail(5).sort_index(ascending=False), use_container_width=True)
 
     with col6:
@@ -272,12 +272,16 @@ def trading_page():
         fig_eido.add_trace(go.Scatter(
             x=eido_data.index, y=eido_data["Index EIDO"],
             mode="lines+markers",
-            line=dict(color="blue"),
-            marker=dict(size=4)
+            line=dict(color="blue", width=2),
+            marker=dict(color="lime", size=6)
         ))
-        fig_eido.update_traces(connectgaps=True)
-        fig_eido.update_layout(height=250, margin=dict(t=20, b=40, l=30, r=30), xaxis_title="Tanggal", yaxis_title="Index", showlegend=False)
+        fig_eido.update_layout(
+            height=250, xaxis_title="Tanggal", yaxis_title="Index",
+            margin=dict(t=20, b=40, l=30, r=20), showlegend=False
+        )
+        fig_eido.update_yaxes(rangemode="tozero")
         st.plotly_chart(fig_eido, use_container_width=True)
+
 
 def tampilkan_teknikal():
     st.header("📉 Analisa Teknikal Saham")
