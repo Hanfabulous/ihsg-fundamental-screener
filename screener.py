@@ -197,7 +197,7 @@ def tampilkan_sektoral_idx():
         st.error(f"❌ Gagal mengambil data sektoral IDX: {e}")
 
 def trading_page():
-    st.markdown("### 🌐 Global Market - Index DXY & VIX")
+    st.markdown("### 🌐 Global Market - DXY, VIX, dan EIDO")
 
     # Ambil data DXY
     dxy_data = yf.download("DX-Y.NYB", period="30d", interval="1d", progress=False)
@@ -215,9 +215,18 @@ def trading_page():
     vix_data = vix_data[["Close"]].rename(columns={"Close": "Index VIX"})
     vix_data.index = vix_data.index.date
 
-    # Buat 4 kolom sejajar
-    col1, col2, col3, col4 = st.columns([1, 1.5, 1, 1.5])
+    # Ambil data EIDO
+    eido_data = yf.download("EIDO", period="30d", interval="1d", progress=False)
+    if eido_data.empty:
+        st.warning("❌ Data EIDO tidak tersedia.")
+        return
+    eido_data = eido_data[["Close"]].rename(columns={"Close": "Index EIDO"})
+    eido_data.index = eido_data.index.date
 
+    # Layout 6 kolom sejajar: Tabel & Grafik DXY, VIX, EIDO
+    col1, col2, col3, col4, col5, col6 = st.columns([1, 1.5, 1, 1.5, 1, 1.5])
+
+    # === DXY ===
     with col1:
         st.markdown("#### 📅 DXY (5 Hari)")
         st.dataframe(
@@ -231,18 +240,16 @@ def trading_page():
         fig_dxy = go.Figure()
         fig_dxy.add_trace(go.Scatter(
             x=dxy_data.index, y=dxy_data["Index DXY"],
-            mode="lines+markers",
-            line=dict(color="orange")
+            mode="lines+markers", line=dict(color="orange")
         ))
         fig_dxy.update_layout(
             height=300,
             margin=dict(t=20, b=20, l=20, r=20),
-            xaxis_title="Tanggal",
-            yaxis_title="Index",
-            showlegend=False
+            xaxis_title="Tanggal", yaxis_title="Index", showlegend=False
         )
         st.plotly_chart(fig_dxy, use_container_width=True)
 
+    # === VIX ===
     with col3:
         st.markdown("#### 📅 VIX (5 Hari)")
         st.dataframe(
@@ -256,17 +263,38 @@ def trading_page():
         fig_vix = go.Figure()
         fig_vix.add_trace(go.Scatter(
             x=vix_data.index, y=vix_data["Index VIX"],
-            mode="lines+markers",
-            line=dict(color="red")
+            mode="lines+markers", line=dict(color="red")
         ))
         fig_vix.update_layout(
             height=300,
             margin=dict(t=20, b=20, l=20, r=20),
-            xaxis_title="Tanggal",
-            yaxis_title="Index",
-            showlegend=False
+            xaxis_title="Tanggal", yaxis_title="Index", showlegend=False
         )
         st.plotly_chart(fig_vix, use_container_width=True)
+
+    # === EIDO ===
+    with col5:
+        st.markdown("#### 📅 EIDO (5 Hari)")
+        st.dataframe(
+            eido_data.tail(5).sort_index(ascending=False).reset_index().rename(columns={"index": "Tanggal"}),
+            use_container_width=True,
+            hide_index=True
+        )
+
+    with col6:
+        st.markdown("#### 📈 Grafik EIDO")
+        fig_eido = go.Figure()
+        fig_eido.add_trace(go.Scatter(
+            x=eido_data.index, y=eido_data["Index EIDO"],
+            mode="lines+markers", line=dict(color="blue")
+        ))
+        fig_eido.update_layout(
+            height=300,
+            margin=dict(t=20, b=20, l=20, r=20),
+            xaxis_title="Tanggal", yaxis_title="Index", showlegend=False
+        )
+        st.plotly_chart(fig_eido, use_container_width=True)
+
 
     # 3. Komoditas Dunia
     st.markdown("### 🛢️ Komoditas Dunia")
