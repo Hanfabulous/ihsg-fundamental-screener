@@ -697,7 +697,7 @@ if menu == "Home":
     tampilkan_sektoral_idx()
 
 elif st.session_state.menu == "Trading Page":
-    trading_page()
+    tampilkan_chart()
 
 elif st.session_state.menu == "Teknikal":
     tampilkan_teknikal()
