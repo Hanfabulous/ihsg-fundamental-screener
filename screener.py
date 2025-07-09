@@ -196,64 +196,58 @@ def tampilkan_sektoral_idx():
     except Exception as e:
         st.error(f"❌ Gagal mengambil data sektoral IDX: {e}")
 
-import streamlit as st
 import yfinance as yf
-import pandas as pd
+import streamlit as st
 import plotly.graph_objects as go
-import matplotlib.pyplot as plt
+import pandas as pd
 
-st.set_page_config(layout="wide")
-st.title("📊 Debug & Grafik: DXY, VIX, EIDO")
+st.title("📊 Debug Grafik DXY, VIX, EIDO")
 
 # Ambil data
-dxy = yf.download("DX-Y.NYB", period="30d", interval="1d", progress=False).reset_index()
-vix = yf.download("^VIX", period="30d", interval="1d", progress=False).reset_index()
-eido = yf.download("EIDO", period="30d", interval="1d", progress=False).reset_index()
+dxy_data = yf.download("DX-Y.NYB", period="30d", interval="1d")[["Close"]].rename(columns={"Close": "Index DXY"}).dropna()
+vix_data = yf.download("^VIX", period="30d", interval="1d")[["Close"]].rename(columns={"Close": "Index VIX"}).dropna()
+eido_data = yf.download("EIDO", period="30d", interval="1d")[["Close"]].rename(columns={"Close": "Index EIDO"}).dropna()
 
-# Ganti nama kolom dan ubah 'Date' ke datetime
-for df, label in zip([dxy, vix, eido], ["DXY", "VIX", "EIDO"]):
-    df["Date"] = pd.to_datetime(df["Date"])
-    df.rename(columns={"Close": f"Index {label}"}, inplace=True)
+# Pastikan index bertipe datetime dan reset index agar bisa digunakan sebagai x-axis
+for df in [dxy_data, vix_data, eido_data]:
+    df.reset_index(inplace=True)  # Date jadi kolom biasa
+    df["Date"] = pd.to_datetime(df["Date"])  # Pastikan format datetime
+    df.sort_values("Date", inplace=True)
 
-# Tampilkan data
-st.markdown("### 📄 Cek Data Mentah")
-st.write("📊 DXY", dxy.tail())
-st.write("📊 VIX", vix.tail())
-st.write("📊 EIDO", eido.tail())
+# Plotly: DXY
+fig_dxy = go.Figure()
+fig_dxy.add_trace(go.Scatter(
+    x=dxy_data["Date"],
+    y=dxy_data["Index DXY"],
+    mode="lines+markers",
+    line=dict(color="orange"),
+    name="DXY"
+))
+fig_dxy.update_layout(title="Plotly DXY", height=300, yaxis_range=[90, 100])
+st.plotly_chart(fig_dxy, use_container_width=True)
 
-# Tampilkan data dan grafik dalam satu baris
-col1, col2 = st.columns(2)
-with col1:
-    st.markdown("### 📈 Plotly Chart DXY")
-    fig_dxy = go.Figure()
-    fig_dxy.add_trace(go.Scatter(x=dxy["Date"], y=dxy["Index DXY"], mode="lines+markers", line=dict(color="orange")))
-    fig_dxy.update_layout(height=250, xaxis_title="Tanggal", yaxis_title="Index", showlegend=False)
-    st.plotly_chart(fig_dxy, use_container_width=True)
+# Plotly: VIX
+fig_vix = go.Figure()
+fig_vix.add_trace(go.Scatter(
+    x=vix_data["Date"],
+    y=vix_data["Index VIX"],
+    mode="lines+markers",
+    line=dict(color="red"),
+    name="VIX"
+))
+fig_vix.update_layout(title="Plotly VIX", height=300, yaxis_range=[10, 30])
+st.plotly_chart(fig_vix, use_container_width=True)
 
-    st.markdown("### 🐞 Matplotlib DXY (Tes Alternatif)")
-    fig, ax = plt.subplots()
-    ax.plot(dxy["Date"], dxy["Index DXY"], marker="o")
-    ax.set_title("Matplotlib DXY")
-    st.pyplot(fig)
-
-with col2:
-    st.markdown("### 📈 Plotly Chart VIX")
-    fig_vix = go.Figure()
-    fig_vix.add_trace(go.Scatter(x=vix["Date"], y=vix["Index VIX"], mode="lines+markers", line=dict(color="red")))
-    fig_vix.update_layout(height=250, xaxis_title="Tanggal", yaxis_title="Index", showlegend=False)
-    st.plotly_chart(fig_vix, use_container_width=True)
-
-    st.markdown("### 🐞 Matplotlib VIX (Tes Alternatif)")
-    fig, ax = plt.subplots()
-    ax.plot(vix["Date"], vix["Index VIX"], marker="o")
-    ax.set_title("Matplotlib VIX")
-    st.pyplot(fig)
-
-# Tambahan grafik EIDO jika perlu
-st.markdown("### 📈 Grafik EIDO")
+# Plotly: EIDO
 fig_eido = go.Figure()
-fig_eido.add_trace(go.Scatter(x=eido["Date"], y=eido["Index EIDO"], mode="lines+markers", line=dict(color="blue")))
-fig_eido.update_layout(height=250, xaxis_title="Tanggal", yaxis_title="Index", showlegend=False)
+fig_eido.add_trace(go.Scatter(
+    x=eido_data["Date"],
+    y=eido_data["Index EIDO"],
+    mode="lines+markers",
+    line=dict(color="blue"),
+    name="EIDO"
+))
+fig_eido.update_layout(title="Plotly EIDO", height=300, yaxis_range=[10, 20])
 st.plotly_chart(fig_eido, use_container_width=True)
 
 
