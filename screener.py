@@ -196,86 +196,66 @@ def tampilkan_sektoral_idx():
     except Exception as e:
         st.error(f"❌ Gagal mengambil data sektoral IDX: {e}")
 
+import streamlit as st
 import yfinance as yf
 import pandas as pd
 import plotly.graph_objects as go
-import streamlit as st
+import matplotlib.pyplot as plt
 
-def trading_page():
-    st.markdown("### 🌐 Global Market - DXY, VIX, EIDO (Fix Chart Plotly)")
+st.set_page_config(layout="wide")
+st.title("📊 Debug & Grafik: DXY, VIX, EIDO")
 
-    # === Ambil data dan reset index ===
-    dxy = yf.download("DX-Y.NYB", period="30d", interval="1d", progress=False).reset_index()
-    vix = yf.download("^VIX", period="30d", interval="1d", progress=False).reset_index()
-    eido = yf.download("EIDO", period="30d", interval="1d", progress=False).reset_index()
+# Ambil data
+dxy = yf.download("DX-Y.NYB", period="30d", interval="1d", progress=False).reset_index()
+vix = yf.download("^VIX", period="30d", interval="1d", progress=False).reset_index()
+eido = yf.download("EIDO", period="30d", interval="1d", progress=False).reset_index()
 
-    # Validasi
-    if dxy.empty or vix.empty or eido.empty:
-        st.warning("❌ Salah satu data tidak tersedia.")
-        return
+# Ganti nama kolom dan ubah 'Date' ke datetime
+for df, label in zip([dxy, vix, eido], ["DXY", "VIX", "EIDO"]):
+    df["Date"] = pd.to_datetime(df["Date"])
+    df.rename(columns={"Close": f"Index {label}"}, inplace=True)
 
-    # Buat kolom sejajar (Tabel dan Grafik)
-    col1, col2, col3 = st.columns(3)
+# Tampilkan data
+st.markdown("### 📄 Cek Data Mentah")
+st.write("📊 DXY", dxy.tail())
+st.write("📊 VIX", vix.tail())
+st.write("📊 EIDO", eido.tail())
 
-    # ======================== DXY ========================
-    with col1:
-        st.markdown("#### 💵 Index DXY")
-        st.dataframe(dxy[["Date", "Close"]].tail(5).sort_values("Date", ascending=False), use_container_width=True)
+# Tampilkan data dan grafik dalam satu baris
+col1, col2 = st.columns(2)
+with col1:
+    st.markdown("### 📈 Plotly Chart DXY")
+    fig_dxy = go.Figure()
+    fig_dxy.add_trace(go.Scatter(x=dxy["Date"], y=dxy["Index DXY"], mode="lines+markers", line=dict(color="orange")))
+    fig_dxy.update_layout(height=250, xaxis_title="Tanggal", yaxis_title="Index", showlegend=False)
+    st.plotly_chart(fig_dxy, use_container_width=True)
 
-        fig_dxy = go.Figure()
-        fig_dxy.add_trace(go.Scatter(
-            x=dxy["Date"], y=dxy["Close"],
-            mode="lines+markers", line=dict(color="orange")
-        ))
-        fig_dxy.update_layout(
-            title="Chart DXY",
-            height=300,
-            margin=dict(t=20, b=20),
-            xaxis_title=None,
-            yaxis_title=None,
-            yaxis=dict(range=[90, 110])  # Skala disesuaikan
-        )
-        st.plotly_chart(fig_dxy, use_container_width=True)
+    st.markdown("### 🐞 Matplotlib DXY (Tes Alternatif)")
+    fig, ax = plt.subplots()
+    ax.plot(dxy["Date"], dxy["Index DXY"], marker="o")
+    ax.set_title("Matplotlib DXY")
+    st.pyplot(fig)
 
-    # ======================== VIX ========================
-    with col2:
-        st.markdown("#### 📉 Index VIX")
-        st.dataframe(vix[["Date", "Close"]].tail(5).sort_values("Date", ascending=False), use_container_width=True)
+with col2:
+    st.markdown("### 📈 Plotly Chart VIX")
+    fig_vix = go.Figure()
+    fig_vix.add_trace(go.Scatter(x=vix["Date"], y=vix["Index VIX"], mode="lines+markers", line=dict(color="red")))
+    fig_vix.update_layout(height=250, xaxis_title="Tanggal", yaxis_title="Index", showlegend=False)
+    st.plotly_chart(fig_vix, use_container_width=True)
 
-        fig_vix = go.Figure()
-        fig_vix.add_trace(go.Scatter(
-            x=vix["Date"], y=vix["Close"],
-            mode="lines+markers", line=dict(color="red")
-        ))
-        fig_vix.update_layout(
-            title="Chart VIX",
-            height=300,
-            margin=dict(t=20, b=20),
-            xaxis_title=None,
-            yaxis_title=None,
-            yaxis=dict(range=[0, 40])  # Skala disesuaikan
-        )
-        st.plotly_chart(fig_vix, use_container_width=True)
+    st.markdown("### 🐞 Matplotlib VIX (Tes Alternatif)")
+    fig, ax = plt.subplots()
+    ax.plot(vix["Date"], vix["Index VIX"], marker="o")
+    ax.set_title("Matplotlib VIX")
+    st.pyplot(fig)
 
-    # ======================== EIDO ========================
-    with col3:
-        st.markdown("#### 🇮🇩 Index EIDO")
-        st.dataframe(eido[["Date", "Close"]].tail(5).sort_values("Date", ascending=False), use_container_width=True)
+# Tambahan grafik EIDO jika perlu
+st.markdown("### 📈 Grafik EIDO")
+fig_eido = go.Figure()
+fig_eido.add_trace(go.Scatter(x=eido["Date"], y=eido["Index EIDO"], mode="lines+markers", line=dict(color="blue")))
+fig_eido.update_layout(height=250, xaxis_title="Tanggal", yaxis_title="Index", showlegend=False)
+st.plotly_chart(fig_eido, use_container_width=True)
 
-        fig_eido = go.Figure()
-        fig_eido.add_trace(go.Scatter(
-            x=eido["Date"], y=eido["Close"],
-            mode="lines+markers", line=dict(color="blue")
-        ))
-        fig_eido.update_layout(
-            title="Chart EIDO",
-            height=300,
-            margin=dict(t=20, b=20),
-            xaxis_title=None,
-            yaxis_title=None,
-            yaxis=dict(range=[10, 30])  # Skala disesuaikan
-        )
-        st.plotly_chart(fig_eido, use_container_width=True)
 
 def tampilkan_teknikal():
     st.header("📉 Analisa Teknikal Saham")
