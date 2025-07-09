@@ -208,7 +208,7 @@ def trading_page():
     vix_data = yf.download("^VIX", period="30d", interval="1d", progress=False)[["Close"]].rename(columns={"Close": "Index VIX"})
     eido_data = yf.download("EIDO", period="30d", interval="1d", progress=False)[["Close"]].rename(columns={"Close": "Index EIDO"})
 
-    # Bersihkan index menjadi tanggal biasa
+    # Ubah index ke tanggal biasa
     for df in [dxy_data, vix_data, eido_data]:
         df.index = df.index.date
 
@@ -217,115 +217,71 @@ def trading_page():
         st.warning("❌ Data DXY, VIX, atau EIDO tidak tersedia.")
         return
 
-    # Validasi dropna
+    # Drop nilai NaN
     valid_dxy = dxy_data.dropna()
     valid_vix = vix_data.dropna()
     valid_eido = eido_data.dropna()
 
-    # === Layout Tabel dan Grafik dalam 1 baris ===
+    # === Layout Tabel & Grafik dalam 1 baris ===
     col1, col2, col3, col4, col5, col6 = st.columns([1, 1.5, 1, 1.5, 1, 1.5])
 
+    # DXY
     with col1:
         st.markdown("#### 📅 DXY (5 Hari)")
         st.dataframe(valid_dxy.tail(5).sort_index(ascending=False), use_container_width=True)
 
     with col2:
         st.markdown("#### 📈 Grafik DXY")
-        if len(valid_dxy.dropna()) > 1:
+        if len(valid_dxy) > 1:
             fig_dxy = go.Figure()
             fig_dxy.add_trace(go.Scatter(
                 x=valid_dxy.index, y=valid_dxy["Index DXY"],
                 mode="lines+markers", line=dict(color="orange")
             ))
-            fig_dxy.update_layout(height=250, margin=dict(t=20, b=20, l=20, r=20), xaxis_title="Tanggal", yaxis_title="Index", showlegend=False)
+            fig_dxy.update_layout(height=250, margin=dict(t=20, b=20, l=20, r=20),
+                                  xaxis_title="Tanggal", yaxis_title="Index", showlegend=False)
             st.plotly_chart(fig_dxy, use_container_width=True)
         else:
             st.warning("⚠️ Grafik DXY tidak tersedia (data terlalu sedikit).")
 
-
+    # VIX
     with col3:
         st.markdown("#### 📅 VIX (5 Hari)")
         st.dataframe(valid_vix.tail(5).sort_index(ascending=False), use_container_width=True)
 
     with col4:
         st.markdown("#### 📈 Grafik VIX")
-        if len(valid_vix.dropna()) > 1:
+        if len(valid_vix) > 1:
             fig_vix = go.Figure()
             fig_vix.add_trace(go.Scatter(
                 x=valid_vix.index, y=valid_vix["Index VIX"],
                 mode="lines+markers", line=dict(color="red")
             ))
-            fig_vix.update_layout(height=250, margin=dict(t=20, b=20, l=20, r=20), xaxis_title="Tanggal", yaxis_title="Index", showlegend=False)
+            fig_vix.update_layout(height=250, margin=dict(t=20, b=20, l=20, r=20),
+                                  xaxis_title="Tanggal", yaxis_title="Index", showlegend=False)
             st.plotly_chart(fig_vix, use_container_width=True)
-else:
-    st.warning("⚠️ Grafik VIX tidak tersedia (data terlalu sedikit).")
+        else:
+            st.warning("⚠️ Grafik VIX tidak tersedia (data terlalu sedikit).")
 
-        fig_vix.update_layout(height=250, margin=dict(t=20, b=20, l=20, r=20), xaxis_title="Tanggal", yaxis_title="Index", showlegend=False)
-        st.plotly_chart(fig_vix, use_container_width=True)
-
+    # EIDO
     with col5:
         st.markdown("#### 📅 EIDO (5 Hari)")
         st.dataframe(valid_eido.tail(5).sort_index(ascending=False), use_container_width=True)
 
     with col6:
         st.markdown("#### 📈 Grafik EIDO")
-        if len(valid_eido.dropna()) > 1:
+        if len(valid_eido) > 1:
             fig_eido = go.Figure()
             fig_eido.add_trace(go.Scatter(
                 x=valid_eido.index, y=valid_eido["Index EIDO"],
                 mode="lines+markers", line=dict(color="blue")
             ))
-            fig_eido.update_layout(height=250, margin=dict(t=20, b=20, l=20, r=20), xaxis_title="Tanggal", yaxis_title="Index", showlegend=False)
+            fig_eido.update_layout(height=250, margin=dict(t=20, b=20, l=20, r=20),
+                                   xaxis_title="Tanggal", yaxis_title="Index", showlegend=False)
             st.plotly_chart(fig_eido, use_container_width=True)
-else:
-    st.warning("⚠️ Grafik EIDO tidak tersedia (data terlalu sedikit).")
+        else:
+            st.warning("⚠️ Grafik EIDO tidak tersedia (data terlalu sedikit).")
 
-        fig_eido.update_layout(height=250, margin=dict(t=20, b=20, l=20, r=20), xaxis_title="Tanggal", yaxis_title="Index", showlegend=False)
-        st.plotly_chart(fig_eido, use_container_width=True)
-
-    # 3. Komoditas Dunia
-    st.markdown("### 🛢️ Komoditas Dunia")
-    tampilkan_chart_yf("CL=F", "WTI Crude Oil", "green")
-    tampilkan_chart_yf("BZ=F", "Brent Crude Oil", "darkgreen")
-    tampilkan_chart_yf("GC=F", "Emas (Gold)", "gold")
-    tampilkan_chart_yf("NG=F", "Gas Alam", "lightblue")
-    tampilkan_chart_yf("HG=F", "Tembaga", "brown")
-
-    # 4. Indeks Dunia
-    st.markdown("### 🌎 Indeks Dunia")
-    tampilkan_chart_yf("^GSPC", "S&P 500", "cyan")
-    tampilkan_chart_yf("^IXIC", "Nasdaq", "purple")
-    tampilkan_chart_yf("^DJI", "Dow Jones", "gray")
-    tampilkan_chart_yf("^N225", "Nikkei", "pink")
-    tampilkan_chart_yf("^HSI", "Hang Seng", "teal")
-
-    # 5. Performa IHSG dan Prediksi JKSE dengan DXY
-    st.markdown("### 🇮🇩 IHSG & Prediksi dengan DXY (LSTM Dummy)")
-
-    dxy = yf.download("DX-Y.NYB", period="3mo", interval="1d", progress=False)
-    jkse = yf.download("^JKSE", period="3mo", interval="1d", progress=False)
-
-    if not dxy.empty and not jkse.empty:
-        df = pd.DataFrame({
-            "JKSE": jkse["Close"].values,
-            "DXY": dxy["Close"].values
-        }, index=jkse.index)
-
-        # Dummy Prediksi: kombinasi rata-rata rolling JKSE + pengaruh DXY sederhana
-        df["Prediksi"] = df["JKSE"].rolling(5).mean().shift(-2) - 0.5 * df["DXY"].pct_change().shift(1).fillna(0) * df["JKSE"]
-
-        fig = go.Figure()
-        fig.add_trace(go.Scatter(x=df.index, y=df["JKSE"], name="IHSG", line=dict(color="blue")))
-        fig.add_trace(go.Scatter(x=df.index, y=df["Prediksi"], name="Prediksi (Dummy)", line=dict(color="red", dash="dot")))
-
-        fig.update_layout(title="IHSG & Prediksi LSTM Dummy (dengan DXY)", xaxis_title="Tanggal", yaxis_title="Index")
-        st.plotly_chart(fig, use_container_width=True)
-    else:
-        st.warning("❌ Gagal mengambil data DXY atau IHSG.")
-
-    # 6. EIDO ETF
-    st.markdown("### 🇮🇩 EIDO - Indonesia ETF")
-    tampilkan_chart_yf("EIDO", "EIDO (Indonesia ETF)", "darkblue")
 
 def tampilkan_teknikal():
     st.header("📉 Analisa Teknikal Saham")
