@@ -199,7 +199,7 @@ def tampilkan_sektoral_idx():
 def trading_page():
     st.markdown("### 🌐 Global Market - Index DXY & VIX")
 
-    # ======== Ambil Data DXY ========
+    # === Ambil data DXY ===
     dxy_data = yf.download("DX-Y.NYB", period="30d", interval="1d", progress=False)
     if dxy_data.empty:
         st.warning("❌ Data Index DXY tidak tersedia.")
@@ -207,7 +207,7 @@ def trading_page():
     dxy_data = dxy_data[["Close"]].rename(columns={"Close": "Index DXY"})
     dxy_data.index = dxy_data.index.date
 
-    # ======== Ambil Data VIX ========
+    # === Ambil data VIX ===
     vix_data = yf.download("^VIX", period="30d", interval="1d", progress=False)
     if vix_data.empty:
         st.warning("❌ Data Index VIX tidak tersedia.")
@@ -215,10 +215,10 @@ def trading_page():
     vix_data = vix_data[["Close"]].rename(columns={"Close": "Index VIX"})
     vix_data.index = vix_data.index.date
 
-    # ======== Layout 2 Kolom: DXY & VIX ========
+    # === Layout 2 Kolom: DXY di kiri, VIX di kanan ===
     col1, col2 = st.columns(2)
 
-    # ======== Kolom Kiri: DXY ========
+    # === Kiri: DXY ===
     with col1:
         st.markdown("#### 📅 Tabel Index DXY (5 Hari Terakhir)")
         st.dataframe(
@@ -244,7 +244,7 @@ def trading_page():
         )
         st.plotly_chart(fig_dxy, use_container_width=True)
 
-    # ======== Kolom Kanan: VIX ========
+    # === Kanan: VIX ===
     with col2:
         st.markdown("#### 📅 Tabel Index VIX (5 Hari Terakhir)")
         st.dataframe(
@@ -269,8 +269,6 @@ def trading_page():
             showlegend=False
         )
         st.plotly_chart(fig_vix, use_container_width=True)
-
-
 
     # 3. Komoditas Dunia
     st.markdown("### 🛢️ Komoditas Dunia")
