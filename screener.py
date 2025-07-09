@@ -203,7 +203,6 @@ import plotly.graph_objects as go
 def trading_page():
     st.markdown("### 🌐 Global Market - DXY, VIX, EIDO, dan Komoditas")
 
-    # === Ambil data (30 hari, hanya 'Close') dan reset index ===
     symbols = {
         "DXY": ("DX-Y.NYB", "Index DXY", "orange", [90, 100]),
         "VIX": ("^VIX", "Index VIX", "red", [10, 30]),
@@ -215,35 +214,43 @@ def trading_page():
 
     data_dict = {}
 
-    # Download semua data
+    # Download data dan format tanggal
     for key, (symbol, label, color, y_range) in symbols.items():
         df = yf.download(symbol, period="30d", interval="1d", progress=False)[["Close"]]
         if df.empty:
             st.warning(f"❌ Data {label} tidak tersedia.")
             return
         df = df.rename(columns={"Close": label}).dropna().reset_index()
+        df["Tanggal"] = df["Date"].dt.strftime("%d-%m-%Y")  # Format tanggal
         data_dict[key] = {"data": df, "label": label, "color": color, "y_range": y_range}
 
-    # === Tampilkan 6 instrumen: DXY, VIX, EIDO, WTI, NG, Gold ===
+    # Tampilkan 3 instrumen per baris
     keys_order = ["DXY", "VIX", "EIDO", "WTI", "NG", "GOLD"]
 
     for i in range(0, len(keys_order), 3):
-        cols = st.columns([1, 1.5, 1, 1.5, 1, 1.5])  # 3 instrumen per baris
+        cols = st.columns([1, 1.5, 1, 1.5, 1, 1.5])
         for j, key in enumerate(keys_order[i:i+3]):
             df = data_dict[key]["data"]
             label = data_dict[key]["label"]
             color = data_dict[key]["color"]
             y_range = data_dict[key]["y_range"]
 
+            # Tabel
             with cols[j * 2]:
                 st.markdown(f"#### 📅 {label} (5 Hari)")
-                st.dataframe(df[["Date", label]].tail(5).sort_values("Date", ascending=False), use_container_width=True)
+                st.dataframe(
+                    df[["Tanggal", label]].tail(5).sort_values("Tanggal", ascending=False),
+                    use_container_width=True
+                )
 
+            # Grafik
             with cols[j * 2 + 1]:
                 fig = go.Figure()
                 fig.add_trace(go.Scatter(
-                    x=df["Date"], y=df[label],
-                    mode="lines+markers", line=dict(color=color)
+                    x=df.tail(5)["Tanggal"]
+                    y=df.tail(5)[label],
+                    mode="lines+markers",
+                    line=dict(color=color)
                 ))
                 fig.update_layout(
                     height=250, yaxis_range=y_range,
