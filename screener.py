@@ -205,12 +205,12 @@ def trading_page():
 
     # === Ambil data (30 hari, hanya 'Close') dan reset index ===
     symbols = {
-        "DXY": ("DX-Y.NYB", "Index DXY", "orange", [90, 100]),
-        "VIX": ("^VIX", "Index VIX", "red", [10, 30]),
-        "EIDO": ("EIDO", "Index EIDO", "blue", [10, 20]),
-        "WTI": ("CL=F", "WTI Crude Oil", "green", [60, 90]),
-        "NG": ("NG=F", "Natural Gas", "purple", [1, 4]),
-        "GOLD": ("GC=F", "Gold", "gold", [1800, 2500]),
+        "DXY": ("Index DXY", "orange", [90, 100]),
+        "VIX": ("Index VIX", "red", [10, 30]),
+        "EIDO": ("Index EIDO", "blue", [10, 20]),
+        "WTI": ("WTI Crude Oil", "green", [60, 90]),
+        "NG": ("Natural Gas", "purple", [1, 4]),
+        "GOLD": ("Gold", "gold", [1800, 2500]),
     }
 
     data_dict = {}
