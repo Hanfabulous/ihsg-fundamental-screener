@@ -198,49 +198,73 @@ def tampilkan_sektoral_idx():
 
 import streamlit as st
 import yfinance as yf
-import plotly.graph_objs as go
+import plotly.graph_objects as go
 
-ChatGPT said:
-Jika grafik tidak muncul meskipun data yfinance sudah benar (1 bulan / 30 hari), maka kemungkinan besar masalahnya bukan pada data tetapi pada struktur atau logika kode.
+def trading_page():
+    st.markdown("### 🌐 Global Market - DXY, VIX, dan EIDO")
 
-Berikut kemungkinan penyebab grafik tidak muncul, beserta solusinya:
+    # === Ambil data dari Yahoo Finance ===
+    def ambil_data(ticker, nama_kolom):
+        df = yf.download(ticker, period="30d", interval="1d", progress=False)[["Close"]]
+        if df.empty:
+            return pd.DataFrame()
+        df = df.rename(columns={"Close": nama_kolom})
+        df.index = df.index.date
+        return df.dropna()
 
-✅ 1. Indentasi else salah (SyntaxError)
-Di skrip Anda sebelumnya terdapat:
+    dxy_data = ambil_data("DX-Y.NYB", "Index DXY")
+    vix_data = ambil_data("^VIX", "Index VIX")
+    eido_data = ambil_data("EIDO", "Index EIDO")
 
-python
-Copy
-Edit
-else:
-    st.warning("⚠️ Grafik VIX tidak tersedia (data terlalu sedikit).")
+    if dxy_data.empty or vix_data.empty or eido_data.empty:
+        st.warning("❌ Salah satu atau lebih data (DXY, VIX, EIDO) tidak tersedia.")
+        return
 
-    fig_vix.update_layout(...)
-    st.plotly_chart(fig_vix, use_container_width=True)
-⚠️ Salah besar: else tidak boleh disusul langsung oleh pemanggilan fig_vix.update_layout, karena else: hanya dipakai untuk kondisi gagal tampil grafik.
+    # === Layout 3 aset sejajar: DXY | VIX | EIDO ===
+    col_table1, col_chart1, col_table2, col_chart2, col_table3, col_chart3 = st.columns([1, 1.5, 1, 1.5, 1, 1.5])
 
-✅ Seharusnya:
+    # ========== DXY ==========
+    with col_table1:
+        st.markdown("**📅 DXY (5 Hari Terakhir)**")
+        st.dataframe(dxy_data.tail(5).sort_index(ascending=False), use_container_width=True)
 
-python
-Copy
-Edit
-if len(valid_vix.dropna()) > 1:
-    fig_vix = ...
-    ...
-    st.plotly_chart(fig_vix, use_container_width=True)
-else:
-    st.warning("⚠️ Grafik VIX tidak tersedia (data terlalu sedikit).")
-✅ 2. Plotly tidak dijalankan karena tidak masuk blok if
-Misalnya:
+    with col_chart1:
+        st.markdown("**📈 Grafik DXY**")
+        fig_dxy = go.Figure()
+        fig_dxy.add_trace(go.Scatter(x=dxy_data.index, y=dxy_data["Index DXY"],
+                                     mode="lines+markers", line=dict(color="orange")))
+        fig_dxy.update_layout(height=250, margin=dict(t=10, b=20, l=20, r=20),
+                              xaxis_title="Tanggal", yaxis_title="Index", showlegend=False)
+        st.plotly_chart(fig_dxy, use_container_width=True)
 
-python
-Copy
-Edit
-if len(valid_dxy.dropna()) > 1:
-    fig_dxy = ...
-    st.plotly_chart(fig_dxy)
-Jika jumlah baris < 2 (misalnya hanya 1 baris valid), maka blok if akan dilewati, dan tidak ada grafik yang ditampilkan.
+    # ========== VIX ==========
+    with col_table2:
+        st.markdown("**📅 VIX (5 Hari Terakhir)**")
+        st.dataframe(vix_data.tail(5).sort_index(ascending=False), use_container_width=True)
 
-✅ Solusi:
+    with col_chart2:
+        st.markdown("**📈 Grafik VIX**")
+        fig_vix = go.Figure()
+        fig_vix.add_trace(go.Scatter(x=vix_data.index, y=vix_data["Index VIX"],
+                                     mode="lines+markers", line=dict(color="red")))
+        fig_vix.update_layout(height=250, margin=dict(t=10, b=20, l=20, r=20),
+                              xaxis_title="Tanggal", yaxis_title="Index", showlegend=False)
+        st.plotly_chart(fig_vix, use_container_width=True)
+
+    # ========== EIDO ==========
+    with col_table3:
+        st.markdown("**📅 EIDO (5 Hari Terakhir)**")
+        st.dataframe(eido_data.tail(5).sort_index(ascending=False), use_container_width=True)
+
+    with col_chart3:
+        st.markdown("**📈 Grafik EIDO**")
+        fig_eido = go.Figure()
+        fig_eido.add_trace(go.Scatter(x=eido_data.index, y=eido_data["Index EIDO"],
+                                      mode="lines+markers", line=dict(color="blue")))
+        fig_eido.update_layout(height=250, margin=dict(t=10, b=20, l=20, r=20),
+                               xaxis_title="Tanggal", yaxis_title="Index", showlegend=False)
+        st.plotly_chart(fig_eido, use_container_width=True)
+
 
 def tampilkan_teknikal():
     st.header("📉 Analisa Teknikal Saham")
