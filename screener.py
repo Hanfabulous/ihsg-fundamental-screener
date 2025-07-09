@@ -215,27 +215,24 @@ def trading_page():
     vix_data = vix_data[["Close"]].rename(columns={"Close": "Index VIX"})
     vix_data.index = vix_data.index.date
 
-    # Buat 4 kolom sejajar (Tabel DXY | Grafik DXY | Tabel VIX | Grafik VIX)
+    # Buat 4 kolom sejajar
     col1, col2, col3, col4 = st.columns([1, 1.5, 1, 1.5])
 
-    # Kolom 1: Tabel DXY
     with col1:
         st.markdown("#### 📅 DXY (5 Hari)")
         st.dataframe(
-            dxy_data.tail(5).sort_index(ascending=False),
+            dxy_data.tail(5).sort_index(ascending=False).reset_index().rename(columns={"index": "Tanggal"}),
             use_container_width=True,
             hide_index=True
         )
 
-    # Kolom 2: Grafik DXY
     with col2:
         st.markdown("#### 📈 Grafik DXY")
         fig_dxy = go.Figure()
         fig_dxy.add_trace(go.Scatter(
             x=dxy_data.index, y=dxy_data["Index DXY"],
             mode="lines+markers",
-            line=dict(color="orange"),
-            name="DXY"
+            line=dict(color="orange")
         ))
         fig_dxy.update_layout(
             height=300,
@@ -246,24 +243,21 @@ def trading_page():
         )
         st.plotly_chart(fig_dxy, use_container_width=True)
 
-    # Kolom 3: Tabel VIX
     with col3:
         st.markdown("#### 📅 VIX (5 Hari)")
         st.dataframe(
-            vix_data.tail(5).sort_index(ascending=False),
+            vix_data.tail(5).sort_index(ascending=False).reset_index().rename(columns={"index": "Tanggal"}),
             use_container_width=True,
             hide_index=True
         )
 
-    # Kolom 4: Grafik VIX
     with col4:
         st.markdown("#### 📈 Grafik VIX")
         fig_vix = go.Figure()
         fig_vix.add_trace(go.Scatter(
             x=vix_data.index, y=vix_data["Index VIX"],
             mode="lines+markers",
-            line=dict(color="red"),
-            name="VIX"
+            line=dict(color="red")
         ))
         fig_vix.update_layout(
             height=300,
@@ -273,7 +267,6 @@ def trading_page():
             showlegend=False
         )
         st.plotly_chart(fig_vix, use_container_width=True)
-
 
     # 3. Komoditas Dunia
     st.markdown("### 🛢️ Komoditas Dunia")
