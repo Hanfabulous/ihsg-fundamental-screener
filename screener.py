@@ -200,88 +200,47 @@ import streamlit as st
 import yfinance as yf
 import plotly.graph_objs as go
 
-def trading_page():
-    st.markdown("### 🌐 Global Market - DXY, VIX, dan EIDO")
+ChatGPT said:
+Jika grafik tidak muncul meskipun data yfinance sudah benar (1 bulan / 30 hari), maka kemungkinan besar masalahnya bukan pada data tetapi pada struktur atau logika kode.
 
-    # === Ambil data dari Yahoo Finance ===
-    dxy_data = yf.download("DX-Y.NYB", period="30d", interval="1d", progress=False)[["Close"]].rename(columns={"Close": "Index DXY"})
-    vix_data = yf.download("^VIX", period="30d", interval="1d", progress=False)[["Close"]].rename(columns={"Close": "Index VIX"})
-    eido_data = yf.download("EIDO", period="30d", interval="1d", progress=False)[["Close"]].rename(columns={"Close": "Index EIDO"})
+Berikut kemungkinan penyebab grafik tidak muncul, beserta solusinya:
 
-    # Ubah index ke tanggal biasa
-    for df in [dxy_data, vix_data, eido_data]:
-        df.index = df.index.date
+✅ 1. Indentasi else salah (SyntaxError)
+Di skrip Anda sebelumnya terdapat:
 
-    # Validasi data tidak kosong
-    if dxy_data.empty or vix_data.empty or eido_data.empty:
-        st.warning("❌ Data DXY, VIX, atau EIDO tidak tersedia.")
-        return
+python
+Copy
+Edit
+else:
+    st.warning("⚠️ Grafik VIX tidak tersedia (data terlalu sedikit).")
 
-    # Drop nilai NaN
-    valid_dxy = dxy_data.dropna()
-    valid_vix = vix_data.dropna()
-    valid_eido = eido_data.dropna()
+    fig_vix.update_layout(...)
+    st.plotly_chart(fig_vix, use_container_width=True)
+⚠️ Salah besar: else tidak boleh disusul langsung oleh pemanggilan fig_vix.update_layout, karena else: hanya dipakai untuk kondisi gagal tampil grafik.
 
-    # === Layout Tabel & Grafik dalam 1 baris ===
-    col1, col2, col3, col4, col5, col6 = st.columns([1, 1.5, 1, 1.5, 1, 1.5])
+✅ Seharusnya:
 
-    # DXY
-    with col1:
-        st.markdown("#### 📅 DXY (5 Hari)")
-        st.dataframe(valid_dxy.tail(5).sort_index(ascending=False), use_container_width=True)
+python
+Copy
+Edit
+if len(valid_vix.dropna()) > 1:
+    fig_vix = ...
+    ...
+    st.plotly_chart(fig_vix, use_container_width=True)
+else:
+    st.warning("⚠️ Grafik VIX tidak tersedia (data terlalu sedikit).")
+✅ 2. Plotly tidak dijalankan karena tidak masuk blok if
+Misalnya:
 
-    with col2:
-        st.markdown("#### 📈 Grafik DXY")
-        if len(valid_dxy) > 1:
-            fig_dxy = go.Figure()
-            fig_dxy.add_trace(go.Scatter(
-                x=valid_dxy.index, y=valid_dxy["Index DXY"],
-                mode="lines+markers", line=dict(color="orange")
-            ))
-            fig_dxy.update_layout(height=250, margin=dict(t=20, b=20, l=20, r=20),
-                                  xaxis_title="Tanggal", yaxis_title="Index", showlegend=False)
-            st.plotly_chart(fig_dxy, use_container_width=True)
-        else:
-            st.warning("⚠️ Grafik DXY tidak tersedia (data terlalu sedikit).")
+python
+Copy
+Edit
+if len(valid_dxy.dropna()) > 1:
+    fig_dxy = ...
+    st.plotly_chart(fig_dxy)
+Jika jumlah baris < 2 (misalnya hanya 1 baris valid), maka blok if akan dilewati, dan tidak ada grafik yang ditampilkan.
 
-    # VIX
-    with col3:
-        st.markdown("#### 📅 VIX (5 Hari)")
-        st.dataframe(valid_vix.tail(5).sort_index(ascending=False), use_container_width=True)
-
-    with col4:
-        st.markdown("#### 📈 Grafik VIX")
-        if len(valid_vix) > 1:
-            fig_vix = go.Figure()
-            fig_vix.add_trace(go.Scatter(
-                x=valid_vix.index, y=valid_vix["Index VIX"],
-                mode="lines+markers", line=dict(color="red")
-            ))
-            fig_vix.update_layout(height=250, margin=dict(t=20, b=20, l=20, r=20),
-                                  xaxis_title="Tanggal", yaxis_title="Index", showlegend=False)
-            st.plotly_chart(fig_vix, use_container_width=True)
-        else:
-            st.warning("⚠️ Grafik VIX tidak tersedia (data terlalu sedikit).")
-
-    # EIDO
-    with col5:
-        st.markdown("#### 📅 EIDO (5 Hari)")
-        st.dataframe(valid_eido.tail(5).sort_index(ascending=False), use_container_width=True)
-
-    with col6:
-        st.markdown("#### 📈 Grafik EIDO")
-        if len(valid_eido) > 1:
-            fig_eido = go.Figure()
-            fig_eido.add_trace(go.Scatter(
-                x=valid_eido.index, y=valid_eido["Index EIDO"],
-                mode="lines+markers", line=dict(color="blue")
-            ))
-            fig_eido.update_layout(height=250, margin=dict(t=20, b=20, l=20, r=20),
-                                   xaxis_title="Tanggal", yaxis_title="Index", showlegend=False)
-            st.plotly_chart(fig_eido, use_container_width=True)
-        else:
-            st.warning("⚠️ Grafik EIDO tidak tersedia (data terlalu sedikit).")
-
+✅ Solusi:
 
 def tampilkan_teknikal():
     st.header("📉 Analisa Teknikal Saham")
