@@ -208,39 +208,69 @@ def trading_page():
     dxy_data = dxy_data[["Close"]].rename(columns={"Close": "Index DXY"})
     dxy_data.index = dxy_data.index.date  # Ubah datetime ke tanggal
 
-    # Pisah menjadi dua kolom
-    col1, col2 = st.columns([1, 2])
+    # =============================== #
+# 📈 Global Market - Index DXY & VIX
+# =============================== #
+st.markdown("### 🌐 Global Market Index")
 
-    # Kolom kiri: Tabel 5 hari terakhir
-    with col1:
-        st.markdown("### 📅 Tabel Index DXY (5 Hari Terakhir)")
+col1, col2 = st.columns(2)
+
+with col1:
+    st.markdown("#### 📅 Tabel DXY (5 Hari Terakhir)")
+    st.dataframe(
+        dxy_data.tail(5).sort_index(ascending=False),
+        use_container_width=True,
+        hide_index=False
+    )
+
+    st.markdown("#### 📈 Grafik DXY (30 Hari Terakhir)")
+    fig_dxy = go.Figure()
+    fig_dxy.add_trace(go.Scatter(
+        x=dxy_data.index, y=dxy_data["Index DXY"],
+        mode="lines+markers",
+        line=dict(color="orange"),
+        name="DXY"
+    ))
+    fig_dxy.update_layout(
+        height=250,
+        margin=dict(t=20, b=20, l=20, r=20),
+        xaxis_title="Tanggal",
+        yaxis_title="Index",
+        showlegend=False
+    )
+    st.plotly_chart(fig_dxy, use_container_width=True)
+
+with col2:
+    st.markdown("#### 📅 Tabel VIX (5 Hari Terakhir)")
+    vix_data = yf.download("^VIX", period="30d", interval="1d", progress=False)
+    if not vix_data.empty:
+        vix_data = vix_data[["Close"]].rename(columns={"Close": "Index VIX"})
+        vix_data.index = vix_data.index.date
         st.dataframe(
-            dxy_data.tail(5).sort_index(ascending=False),
+            vix_data.tail(5).sort_index(ascending=False),
             use_container_width=True,
             hide_index=False
         )
 
-    # Kolom kanan: Grafik 30 hari terakhir
-    with col2:
-        st.markdown("### 📈 Grafik Index DXY (30 Hari Terakhir)")
-        fig = go.Figure()
-        fig.add_trace(go.Scatter(
-            x=dxy_data.index, y=dxy_data["Index DXY"],
+        st.markdown("#### 📈 Grafik VIX (30 Hari Terakhir)")
+        fig_vix = go.Figure()
+        fig_vix.add_trace(go.Scatter(
+            x=vix_data.index, y=vix_data["Index VIX"],
             mode="lines+markers",
-            line=dict(color="orange"),
-            name="DXY"
+            line=dict(color="red"),
+            name="VIX"
         ))
-        fig.update_layout(
+        fig_vix.update_layout(
             height=250,
             margin=dict(t=20, b=20, l=20, r=20),
             xaxis_title="Tanggal",
             yaxis_title="Index",
             showlegend=False
         )
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig_vix, use_container_width=True)
+    else:
+        st.warning("❌ Data Index VIX tidak tersedia.")
 
-    # 2. Index VIX
-    tampilkan_chart_yf("^VIX", "Index VIX", "red")
 
     # 3. Komoditas Dunia
     st.markdown("### 🛢️ Komoditas Dunia")
