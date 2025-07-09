@@ -199,57 +199,66 @@ def tampilkan_sektoral_idx():
 import streamlit as st
 import yfinance as yf
 import plotly.graph_objects as go
+import pandas as pd
 
 def trading_page():
     st.markdown("### 🌐 Global Market - DXY, VIX, EIDO, dan Komoditas")
 
-    # === Ambil data (30 hari, hanya 'Close') dan reset index ===
+    # === Simbol Yahoo Finance ===
     symbols = {
-        "DXY": ("DX-Y.NYB", "Index DXY", "orange", [90, 100]),
-        "VIX": ("^VIX", "Index VIX", "red", [10, 30]),
-        "EIDO": ("EIDO", "Index EIDO", "blue", [10, 20]),
-        "WTI": ("CL=F", "WTI Crude Oil", "green", [60, 90]),
-        "NG": ("NG=F", "Natural Gas", "purple", [1, 4]),
-        "GOLD": ("GC=F", "Gold", "gold", [1800, 2500]),
+        "DXY": "DX-Y.NYB",
+        "VIX": "^VIX",
+        "EIDO": "EIDO",
+        "Crude Oil": "CL=F",
+        "Natural Gas": "NG=F",
+        "Gold": "GC=F"
     }
 
-    data_dict = {}
+    # === Unduh data (30 hari, hanya Close) ===
+    data = {}
+    for name, ticker in symbols.items():
+        df = yf.download(ticker, period="30d", interval="1d", progress=False)[["Close"]]
+        df = df.dropna().rename(columns={"Close": f"Index {name}"}).reset_index()
+        df["Date"] = pd.to_datetime(df["Date"])
+        data[name] = df
 
-    # Download semua data
-    for key, (symbol, label, color, y_range) in symbols.items():
-        df = yf.download(symbol, period="30d", interval="1d", progress=False)[["Close"]]
-        if df.empty:
-            st.warning(f"❌ Data {label} tidak tersedia.")
-            return
-        df = df.rename(columns={"Close": label}).dropna().reset_index()
-        data_dict[key] = {"data": df, "label": label, "color": color, "y_range": y_range}
+    # === Cek data kosong ===
+    if any(df.empty for df in data.values()):
+        st.warning("❌ Salah satu data tidak tersedia.")
+        return
 
-    # === Tampilkan 6 instrumen: DXY, VIX, EIDO, WTI, NG, Gold ===
-    keys_order = ["DXY", "VIX", "EIDO", "WTI", "NG", "GOLD"]
+    # === Fungsi bantu: buat kolom tabel dan grafik ===
+    def tampilkan_kolom(nama, warna, y_range):
+        df_disp = data[nama][["Date", f"Index {nama}"]].tail(5).sort_values("Date", ascending=False)
 
-    for i in range(0, len(keys_order), 3):
-        cols = st.columns([1, 1.5, 1, 1.5, 1, 1.5])  # 3 instrumen per baris
-        for j, key in enumerate(keys_order[i:i+3]):
-            df = data_dict[key]["data"]
-            label = data_dict[key]["label"]
-            color = data_dict[key]["color"]
-            y_range = data_dict[key]["y_range"]
+        col_tabel, col_chart = st.columns([1, 1.5])
+        with col_tabel:
+            st.markdown(f"#### 📅 Index {nama} (5 Hari)")
+            st.dataframe(df_disp, use_container_width=True)
 
-            with cols[j * 2]:
-                st.markdown(f"#### 📅 {label} (5 Hari)")
-                st.dataframe(df[["Date", label]].tail(5).sort_values("Date", ascending=False), use_container_width=True)
+        with col_chart:
+            st.markdown(f"#### 📈 Grafik {nama}")
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(
+                x=data[nama]["Date"], y=data[nama][f"Index {nama}"],
+                mode="lines+markers", line=dict(color=warna)
+            ))
+            fig.update_layout(
+                height=250, yaxis_range=y_range,
+                margin=dict(t=20, b=20), showlegend=False,
+                xaxis_title="Tanggal", yaxis_title="Index"
+            )
+            st.plotly_chart(fig, use_container_width=True)
 
-            with cols[j * 2 + 1]:
-                fig = go.Figure()
-                fig.add_trace(go.Scatter(
-                    x=df["Date"], y=df[label],
-                    mode="lines+markers", line=dict(color=color)
-                ))
-                fig.update_layout(
-                    height=250, yaxis_range=y_range,
-                    margin=dict(t=20, b=20), showlegend=False
-                )
-                st.plotly_chart(fig, use_container_width=True)
+    # === Baris 1: DXY, VIX, EIDO ===
+    tampilkan_kolom("DXY", "orange", [90, 100])
+    tampilkan_kolom("VIX", "red", [10, 30])
+    tampilkan_kolom("EIDO", "blue", [10, 20])
+
+    # === Baris 2: Crude Oil, Gas, Gold ===
+    tampilkan_kolom("Crude Oil", "green", [60, 90])
+    tampilkan_kolom("Natural Gas", "purple", [2, 5])
+    tampilkan_kolom("Gold", "gold", [1800, 2400])
 
 
 def tampilkan_teknikal():
