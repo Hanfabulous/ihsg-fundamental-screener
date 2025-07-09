@@ -196,38 +196,87 @@ def tampilkan_sektoral_idx():
     except Exception as e:
         st.error(f"❌ Gagal mengambil data sektoral IDX: {e}")
 
-import yfinance as yf
 import streamlit as st
-import plotly.express as px
-import pandas as pd
+import yfinance as yf
+import plotly.graph_objects as go
 
-st.set_page_config(layout="wide")
-st.title("📊 Debug Chart DXY, VIX, EIDO")
+def trading_page():
+    st.markdown("### 🌐 Global Market - DXY, VIX, dan EIDO")
 
-# Download data
-dxy = yf.download("DX-Y.NYB", period="1mo", interval="1d")[["Close"]].rename(columns={"Close": "DXY"})
-vix = yf.download("^VIX", period="1mo", interval="1d")[["Close"]].rename(columns={"Close": "VIX"})
-eido = yf.download("EIDO", period="1mo", interval="1d")[["Close"]].rename(columns={"Close": "EIDO"})
+    # === Ambil data (30 hari, hanya 'Close') dan reset index agar tanggal eksplisit ===
+    dxy = yf.download("DX-Y.NYB", period="30d", interval="1d", progress=False)[["Close"]].rename(columns={"Close": "Index DXY"}).dropna().reset_index()
+    vix = yf.download("^VIX", period="30d", interval="1d", progress=False)[["Close"]].rename(columns={"Close": "Index VIX"}).dropna().reset_index()
+    eido = yf.download("EIDO", period="30d", interval="1d", progress=False)[["Close"]].rename(columns={"Close": "Index EIDO"}).dropna().reset_index()
 
-# Reset index agar tanggal jadi kolom biasa
-dxy = dxy.reset_index()
-vix = vix.reset_index()
-eido = eido.reset_index()
+    # === Validasi Data ===
+    if dxy.empty or vix.empty or eido.empty:
+        st.warning("❌ Data DXY, VIX, atau EIDO tidak tersedia.")
+        return
 
-# Plot DXY
-fig_dxy = px.line(dxy, x="Date", y="DXY", markers=True, title="Index DXY")
-fig_dxy.update_yaxes(range=[90, 100])
-st.plotly_chart(fig_dxy, use_container_width=True)
+    # === Ambil 5 Hari Terakhir untuk Tabel ===
+    dxy_disp = dxy[["Date", "Index DXY"]].tail(5).sort_values("Date", ascending=False)
+    vix_disp = vix[["Date", "Index VIX"]].tail(5).sort_values("Date", ascending=False)
+    eido_disp = eido[["Date", "Index EIDO"]].tail(5).sort_values("Date", ascending=False)
 
-# Plot VIX
-fig_vix = px.line(vix, x="Date", y="VIX", markers=True, title="Index VIX")
-fig_vix.update_yaxes(range=[10, 30])
-st.plotly_chart(fig_vix, use_container_width=True)
+    # === Layout 6 Kolom Sejajar ===
+    col1, col2, col3, col4, col5, col6 = st.columns([1, 1.5, 1, 1.5, 1, 1.5])
 
-# Plot EIDO
-fig_eido = px.line(eido, x="Date", y="EIDO", markers=True, title="Index EIDO")
-fig_eido.update_yaxes(range=[10, 20])
-st.plotly_chart(fig_eido, use_container_width=True)
+    # ==== TABEL DAN GRAFIK DXY ====
+    with col1:
+        st.markdown("#### 📅 DXY (5 Hari)")
+        st.dataframe(dxy_disp, use_container_width=True)
+
+    with col2:
+        st.markdown("#### 📈 Grafik DXY")
+        fig_dxy = go.Figure()
+        fig_dxy.add_trace(go.Scatter(
+            x=dxy["Date"], y=dxy["Index DXY"],
+            mode="lines+markers", line=dict(color="orange")
+        ))
+        fig_dxy.update_layout(
+            height=250, yaxis_range=[90, 100],
+            margin=dict(t=20, b=20), showlegend=False,
+            xaxis_title="Tanggal", yaxis_title="Index"
+        )
+        st.plotly_chart(fig_dxy, use_container_width=True)
+
+    # ==== TABEL DAN GRAFIK VIX ====
+    with col3:
+        st.markdown("#### 📅 VIX (5 Hari)")
+        st.dataframe(vix_disp, use_container_width=True)
+
+    with col4:
+        st.markdown("#### 📈 Grafik VIX")
+        fig_vix = go.Figure()
+        fig_vix.add_trace(go.Scatter(
+            x=vix["Date"], y=vix["Index VIX"],
+            mode="lines+markers", line=dict(color="red")
+        ))
+        fig_vix.update_layout(
+            height=250, yaxis_range=[10, 30],
+            margin=dict(t=20, b=20), showlegend=False,
+            xaxis_title="Tanggal", yaxis_title="Index"
+        )
+        st.plotly_chart(fig_vix, use_container_width=True)
+
+    # ==== TABEL DAN GRAFIK EIDO ====
+    with col5:
+        st.markdown("#### 📅 EIDO (5 Hari)")
+        st.dataframe(eido_disp, use_container_width=True)
+
+    with col6:
+        st.markdown("#### 📈 Grafik EIDO")
+        fig_eido = go.Figure()
+        fig_eido.add_trace(go.Scatter(
+            x=eido["Date"], y=eido["Index EIDO"],
+            mode="lines+markers", line=dict(color="blue")
+        ))
+        fig_eido.update_layout(
+            height=250, yaxis_range=[10, 20],
+            margin=dict(t=20, b=20), showlegend=False,
+            xaxis_title="Tanggal", yaxis_title="Index"
+        )
+        st.plotly_chart(fig_eido, use_container_width=True)
 
 
 def tampilkan_teknikal():
