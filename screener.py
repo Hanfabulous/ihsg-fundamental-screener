@@ -203,75 +203,83 @@ import plotly.graph_objects as go
 def trading_page():
     st.markdown("### 🌐 Global Market - DXY, VIX, dan EIDO")
 
-    # Ambil data
-    dxy = yf.download("DX-Y.NYB", period="30d", interval="1d", progress=False)
-    vix = yf.download("^VIX", period="30d", interval="1d", progress=False)
-    eido = yf.download("EIDO", period="30d", interval="1d", progress=False)
+    # Ambil data harga penutupan (Close)
+    dxy = yf.download("DX-Y.NYB", period="30d", interval="1d", progress=False)[["Close"]].rename(columns={"Close": "Index DXY"})
+    vix = yf.download("^VIX", period="30d", interval="1d", progress=False)[["Close"]].rename(columns={"Close": "Index VIX"})
+    eido = yf.download("EIDO", period="30d", interval="1d", progress=False)[["Close"]].rename(columns={"Close": "Index EIDO"})
 
-    # Cek data
+    # Ubah index ke tanggal
+    for df in [dxy, vix, eido]:
+        df.index = df.index.date
+
+    # Validasi
     if dxy.empty or vix.empty or eido.empty:
         st.warning("❌ Salah satu data (DXY, VIX, EIDO) kosong.")
         return
 
-    # Ambil kolom Close & ubah index ke tanggal
-    dxy = dxy[["Close"]].rename(columns={"Close": "DXY"}); dxy.index = dxy.index.date
-    vix = vix[["Close"]].rename(columns={"Close": "VIX"}); vix.index = vix.index.date
-    eido = eido[["Close"]].rename(columns={"Close": "EIDO"}); eido.index = eido.index.date
-
-    # Buat layout: 6 kolom (Tabel + Grafik untuk masing-masing)
+    # Layout kolom: Tabel & Grafik (DXY, VIX, EIDO)
     col1, col2, col3, col4, col5, col6 = st.columns([1, 1.5, 1, 1.5, 1, 1.5])
 
-    # DXY
+    # === DXY ===
     with col1:
         st.markdown("#### 📅 DXY (5 Hari)")
         st.dataframe(dxy.tail(5).sort_index(ascending=False), use_container_width=True)
 
     with col2:
-        st.markdown("#### 📈 DXY")
+        st.markdown("#### 📈 Grafik DXY")
         fig_dxy = go.Figure()
-        fig_dxy.add_trace(go.Scatter(x=dxy.index, y=dxy["DXY"], mode="lines+markers", line=dict(color="orange")))
+        fig_dxy.add_trace(go.Scatter(
+            x=dxy.index, y=dxy["Index DXY"],
+            mode="lines+markers", line=dict(color="orange")
+        ))
         fig_dxy.update_layout(
             height=250,
             margin=dict(t=20, b=20, l=20, r=20),
-            yaxis=dict(range=[90, 110]),
+            yaxis=dict(range=[90, 110]),  # Atur skala DXY
             xaxis=dict(showticklabels=False),
             yaxis_title="Index",
             showlegend=False
         )
         st.plotly_chart(fig_dxy, use_container_width=True)
 
-    # VIX
+    # === VIX ===
     with col3:
         st.markdown("#### 📅 VIX (5 Hari)")
         st.dataframe(vix.tail(5).sort_index(ascending=False), use_container_width=True)
 
     with col4:
-        st.markdown("#### 📈 VIX")
+        st.markdown("#### 📈 Grafik VIX")
         fig_vix = go.Figure()
-        fig_vix.add_trace(go.Scatter(x=vix.index, y=vix["VIX"], mode="lines+markers", line=dict(color="red")))
+        fig_vix.add_trace(go.Scatter(
+            x=vix.index, y=vix["Index VIX"],
+            mode="lines+markers", line=dict(color="red")
+        ))
         fig_vix.update_layout(
             height=250,
             margin=dict(t=20, b=20, l=20, r=20),
-            yaxis=dict(range=[0, 40]),
+            yaxis=dict(range=[0, 40]),  # Atur skala VIX
             xaxis=dict(showticklabels=False),
             yaxis_title="Index",
             showlegend=False
         )
         st.plotly_chart(fig_vix, use_container_width=True)
 
-    # EIDO
+    # === EIDO ===
     with col5:
         st.markdown("#### 📅 EIDO (5 Hari)")
         st.dataframe(eido.tail(5).sort_index(ascending=False), use_container_width=True)
 
     with col6:
-        st.markdown("#### 📈 EIDO")
+        st.markdown("#### 📈 Grafik EIDO")
         fig_eido = go.Figure()
-        fig_eido.add_trace(go.Scatter(x=eido.index, y=eido["EIDO"], mode="lines+markers", line=dict(color="blue")))
+        fig_eido.add_trace(go.Scatter(
+            x=eido.index, y=eido["Index EIDO"],
+            mode="lines+markers", line=dict(color="blue")
+        ))
         fig_eido.update_layout(
             height=250,
             margin=dict(t=20, b=20, l=20, r=20),
-            yaxis=dict(range=[10, 30]),
+            yaxis=dict(range=[10, 30]),  # Atur skala EIDO
             xaxis=dict(showticklabels=False),
             yaxis_title="Index",
             showlegend=False
