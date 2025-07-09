@@ -203,67 +203,61 @@ import plotly.graph_objects as go
 def trading_page():
     st.markdown("### 🌐 Global Market - DXY, VIX, EIDO, dan Komoditas")
 
-    # === Daftar simbol dan konfigurasi ===
     symbols = {
-        "DXY": ("DX-Y.NYB", "Index DXY", "orange"),
-        "VIX": ("^VIX", "Index VIX", "red"),
-        "EIDO": ("EIDO", "Index EIDO", "blue"),
-        "WTI": ("CL=F", "WTI Crude Oil", "green"),
-        "NG": ("NG=F", "Natural Gas", "purple"),
-        "GOLD": ("GC=F", "Gold", "gold"),
+        "DXY": ("DX-Y.NYB", "Index DXY", "orange", [90, 100]),
+        "VIX": ("^VIX", "Index VIX", "red", [10, 30]),
+        "EIDO": ("EIDO", "Index EIDO", "blue", [10, 20]),
+        "WTI": ("CL=F", "WTI Crude Oil", "green", [60, 90]),
+        "NG": ("NG=F", "Natural Gas", "purple", [1, 4]),
+        "GOLD": ("GC=F", "Gold", "gold", [1800, 2500]),
     }
 
     data_dict = {}
 
-    # Ambil data dan simpan
-    for key, (symbol, label, color) in symbols.items():
+    # Download data dan format tanggal
+    for key, (symbol, label, color, y_range) in symbols.items():
         df = yf.download(symbol, period="30d", interval="1d", progress=False)[["Close"]]
         if df.empty:
             st.warning(f"❌ Data {label} tidak tersedia.")
             return
         df = df.rename(columns={"Close": label}).dropna().reset_index()
-        df["Tanggal"] = df["Date"].dt.strftime("%d-%m-%Y")
-        data_dict[key] = {"data": df, "label": label, "color": color}
+        df["Tanggal"] = df["Date"].dt.strftime("%d-%m-%Y")  # Format tanggal
+        data_dict[key] = {"data": df, "label": label, "color": color, "y_range": y_range}
 
-    # Urutan tampilan
+    # Tampilkan 3 instrumen per baris
     keys_order = ["DXY", "VIX", "EIDO", "WTI", "NG", "GOLD"]
 
     for i in range(0, len(keys_order), 3):
-        cols = st.columns([1, 1.5, 1, 1.5, 1, 1.5])  # 3 instrumen per baris
-
+        cols = st.columns([1, 1.5, 1, 1.5, 1, 1.5])
         for j, key in enumerate(keys_order[i:i+3]):
             df = data_dict[key]["data"]
             label = data_dict[key]["label"]
             color = data_dict[key]["color"]
+            y_range = data_dict[key]["y_range"]
 
-            df_5 = df.tail(5)
-            min_y = df_5[label].min()
-            max_y = df_5[label].max()
-            margin = (max_y - min_y) * 0.1 if max_y != min_y else 1
-
+            # Tabel
             with cols[j * 2]:
                 st.markdown(f"#### 📅 {label} (5 Hari)")
-                st.dataframe(df_5[["Tanggal", label]].sort_values("Tanggal", ascending=False), use_container_width=True)
+                st.dataframe(
+                    df[["Tanggal", label]].tail(5).sort_values("Tanggal", ascending=False),
+                    use_container_width=True
+                )
 
+            # Grafik
             with cols[j * 2 + 1]:
-                st.markdown(f"#### 📈 Grafik {label}")
                 fig = go.Figure()
                 fig.add_trace(go.Scatter(
-                    x=df_5["Tanggal"], y=df_5[label],
+                    x=df.tail(5)["Tanggal"]
+                    y=df.tail(5)[label],
                     mode="lines+markers",
-                    line=dict(color=color, width=2),
-                    marker=dict(size=6)
+                    line=dict(color=color)
                 ))
                 fig.update_layout(
-                    height=250,
-                    yaxis_range=[min_y - margin, max_y + margin],
-                    margin=dict(t=20, b=20),
-                    showlegend=False,
-                    xaxis_title="Tanggal",
-                    yaxis_title="Index"
+                    height=250, yaxis_range=y_range,
+                    margin=dict(t=20, b=20), showlegend=False,
+                    xaxis_title="Tanggal", yaxis_title="Index"
                 )
                 st.plotly_chart(fig, use_container_width=True)
-
 
 def tampilkan_teknikal():
     st.header("📉 Analisa Teknikal Saham")
