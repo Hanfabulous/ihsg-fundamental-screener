@@ -240,7 +240,6 @@ def trading_page():
                 st.dataframe(df[["Date", label]].tail(5).sort_values("Date", ascending=False), use_container_width=True)
 
             with cols[j * 2 + 1]:
-                st.markdown(f"#### 📈 Grafik {label}")
                 fig = go.Figure()
                 fig.add_trace(go.Scatter(
                     x=df["Date"], y=df[label],
