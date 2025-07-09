@@ -247,8 +247,7 @@ def trading_page():
                 ))
                 fig.update_layout(
                     height=250, yaxis_range=y_range,
-                    margin=dict(t=20, b=20), showlegend=False,
-                    xaxis_title="Tanggal", yaxis_title="Index"
+                    margin=dict(t=20, b=20), showlegend=False
                 )
                 st.plotly_chart(fig, use_container_width=True)
 
