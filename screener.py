@@ -199,7 +199,7 @@ def tampilkan_sektoral_idx():
 def trading_page():
     st.markdown("### 🌐 Global Market - Index DXY & VIX")
 
-    # === Ambil data DXY ===
+    # Ambil data DXY
     dxy_data = yf.download("DX-Y.NYB", period="30d", interval="1d", progress=False)
     if dxy_data.empty:
         st.warning("❌ Data Index DXY tidak tersedia.")
@@ -207,7 +207,7 @@ def trading_page():
     dxy_data = dxy_data[["Close"]].rename(columns={"Close": "Index DXY"})
     dxy_data.index = dxy_data.index.date
 
-    # === Ambil data VIX ===
+    # Ambil data VIX
     vix_data = yf.download("^VIX", period="30d", interval="1d", progress=False)
     if vix_data.empty:
         st.warning("❌ Data Index VIX tidak tersedia.")
@@ -215,19 +215,21 @@ def trading_page():
     vix_data = vix_data[["Close"]].rename(columns={"Close": "Index VIX"})
     vix_data.index = vix_data.index.date
 
-    # === Layout 2 Kolom: DXY di kiri, VIX di kanan ===
-    col1, col2 = st.columns(2)
+    # Buat 4 kolom sejajar (Tabel DXY | Grafik DXY | Tabel VIX | Grafik VIX)
+    col1, col2, col3, col4 = st.columns([1, 1.5, 1, 1.5])
 
-    # === Kiri: DXY ===
+    # Kolom 1: Tabel DXY
     with col1:
-        st.markdown("#### 📅 Tabel Index DXY (5 Hari Terakhir)")
+        st.markdown("#### 📅 DXY (5 Hari)")
         st.dataframe(
             dxy_data.tail(5).sort_index(ascending=False),
             use_container_width=True,
-            hide_index=False
+            hide_index=True
         )
 
-        st.markdown("#### 📈 Grafik Index DXY (30 Hari Terakhir)")
+    # Kolom 2: Grafik DXY
+    with col2:
+        st.markdown("#### 📈 Grafik DXY")
         fig_dxy = go.Figure()
         fig_dxy.add_trace(go.Scatter(
             x=dxy_data.index, y=dxy_data["Index DXY"],
@@ -236,7 +238,7 @@ def trading_page():
             name="DXY"
         ))
         fig_dxy.update_layout(
-            height=250,
+            height=300,
             margin=dict(t=20, b=20, l=20, r=20),
             xaxis_title="Tanggal",
             yaxis_title="Index",
@@ -244,16 +246,18 @@ def trading_page():
         )
         st.plotly_chart(fig_dxy, use_container_width=True)
 
-    # === Kanan: VIX ===
-    with col2:
-        st.markdown("#### 📅 Tabel Index VIX (5 Hari Terakhir)")
+    # Kolom 3: Tabel VIX
+    with col3:
+        st.markdown("#### 📅 VIX (5 Hari)")
         st.dataframe(
             vix_data.tail(5).sort_index(ascending=False),
             use_container_width=True,
-            hide_index=False
+            hide_index=True
         )
 
-        st.markdown("#### 📈 Grafik Index VIX (30 Hari Terakhir)")
+    # Kolom 4: Grafik VIX
+    with col4:
+        st.markdown("#### 📈 Grafik VIX")
         fig_vix = go.Figure()
         fig_vix.add_trace(go.Scatter(
             x=vix_data.index, y=vix_data["Index VIX"],
@@ -262,13 +266,14 @@ def trading_page():
             name="VIX"
         ))
         fig_vix.update_layout(
-            height=250,
+            height=300,
             margin=dict(t=20, b=20, l=20, r=20),
             xaxis_title="Tanggal",
             yaxis_title="Index",
             showlegend=False
         )
         st.plotly_chart(fig_vix, use_container_width=True)
+
 
     # 3. Komoditas Dunia
     st.markdown("### 🛢️ Komoditas Dunia")
