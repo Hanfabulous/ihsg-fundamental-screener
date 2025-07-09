@@ -214,51 +214,61 @@ def trading_page():
         "Gold": "GC=F"
     }
 
-    # === Unduh data (30 hari, hanya Close) ===
+    # === Unduh data dan pastikan kolom Date berbentuk datetime ===
     data = {}
-    for name, ticker in symbols.items():
+    for nama, ticker in symbols.items():
         df = yf.download(ticker, period="30d", interval="1d", progress=False)[["Close"]]
-        df = df.dropna().rename(columns={"Close": f"Index {name}"}).reset_index()
+        df = df.dropna().rename(columns={"Close": f"Index {nama}"}).reset_index()
         df["Date"] = pd.to_datetime(df["Date"])
-        data[name] = df
+        data[nama] = df
 
-    # === Cek data kosong ===
+    # === Cek jika ada data kosong ===
     if any(df.empty for df in data.values()):
         st.warning("❌ Salah satu data tidak tersedia.")
         return
 
-    # === Fungsi bantu: buat kolom tabel dan grafik ===
-    def tampilkan_kolom(nama, warna, y_range):
-        df_disp = data[nama][["Date", f"Index {nama}"]].tail(5).sort_values("Date", ascending=False)
+    # === Fungsi bantu: tampilkan Tabel dan Grafik ===
+    def tampilkan_chart(nama, warna, y_range):
+        df_chart = data[nama].dropna()
+        df_disp = df_chart[["Date", f"Index {nama}"]].tail(5).sort_values("Date", ascending=False)
 
-        col_tabel, col_chart = st.columns([1, 1.5])
-        with col_tabel:
+        col1, col2 = st.columns([1, 1.5])
+        with col1:
             st.markdown(f"#### 📅 Index {nama} (5 Hari)")
             st.dataframe(df_disp, use_container_width=True)
 
-        with col_chart:
+        with col2:
             st.markdown(f"#### 📈 Grafik {nama}")
             fig = go.Figure()
             fig.add_trace(go.Scatter(
-                x=data[nama]["Date"], y=data[nama][f"Index {nama}"],
-                mode="lines+markers", line=dict(color=warna)
+                x=df_chart["Date"],
+                y=df_chart[f"Index {nama}"],
+                mode="lines+markers",
+                name=nama,
+                line=dict(color=warna)
             ))
             fig.update_layout(
-                height=250, yaxis_range=y_range,
-                margin=dict(t=20, b=20), showlegend=False,
-                xaxis_title="Tanggal", yaxis_title="Index"
+                title=f"📊 Grafik {nama}",
+                xaxis_title="Tanggal",
+                yaxis_title="Index",
+                template="plotly_dark",
+                height=300,
+                margin=dict(t=20, b=20),
+                showlegend=False,
+                xaxis_rangeslider_visible=False,
+                yaxis_range=y_range
             )
             st.plotly_chart(fig, use_container_width=True)
 
-    # === Baris 1: DXY, VIX, EIDO ===
-    tampilkan_kolom("DXY", "orange", [90, 100])
-    tampilkan_kolom("VIX", "red", [10, 30])
-    tampilkan_kolom("EIDO", "blue", [10, 20])
+    # === Baris 1 ===
+    tampilkan_chart("DXY", "orange", [90, 100])
+    tampilkan_chart("VIX", "red", [10, 30])
+    tampilkan_chart("EIDO", "blue", [10, 20])
 
-    # === Baris 2: Crude Oil, Gas, Gold ===
-    tampilkan_kolom("Crude Oil", "green", [60, 90])
-    tampilkan_kolom("Natural Gas", "purple", [2, 5])
-    tampilkan_kolom("Gold", "gold", [1800, 2400])
+    # === Baris 2 ===
+    tampilkan_chart("Crude Oil", "green", [60, 90])
+    tampilkan_chart("Natural Gas", "purple", [2, 5])
+    tampilkan_chart("Gold", "gold", [1800, 2400])
 
 
 def tampilkan_teknikal():
