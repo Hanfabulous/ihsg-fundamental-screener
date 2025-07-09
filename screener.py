@@ -196,6 +196,10 @@ def tampilkan_sektoral_idx():
     except Exception as e:
         st.error(f"❌ Gagal mengambil data sektoral IDX: {e}")
 
+import streamlit as st
+import yfinance as yf
+import plotly.graph_objs as go
+
 def trading_page():
     st.markdown("### 🌐 Global Market - DXY, VIX, dan EIDO")
 
