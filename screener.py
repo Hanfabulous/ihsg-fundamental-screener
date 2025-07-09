@@ -199,55 +199,53 @@ def tampilkan_sektoral_idx():
 import yfinance as yf
 import streamlit as st
 import plotly.graph_objects as go
-import pandas as pd
 
-st.title("📊 Debug Grafik DXY, VIX, EIDO")
+st.title("📊 Debug Plotly Chart DXY, VIX, EIDO")
 
-# Ambil data
+# Ambil data Close dari Yahoo Finance
 dxy_data = yf.download("DX-Y.NYB", period="30d", interval="1d")[["Close"]].rename(columns={"Close": "Index DXY"}).dropna()
 vix_data = yf.download("^VIX", period="30d", interval="1d")[["Close"]].rename(columns={"Close": "Index VIX"}).dropna()
 eido_data = yf.download("EIDO", period="30d", interval="1d")[["Close"]].rename(columns={"Close": "Index EIDO"}).dropna()
 
-# Pastikan index bertipe datetime dan reset index agar bisa digunakan sebagai x-axis
-for df in [dxy_data, vix_data, eido_data]:
-    df.reset_index(inplace=True)  # Date jadi kolom biasa
-    df["Date"] = pd.to_datetime(df["Date"])  # Pastikan format datetime
-    df.sort_values("Date", inplace=True)
+# Pastikan index datetime
+dxy_data.index = pd.to_datetime(dxy_data.index)
+vix_data.index = pd.to_datetime(vix_data.index)
+eido_data.index = pd.to_datetime(eido_data.index)
 
-# Plotly: DXY
+# Plotly Chart DXY
 fig_dxy = go.Figure()
 fig_dxy.add_trace(go.Scatter(
-    x=dxy_data["Date"],
+    x=dxy_data.index,
     y=dxy_data["Index DXY"],
     mode="lines+markers",
     line=dict(color="orange"),
     name="DXY"
 ))
-fig_dxy.update_layout(title="Plotly DXY", height=300, yaxis_range=[90, 100])
+fig_dxy.update_layout(title="DXY - Index", height=300, yaxis_range=[90, 100])
 st.plotly_chart(fig_dxy, use_container_width=True)
 
-# Plotly: VIX
+# Plotly Chart VIX
 fig_vix = go.Figure()
 fig_vix.add_trace(go.Scatter(
-    x=vix_data["Date"],
+    x=vix_data.index,
     y=vix_data["Index VIX"],
     mode="lines+markers",
     line=dict(color="red"),
     name="VIX"
 ))
-fig_vix.update_layout(title="Plotly VIX", height=300, yaxis_range=[10, 30])
+fig_vix.update_layout(title="VIX - Index", height=300, yaxis_range=[10, 30])
 st.plotly_chart(fig_vix, use_container_width=True)
 
-# Plotly: EIDO
+# Plotly Chart EIDO
 fig_eido = go.Figure()
 fig_eido.add_trace(go.Scatter(
-    x=eido_data["Date"],
+    x=eido_data.index,
     y=eido_data["Index EIDO"],
     mode="lines+markers",
     line=dict(color="blue"),
     name="EIDO"
 ))
-fig_eido.update_layout(title="Plotly EIDO", height=300, yaxis_range=[10, 20])
+fig_eido.update_layout(title="EIDO - Index", height=300, yaxis_range=[10, 20])
 st.plotly_chart(fig_eido, use_container_width=True)
 
 
