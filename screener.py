@@ -231,13 +231,17 @@ def trading_page():
 
     with col2:
         st.markdown("#### 📈 Grafik DXY")
-        fig_dxy = go.Figure()
-        fig_dxy.add_trace(go.Scatter(
-            x=valid_dxy.index, y=valid_dxy["Index DXY"],
-            mode="lines+markers", line=dict(color="orange")
-        ))
-        fig_dxy.update_layout(height=250, margin=dict(t=20, b=20, l=20, r=20), xaxis_title="Tanggal", yaxis_title="Index", showlegend=False)
-        st.plotly_chart(fig_dxy, use_container_width=True)
+        if len(valid_dxy.dropna()) > 1:
+            fig_dxy = go.Figure()
+            fig_dxy.add_trace(go.Scatter(
+                x=valid_dxy.index, y=valid_dxy["Index DXY"],
+                mode="lines+markers", line=dict(color="orange")
+            ))
+            fig_dxy.update_layout(height=250, margin=dict(t=20, b=20, l=20, r=20), xaxis_title="Tanggal", yaxis_title="Index", showlegend=False)
+            st.plotly_chart(fig_dxy, use_container_width=True)
+        else:
+            st.warning("⚠️ Grafik DXY tidak tersedia (data terlalu sedikit).")
+
 
     with col3:
         st.markdown("#### 📅 VIX (5 Hari)")
@@ -245,11 +249,17 @@ def trading_page():
 
     with col4:
         st.markdown("#### 📈 Grafik VIX")
-        fig_vix = go.Figure()
-        fig_vix.add_trace(go.Scatter(
-            x=valid_vix.index, y=valid_vix["Index VIX"],
-            mode="lines+markers", line=dict(color="red")
-        ))
+        if len(valid_vix.dropna()) > 1:
+            fig_vix = go.Figure()
+            fig_vix.add_trace(go.Scatter(
+                x=valid_vix.index, y=valid_vix["Index VIX"],
+                mode="lines+markers", line=dict(color="red")
+            ))
+            fig_vix.update_layout(height=250, margin=dict(t=20, b=20, l=20, r=20), xaxis_title="Tanggal", yaxis_title="Index", showlegend=False)
+            st.plotly_chart(fig_vix, use_container_width=True)
+else:
+    st.warning("⚠️ Grafik VIX tidak tersedia (data terlalu sedikit).")
+
         fig_vix.update_layout(height=250, margin=dict(t=20, b=20, l=20, r=20), xaxis_title="Tanggal", yaxis_title="Index", showlegend=False)
         st.plotly_chart(fig_vix, use_container_width=True)
 
@@ -259,11 +269,17 @@ def trading_page():
 
     with col6:
         st.markdown("#### 📈 Grafik EIDO")
-        fig_eido = go.Figure()
-        fig_eido.add_trace(go.Scatter(
-            x=valid_eido.index, y=valid_eido["Index EIDO"],
-            mode="lines+markers", line=dict(color="blue")
-        ))
+        if len(valid_eido.dropna()) > 1:
+            fig_eido = go.Figure()
+            fig_eido.add_trace(go.Scatter(
+                x=valid_eido.index, y=valid_eido["Index EIDO"],
+                mode="lines+markers", line=dict(color="blue")
+            ))
+            fig_eido.update_layout(height=250, margin=dict(t=20, b=20, l=20, r=20), xaxis_title="Tanggal", yaxis_title="Index", showlegend=False)
+            st.plotly_chart(fig_eido, use_container_width=True)
+else:
+    st.warning("⚠️ Grafik EIDO tidak tersedia (data terlalu sedikit).")
+
         fig_eido.update_layout(height=250, margin=dict(t=20, b=20, l=20, r=20), xaxis_title="Tanggal", yaxis_title="Index", showlegend=False)
         st.plotly_chart(fig_eido, use_container_width=True)
 
