@@ -245,17 +245,28 @@ def trading_page():
 
             # Grafik
             with cols[j * 2 + 1]:
+                st.markdown(f"#### 📈 Grafik {label} (5 Hari Terakhir)")
+
+                df_5hari = df.tail(5)
+                min_y = df_5hari[label].min()
+                max_y = df_5hari[label].max()
+                margin = (max_y - min_y) * 0.1 if max_y != min_y else 1
+
                 fig = go.Figure()
                 fig.add_trace(go.Scatter(
-                    x=df.tail(5)["Tanggal"],
-                    y=df.tail(5)[label],
+                    x=df_5hari["Date"].dt.strftime("%d-%m-%Y"),  # Tanggal dd-mm-yyyy
+                    y=df_5hari[label],
                     mode="lines+markers",
-                    line=dict(color=color)
+                    line=dict(color=color, width=2),
+                    marker=dict(size=6)
                 ))
                 fig.update_layout(
-                    height=250, yaxis_range=y_range,
-                    margin=dict(t=20, b=20), showlegend=False,
-                    xaxis_title="Tanggal", yaxis_title="Index"
+                    height=250,
+                    yaxis_range=[min_y - margin, max_y + margin],
+                    margin=dict(t=20, b=20),
+                    showlegend=False,
+                    xaxis_title="Tanggal",
+                    yaxis_title="Index",
                 )
                 st.plotly_chart(fig, use_container_width=True)
 
