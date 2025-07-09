@@ -201,7 +201,7 @@ import yfinance as yf
 import plotly.graph_objects as go
 import pandas as pd
 
-def trading_page(nama, warna, y_range):
+def tampilkan_chart(nama, warna, y_range):
     df_chart = data[nama].dropna().tail(5)  # Hanya 5 hari terakhir
     df_disp = df_chart[["Date", f"Index {nama}"]].sort_values("Date", ascending=False)
 
