@@ -195,6 +195,7 @@ def tampilkan_sektoral_idx():
         st.dataframe(df)
     except Exception as e:
         st.error(f"❌ Gagal mengambil data sektoral IDX: {e}")
+        
 import streamlit as st
 import yfinance as yf
 import plotly.graph_objects as go
@@ -202,84 +203,55 @@ import plotly.graph_objects as go
 def trading_page():
     st.markdown("### 🌐 Global Market - DXY, VIX, EIDO, dan Komoditas")
 
-    def ambil_data(ticker, label):
-        df = yf.download(ticker, period="30d", interval="1d", progress=False)[["Close"]].dropna().reset_index()
-        df = df.rename(columns={"Close": label})
-        return df
+    # === Ambil data (30 hari, hanya 'Close') dan reset index ===
+    symbols = {
+        "DXY": ("DX-Y.NYB", "Index DXY", "orange", [90, 100]),
+        "VIX": ("^VIX", "Index VIX", "red", [10, 30]),
+        "EIDO": ("EIDO", "Index EIDO", "blue", [10, 20]),
+        "WTI": ("CL=F", "WTI Crude Oil", "green", [60, 90]),
+        "NG": ("NG=F", "Natural Gas", "purple", [1, 4]),
+        "GOLD": ("GC=F", "Gold", "gold", [1800, 2500]),
+    }
 
-    # === Ambil data dari Yahoo Finance ===
-    dxy = ambil_data("DX-Y.NYB", "Index DXY")
-    vix = ambil_data("^VIX", "Index VIX")
-    eido = ambil_data("EIDO", "Index EIDO")
-    wti = ambil_data("CL=F", "WTI Crude Oil")
-    gas = ambil_data("NG=F", "Natural Gas")
-    gold = ambil_data("GC=F", "Gold")
+    data_dict = {}
 
-    # === Validasi ===
-    if dxy.empty or vix.empty or eido.empty or wti.empty or gas.empty or gold.empty:
-        st.warning("❌ Salah satu data global/komoditas tidak tersedia.")
-        return
+    # Download semua data
+    for key, (symbol, label, color, y_range) in symbols.items():
+        df = yf.download(symbol, period="30d", interval="1d", progress=False)[["Close"]]
+        if df.empty:
+            st.warning(f"❌ Data {label} tidak tersedia.")
+            return
+        df = df.rename(columns={"Close": label}).dropna().reset_index()
+        data_dict[key] = {"data": df, "label": label, "color": color, "y_range": y_range}
 
-    # === Ambil 5 hari terakhir ===
-    def ambil_terakhir(df, kolom):
-        return df[["Date", kolom]].tail(5).sort_values("Date", ascending=False)
+    # === Tampilkan 6 instrumen: DXY, VIX, EIDO, WTI, NG, Gold ===
+    keys_order = ["DXY", "VIX", "EIDO", "WTI", "NG", "GOLD"]
 
-    dxy_disp = ambil_terakhir(dxy, "Index DXY")
-    vix_disp = ambil_terakhir(vix, "Index VIX")
-    eido_disp = ambil_terakhir(eido, "Index EIDO")
-    wti_disp = ambil_terakhir(wti, "WTI Crude Oil")
-    gas_disp = ambil_terakhir(gas, "Natural Gas")
-    gold_disp = ambil_terakhir(gold, "Gold")
+    for i in range(0, len(keys_order), 3):
+        cols = st.columns([1, 1.5, 1, 1.5, 1, 1.5])  # 3 instrumen per baris
+        for j, key in enumerate(keys_order[i:i+3]):
+            df = data_dict[key]["data"]
+            label = data_dict[key]["label"]
+            color = data_dict[key]["color"]
+            y_range = data_dict[key]["y_range"]
 
-    # === Fungsi grafik plotly ===
-    def buat_chart(df, kolom, warna, y_range):
-        fig = go.Figure()
-        fig.add_trace(go.Scatter(
-            x=df["Date"], y=df[kolom],
-            mode="lines+markers", line=dict(color=warna),
-            showlegend=False
-        ))
-        fig.update_layout(
-            height=250,
-            yaxis_range=y_range,
-            margin=dict(t=20, b=20),
-            xaxis_title="Tanggal",
-            yaxis_title="Index"
-        )
-        return fig
+            with cols[j * 2]:
+                st.markdown(f"#### 📅 {label} (5 Hari)")
+                st.dataframe(df[["Date", label]].tail(5).sort_values("Date", ascending=False), use_container_width=True)
 
-    # === Layout Tampilan 3 x 2 ===
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.markdown("#### 🧮 Index DXY (5 Hari)")
-        st.dataframe(dxy_disp, use_container_width=True)
-        st.plotly_chart(buat_chart(dxy, "Index DXY", "orange", [90, 100]), use_container_width=True)
-
-    with col2:
-        st.markdown("#### 📊 Index VIX (5 Hari)")
-        st.dataframe(vix_disp, use_container_width=True)
-        st.plotly_chart(buat_chart(vix, "Index VIX", "red", [10, 30]), use_container_width=True)
-
-    with col3:
-        st.markdown("#### 📊 Index EIDO (5 Hari)")
-        st.dataframe(eido_disp, use_container_width=True)
-        st.plotly_chart(buat_chart(eido, "Index EIDO", "blue", [10, 20]), use_container_width=True)
-
-    col4, col5, col6 = st.columns(3)
-    with col4:
-        st.markdown("#### 🛢️ WTI Crude Oil (5 Hari)")
-        st.dataframe(wti_disp, use_container_width=True)
-        st.plotly_chart(buat_chart(wti, "WTI Crude Oil", "brown", [60, 100]), use_container_width=True)
-
-    with col5:
-        st.markdown("#### 🔥 Natural Gas (5 Hari)")
-        st.dataframe(gas_disp, use_container_width=True)
-        st.plotly_chart(buat_chart(gas, "Natural Gas", "green", [1, 6]), use_container_width=True)
-
-    with col6:
-        st.markdown("#### 🪙 Gold (5 Hari)")
-        st.dataframe(gold_disp, use_container_width=True)
-        st.plotly_chart(buat_chart(gold, "Gold", "gold", [1500, 2500]), use_container_width=True)
+            with cols[j * 2 + 1]:
+                st.markdown(f"#### 📈 Grafik {label}")
+                fig = go.Figure()
+                fig.add_trace(go.Scatter(
+                    x=df["Date"], y=df[label],
+                    mode="lines+markers", line=dict(color=color)
+                ))
+                fig.update_layout(
+                    height=250, yaxis_range=y_range,
+                    margin=dict(t=20, b=20), showlegend=False,
+                    xaxis_title="Tanggal", yaxis_title="Index"
+                )
+                st.plotly_chart(fig, use_container_width=True)
 
 
 def tampilkan_teknikal():
