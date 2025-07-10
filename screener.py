@@ -249,7 +249,7 @@ def trading_page():
                 fig.add_trace(go.Scatter(
                     x=df.tail(5)["Tanggal"],
                     y=df.tail(5)[label],
-                    mode="candlestick",
+                    mode="lines+markers",
                     line=dict(color=color)
                 ))
                 fig.update_layout(
