@@ -12,3 +12,5 @@ requests
 streamlit-aggrid
 ta
 matplotlib
+tensorflow
+scikitlearn
