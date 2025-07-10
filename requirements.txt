@@ -13,4 +13,4 @@ streamlit-aggrid
 ta
 matplotlib
 tensorflow
-scikitlearn
+scikit-learn
