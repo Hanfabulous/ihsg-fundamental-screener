@@ -247,7 +247,7 @@ def trading_page():
             with cols[j * 2 + 1]:
                 fig = go.Figure()
                 fig.add_trace(go.Scatter(
-                    x=df.tail(5)["Tanggal"],
+                    x=df.tail(5)["Tanggal"]
                     y=df.tail(5)[label],
                     mode="lines+markers",
                     line=dict(color=color)
