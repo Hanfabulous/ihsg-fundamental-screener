@@ -19,10 +19,6 @@ import time
 from st_aggrid import AgGrid, GridOptionsBuilder, JsCode, GridUpdateMode
 from urllib.parse import urlparse, parse_qs
 import plotly.graph_objects as go
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import LSTM, Dense
-from sklearn.preprocessing import MinMaxScaler
-import io
 
 try:
     from bs4 import BeautifulSoup
@@ -200,82 +196,69 @@ def tampilkan_sektoral_idx():
     except Exception as e:
         st.error(f"❌ Gagal mengambil data sektoral IDX: {e}")
 
-def tampilkan_prediksi_ihsg_mingguan():
-    st.markdown("### 📈 Prediksi Arah IHSG Mingguan (LSTM)")
+import streamlit as st
+import yfinance as yf
+import plotly.graph_objects as go
 
-    # === 1. Ambil data IHSG harian sejak 2018 ===
-    end_date = datetime.date(2025, 7, 4)
-    start_date = datetime.date(2018, 1, 1)
-    df = yf.download("^JKSE", start=start_date, end=end_date)
+def trading_page():
+    st.markdown("### 🌐 Global Market - DXY, VIX, EIDO, dan Komoditas")
 
-    if df.empty:
-        st.warning("Data IHSG tidak tersedia.")
-        return
+    symbols = {
+        "DXY": ("DX-Y.NYB", "Index DXY", "orange", [90, 100]),
+        "VIX": ("^VIX", "Index VIX", "red", [10, 30]),
+        "EIDO": ("EIDO", "Index EIDO", "blue", [10, 20]),
+        "WTI": ("CL=F", "WTI Crude Oil", "green", [60, 90]),
+        "NG": ("NG=F", "Natural Gas", "purple", [1, 4]),
+        "GOLD": ("GC=F", "Gold", "gold", [1800, 2500]),
+    }
 
-    df = df[['Open', 'High', 'Low', 'Close', 'Volume']]
-    df.dropna(inplace=True)
+    data_dict = {}
 
-    # === 2. Buat data mingguan dan label arah: turun, sideways, naik ===
-    df['Week'] = df.index.to_series().dt.to_period('W').apply(lambda r: r.start_time)
-    df_grouped = df.groupby('Week').agg({
-        'Open': 'first',
-        'High': 'max',
-        'Low': 'min',
-        'Close': ['first', 'last'],
-        'Volume': 'sum'
-    })
-    df_grouped.columns = ['Open', 'High', 'Low', 'Close_Mon', 'Close_Fri', 'Volume']
-    df_grouped.dropna(inplace=True)
-    df_grouped['Return'] = (df_grouped['Close_Fri'] - df_grouped['Close_Mon']) / df_grouped['Close_Mon']
+    # Download data dan format tanggal
+    for key, (symbol, label, color, y_range) in symbols.items():
+        df = yf.download(symbol, period="30d", interval="1d", progress=False)[["Close"]]
+        if df.empty:
+            st.warning(f"❌ Data {label} tidak tersedia.")
+            return
+        df = df.rename(columns={"Close": label}).dropna().reset_index()
+        df["Tanggal"] = df["Date"].dt.strftime("%d-%m-%Y")  # Format tanggal
+        data_dict[key] = {"data": df, "label": label, "color": color, "y_range": y_range}
 
-    def get_label(r):
-        if r > 0.01:
-            return 2  # naik
-        elif r < -0.01:
-            return 0  # turun
-        else:
-            return 1  # sideways
+    # Tampilkan 3 instrumen per baris
+    keys_order = ["DXY", "VIX", "EIDO", "WTI", "NG", "GOLD"]
 
-    df_grouped['Label'] = df_grouped['Return'].apply(get_label)
+    for i in range(0, len(keys_order), 3):
+        cols = st.columns([1, 1.5, 1, 1.5, 1, 1.5])
+        for j, key in enumerate(keys_order[i:i+3]):
+            df = data_dict[key]["data"]
+            label = data_dict[key]["label"]
+            color = data_dict[key]["color"]
+            y_range = data_dict[key]["y_range"]
 
-    # === 3. Siapkan dataset LSTM ===
-    scaler = MinMaxScaler()
-    feature_cols = ['Open', 'High', 'Low', 'Close_Fri', 'Volume']
-    df_grouped[feature_cols] = scaler.fit_transform(df_grouped[feature_cols])
+            # Tabel
+            with cols[j * 2]:
+                st.markdown(f"#### 📅 {label} (5 Hari)")
+                st.dataframe(
+                    df[["Tanggal", label]].tail(5).sort_values("Tanggal", ascending=False),
+                    use_container_width=True
+                )
 
-    window = 5  # 5 minggu sebelumnya
-    X, y = [], []
-    for i in range(window, len(df_grouped)):
-        X.append(df_grouped[feature_cols].iloc[i-window:i].values)
-        y.append(df_grouped['Label'].iloc[i])
+            # Grafik
+            with cols[j * 2 + 1]:
+                fig = go.Figure()
+                fig.add_trace(go.Scatter(
+                    x=df.tail(5)["Tanggal"],
+                    y=df.tail(5)[label],
+                    mode="lines+markers",
+                    line=dict(color=color)
+                ))
+                fig.update_layout(
+                    height=250, yaxis_range=y_range,
+                    margin=dict(t=20, b=20), showlegend=False,
+                    xaxis_title="Tanggal", yaxis_title="Index"
+                )
+                st.plotly_chart(fig, use_container_width=True)
 
-    X = np.array(X)
-    y = np.array(y)
-
-    # === 4. Buat model LSTM dan latih ulang ===
-    model = Sequential()
-    model.add(LSTM(32, input_shape=(X.shape[1], X.shape[2])))
-    model.add(Dense(3, activation='softmax'))  # 3 kelas: turun, sideways, naik
-    model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
-    model.fit(X, y, epochs=20, batch_size=8, verbose=0)
-
-    # === 5. Prediksi minggu depan (berdasarkan 5 minggu terakhir) ===
-    last_sequence = df_grouped[feature_cols].iloc[-5:].values
-    pred_input = np.expand_dims(last_sequence, axis=0)
-    prob = model.predict(pred_input)[0]
-
-    # === 6. Tampilkan pie chart ===
-    labels = ['Turun', 'Sideways', 'Naik']
-    colors = ['red', 'orange', 'green']
-    plt.figure(figsize=(4, 4))
-    plt.pie(prob, labels=labels, autopct='%1.1f%%', colors=colors, startangle=140)
-    plt.title("Prediksi Arah IHSG Mingguan")
-    st.pyplot(plt.gcf())
-    plt.close()
-
-    # === 7. Tampilkan masa berlaku prediksi ===
-    pred_range = "07 – 11 Juli 2025 (berdasarkan data sampai 04 Juli 2025)"
-    st.markdown(f"🗓️ **Masa Berlaku Prediksi:** {pred_range}")
 def tampilkan_teknikal():
     st.header("📉 Analisa Teknikal Saham")
 
